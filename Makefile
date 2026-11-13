@@ -100,6 +100,9 @@ mk.dep: $(SRCS)
 std.obj: std.cpp
     $(CXX) $(CXXFLAGS) -Yc"std.h" std.cpp
 
+i486/i486.obj: i486/i486.cpp
+    $(CXX) $(CXXFLAGS) -Yu"std.h" -Foi486/i486.obj i486/i486.cpp
+
 .cpp.obj::
     $(CXX) $(CXXFLAGS) -Yu"std.h" $<
 
