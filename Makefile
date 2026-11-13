@@ -113,7 +113,7 @@ $(OUT_DIR)/emul.exe: $(OBJS) $(LIBS) settings.res
     $(LINK) $(LFLAGS) -out:$@ -pdb:$*.pdb -map:$*.map $** $(LIBS)
 
 clean:
-    -del *.obj *.res *.map *.pdb *.pch *.pchi
+    -del *.obj *.res *.map *.pdb *.pch *.pchi i486\\i486.obj
 
 !if exist(mk.dep)
 !include mk.dep
