@@ -1,4 +1,5 @@
 #include "std.h"
+#include <new>
 #include "i486.h"
 
 namespace i486
