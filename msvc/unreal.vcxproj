@@ -398,6 +398,7 @@
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <ConformanceMode>true</ConformanceMode>
       <ForcedIncludeFiles>std.h</ForcedIncludeFiles>
+      <AdditionalOptions>/Zc:preprocessor- %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <TargetMachine>MachineX86</TargetMachine>
