@@ -32,6 +32,6 @@ PCem's `x86seg_reset()` currently selects the conventional AT reset state (`F000
 - I/O: isolated guest port callbacks; never call the Z80/ATM output handler.
 - First acceptance test: reset fetch at `FFFFFFF0h`, then a tiny ROM test for 16/32-bit integer instructions, OUT and HLT.
 
-## Import/licensing gate
+## Import/licensing status
 
-The upstream PCem project identifies itself as GPL-2.0 and supplies a `COPYING` file. Project130 documents its `PCem/` directory as a read-only CPU/VGA reference, but its checked tree does not include that license file. Until the exact snapshot provenance is confirmed, treat the PCem interpreter files as GPL-2.0-derived. Before importing them into Project131, confirm that Project131 can be distributed under GPL-2.0-compatible terms; preserve upstream notices, include the complete GPL-2.0 text, and mark every modified source file with the changes and date. Do not mix the interpreter into a differently licensed whole without resolving GPL compatibility.
+The user approved continuing with a GPL-2.0-based integration. The full upstream license is now included at `i486/pcem/COPYING`, and the unmodified PCem interpreter/FPU source snapshot is stored under `i486/pcem/`; see `i486/pcem/UPSTREAM.md` for its manifest. Preserve upstream notices. Any modified imported source file must carry a prominent change notice and date. The imported files remain excluded from the build until their PCem machine dependencies are adapted.
