@@ -374,6 +374,17 @@ static inline void UpdateMemMapping()
 void out(unsigned port, unsigned char val)
 {
 //   printf(__FUNCTION__" port=0x%X, val=0x%X\n", (port & 0xFF), val);
+
+    if ((port & 0xFF) == 0xEF)
+    {
+        FILE* f = fopen("C:\\Temp\\spectrum_out.txt", "a");
+        if (f)
+        {
+            fputc(val, f);
+            fclose(f);
+        }
+    }
+
    switch (port & 0xFF)
    {
       case MPAG:

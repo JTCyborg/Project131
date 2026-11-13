@@ -683,8 +683,19 @@ set1FFD:
           return;
       }
    }
-   if ((port & 0xF8FF) == 0xF8EF && modem.open_port)
-       modem.write((port >> 8) & 7, val);
+   // мюь кнццеп мю яюлнл бунде б тсмйжхч
+
+   if ((port & 0xFF) == 0xEF)
+   {
+       FILE* f = fopen("C:\\Temp\\spectrum_out.txt", "a");
+       if (f)
+       {
+           fputc(val, f);
+           fclose(f);
+       }
+   }
+
+
 }
 
 __inline unsigned char in1(unsigned port)

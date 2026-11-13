@@ -1,3 +1,18 @@
+#ifdef P_
+#define SAVE_P_ P_
+#undef P_
+#endif
+
+#include <windows.h>
+#include <objbase.h>
+
+#ifdef SAVE_P_
+#define P_ SAVE_P_
+#undef SAVE_P_
+#endif
+
+
+
 #include "../std.h"
 
 #include "../emul.h"

@@ -2,7 +2,7 @@
 
 namespace z80gs
 {
-const int GSCPUFQ = 24000000; // hz //12
+const int GSCPUFQ = 240000000; // hz //12
 extern const unsigned GSCPUINT;
 extern unsigned __int64 gs_t_states; // inc'ed with GSCPUINT every gs int
 
