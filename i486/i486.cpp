@@ -7,6 +7,7 @@ namespace i486
     static unsigned char *ram = 0;
     static unsigned long ram_size = 0;
     static unsigned char bios[BiosSize];
+    static bool bios_loaded = false;
 
     static unsigned char read8_internal(unsigned int address)
     {
@@ -37,6 +38,7 @@ namespace i486
         ram_size = requested_ram_size;
         memset(ram, 0, ram_size);
         memset(bios, 0xFF, sizeof(bios));
+        bios_loaded = false;
         return true;
     }
 
@@ -45,6 +47,7 @@ namespace i486
         delete[] ram;
         ram = 0;
         ram_size = 0;
+        bios_loaded = false;
         memset(bios, 0xFF, sizeof(bios));
     }
 
@@ -63,10 +66,31 @@ namespace i486
         if (!file)
             return false;
 
-        const size_t count = fread(bios, 1, sizeof(bios), file);
-        const bool ok = !ferror(file) && count == sizeof(bios);
+        unsigned char *image = new (std::nothrow) unsigned char[BiosSize];
+        if (!image)
+        {
+            fclose(file);
+            return false;
+        }
+
+        const size_t count = fread(image, 1, BiosSize, file);
+        const int extra = fgetc(file);
+        const bool ok = count == BiosSize && extra == EOF && !ferror(file);
         fclose(file);
+
+        if (ok)
+        {
+            memcpy(bios, image, BiosSize);
+            bios_loaded = true;
+        }
+
+        delete[] image;
         return ok;
+    }
+
+    bool bios_is_loaded()
+    {
+        return bios_loaded;
     }
 
     unsigned char read8(unsigned int address)
