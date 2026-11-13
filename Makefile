@@ -68,7 +68,7 @@ RCFLAGS=-D_USING_V110_SDK71_
 
 LIBS=$(LIBS) sndrender/snd.lib z80/z80.lib
 
-SRCS=emul.cpp std.cpp atm.cpp cheat.cpp config.cpp dbgbpx.cpp dbgcmd.cpp dbglabls.cpp \
+SRCS=emul.cpp std.cpp i486/i486.cpp atm.cpp cheat.cpp config.cpp dbgbpx.cpp dbgcmd.cpp dbglabls.cpp \
     dbgmem.cpp dbgoth.cpp dbgpaint.cpp dbgreg.cpp dbgrwdlg.cpp dbgtrace.cpp \
         debug.cpp draw.cpp drawnomc.cpp draw_384.cpp dx.cpp dxerr.cpp dxovr.cpp \
         dxrcopy.cpp dxrend.cpp dxrendch.cpp dxrframe.cpp dxr_4bpp.cpp dxr_512.cpp \
@@ -100,6 +100,9 @@ mk.dep: $(SRCS)
 std.obj: std.cpp
     $(CXX) $(CXXFLAGS) -Yc"std.h" std.cpp
 
+i486/i486.obj: i486/i486.cpp
+    $(CXX) $(CXXFLAGS) -Yu"std.h" -Foi486/i486.obj i486/i486.cpp
+
 .cpp.obj::
     $(CXX) $(CXXFLAGS) -Yu"std.h" $<
 
@@ -110,7 +113,7 @@ $(OUT_DIR)/emul.exe: $(OBJS) $(LIBS) settings.res
     $(LINK) $(LFLAGS) -out:$@ -pdb:$*.pdb -map:$*.map $** $(LIBS)
 
 clean:
-    -del *.obj *.res *.map *.pdb *.pch *.pchi
+    -del *.obj *.res *.map *.pdb *.pch *.pchi i486\\i486.obj
 
 !if exist(mk.dep)
 !include mk.dep
