@@ -350,7 +350,6 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpplatest</LanguageStandard>
-      <AdditionalOptions>/Zc:preprocessor- %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <TargetMachine>MachineX86</TargetMachine>
