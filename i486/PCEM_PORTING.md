@@ -34,4 +34,4 @@ PCem's `x86seg_reset()` currently selects the conventional AT reset state (`F000
 
 ## Import/licensing gate
 
-Before vendoring upstream PCem source files, preserve their original notices and include the applicable upstream license text. The Project130 PCem directory is documented as a reference tree, but no license file was found at the checked repository root or under `PCem/` in the inspected paths. Do not silently strip notices or claim the vendored port is license-complete until that is resolved.
+The upstream PCem project identifies itself as GPL-2.0 and supplies a `COPYING` file. Project130 documents its `PCem/` directory as a read-only CPU/VGA reference, but its checked tree does not include that license file. Until the exact snapshot provenance is confirmed, treat the PCem interpreter files as GPL-2.0-derived. Before importing them into Project131, confirm that Project131 can be distributed under GPL-2.0-compatible terms; preserve upstream notices, include the complete GPL-2.0 text, and mark every modified source file with the changes and date. Do not mix the interpreter into a differently licensed whole without resolving GPL compatibility.
