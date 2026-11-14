@@ -514,7 +514,7 @@ static uint8_t device_in8(uint16_t port)
     if(port==0x21) return pic_master.imr;
     if(port==0xA0) return pic_command_read(pic_slave);
     if(port==0xA1) return pic_slave.imr;
-    if(port==0x40) return pit_read();
+    if(port>=0x40 && port<=0x42) return pit_read();
     if(port<=0x0F) return dma_read(port);
     if(port>=0x80 && port<=0x83) return dma.page[port-0x80];
     if(port==0x63) return ppi_control;
@@ -554,7 +554,7 @@ static void device_out8(uint16_t port, uint8_t value)
     if(port==0x21) { pic_data(pic_master,value); return; }
     if(port==0xA0) { pic_command(pic_slave,value); return; }
     if(port==0xA1) { pic_data(pic_slave,value); return; }
-    if(port==0x40) { pit_write(value); return; }
+    if(port>=0x40 && port<=0x42) { pit_write(value); return; }
     if(port==0x43) { pit_control(value); return; }
     if(port<=0x0F) { dma_write(port,value); return; }
     if(port>=0x80 && port<=0x83) { dma.page[port-0x80]=value; return; }
@@ -636,7 +636,7 @@ int acknowledge_interrupt() { return pic_acknowledge(); }
 uint8_t in8(uint16_t port)
 {
     if ((port>=0x3B0 && port<=0x3DF)) { bool handled=false; uint8_t value=i486::vga::in8(port,&handled); if(handled) return value; return 0xFF; }
-    if (port==0x20 || port==0x21 || port==0x40 || port==0x60 || port==0x61 || port==0x62 || port==0x63 || port==0x64 || port==0x71 || port==0xA0 || port==0xA1 || port<=0x0F || (port>=0x80 && port<=0x83) ||
+    if (port==0x20 || port==0x21 || (port>=0x40 && port<=0x42) || port==0x60 || port==0x61 || port==0x62 || port==0x63 || port==0x64 || port==0x71 || port==0xA0 || port==0xA1 || port<=0x0F || (port>=0x80 && port<=0x83) ||
         (port>=0x1F0 && port<=0x1F7) || port==0x3F2 || port==0x3F4 || port==0x3F5 || port==0x3F6 || port==0x3F7)
         return device_in8(port);
     if (port >= 0x3F8 && port <= 0x3FF) {
@@ -670,7 +670,7 @@ uint8_t in8(uint16_t port)
 void out8(uint16_t port, uint8_t value)
 {
     if ((port>=0x3B0 && port<=0x3DF)) { bool handled=false; i486::vga::out8(port,value,&handled); return; }
-    if (port==0x20 || port==0x21 || port==0x40 || port==0x43 || port==0x60 || port==0x61 || port==0x62 || port==0x63 || port==0x64 || port==0x70 || port==0xA0 || port==0xA1 || port<=0x0F || (port>=0x80 && port<=0x83) ||
+    if (port==0x20 || port==0x21 || (port>=0x40 && port<=0x43) || port==0x60 || port==0x61 || port==0x62 || port==0x63 || port==0x64 || port==0x70 || port==0xA0 || port==0xA1 || port<=0x0F || (port>=0x80 && port<=0x83) ||
         (port>=0x1F0 && port<=0x1F7) || port==0x3F2 || port==0x3F5 || port==0x3F6 || port==0x3F7) {
         device_out8(port,value); return;
     }
