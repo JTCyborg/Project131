@@ -17,6 +17,7 @@
 #include "../x86.h"
 #include "../x86_flags.h"
 #include "../x87.h"
+#include "../x87_timings.h"
 
 extern "C" {
 x86seg gdt, ldt, idt, tr;
@@ -45,6 +46,18 @@ uint16_t cpu_cur_status;
 
 uint32_t pccache;
 uint8_t *pccache2;
+
+/* PCem interpreter state required by opcode handlers. The first real-mode
+ * bring-up does not enter protected mode or use the legacy dynarec gates.
+ */
+int cgate16 = 0;
+int cgate32 = 0;
+int x86_was_reset = 0;
+
+/* x87 execution timing is accounted by the interpreter. The fixed 486 timing
+ * profile is initialized separately when the timing table is wired in.
+ */
+x87_timings_t x87_timings = { 0 };
 
 uint8_t znptable8[256];
 uint16_t *mod1add[2][8];
