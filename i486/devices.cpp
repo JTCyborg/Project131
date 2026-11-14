@@ -157,13 +157,13 @@ static void nic_write(uint8_t reg, uint8_t v)
 
 
 struct Keyboard8042 {
-    uint8_t command_byte, output_port, output_data;
-    uint8_t output_full, expect_command_byte, expect_output_port;
+    uint8_t command_byte, output_port, output_data, output_data2;
+    uint8_t output_full, output_count, expect_command_byte, expect_output_port;
     uint8_t keyboard_enabled;
 } kbc;
 
 struct AtaDisk {
-    uint8_t feature, error, sector_count, lba0, lba1, lba2, drive, status, command;
+    uint8_t feature, error, sector_count, lba0, lba1, lba2, drive, status, command, control;
     uint8_t buffer[512];
     unsigned int pos;
     unsigned int sectors_left;
@@ -181,8 +181,10 @@ static uint8_t cmos_index;
 
 static void kbc_put(uint8_t value)
 {
-    kbc.output_data = value;
-    kbc.output_full = 1;
+    if (!kbc.output_count) kbc.output_data=value;
+    else if (kbc.output_count==1) kbc.output_data2=value;
+    if (kbc.output_count<2) ++kbc.output_count;
+    kbc.output_full = kbc.output_count ? 1 : 0;
 }
 static uint8_t kbc_status()
 {
@@ -225,7 +227,7 @@ static void kbc_data(uint8_t value)
     if (!kbc.keyboard_enabled) return;
     /* AT keyboard is present and idle: acknowledge commands but never
        synthesize key make/break codes. */
-    if (value == 0xFF) { kbc_put(0xFA); }
+    if (value == 0xFF) { kbc_put(0xFA); kbc_put(0xAA); }
     else if (value == 0xF4 || value == 0xF5 || value == 0xED ||
              value == 0xF3 || value == 0xF0) kbc_put(0xFA);
     else kbc_put(0xFA);
@@ -415,8 +417,14 @@ static void cmos_reset()
 static uint8_t device_in8(uint16_t port)
 {
     if (port==0x60) {
-        if (!kbc.output_full) return 0;
-        kbc.output_full=0; return kbc.output_data;
+        if (!kbc.output_count) return 0;
+        {
+            uint8_t value=kbc.output_data;
+            if (kbc.output_count==2) kbc.output_data=kbc.output_data2;
+            --kbc.output_count;
+            kbc.output_full=kbc.output_count ? 1 : 0;
+            return value;
+        }
     }
     if (port==0x64) return kbc_status();
     if (port==0x71) return cmos[cmos_index&0x7F];
@@ -447,6 +455,11 @@ static void device_out8(uint16_t port, uint8_t value)
     if (port==0x1F5) { ata.lba2=value; return; }
     if (port==0x1F6) { ata.drive=value; return; }
     if (port==0x1F7) { ata_command(value); return; }
+    if (port==0x3F6) {
+        ata.control=value;
+        if (value&0x04) { ata_reset(); ata.control=value; }
+        return;
+    }
     if (port==0x3F2) { fdc.dor=value; return; }
     if (port==0x3F5) { fdc_write_fifo(value); return; }
     if (port==0x3F7) { fdc.ccr=value&3; return; }
@@ -517,7 +530,7 @@ uint8_t in8(uint16_t port)
 void out8(uint16_t port, uint8_t value)
 {
     if (port==0x60 || port==0x64 || port==0x70 ||
-        (port>=0x1F0 && port<=0x1F7) || port==0x3F2 || port==0x3F5 || port==0x3F7) {
+        (port>=0x1F0 && port<=0x1F7) || port==0x3F2 || port==0x3F5 || port==0x3F6 || port==0x3F7) {
         device_out8(port,value); return;
     }
     if (port >= 0x3F8 && port <= 0x3FF) {
