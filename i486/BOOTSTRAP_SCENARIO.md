@@ -82,3 +82,17 @@ Observed `spectrum_out.txt` blob SHA `e4d943cb80848c054e863bb56185157657e81192`:
 - `LOOPNZ` repeats while ZF=0; with bit 5 set, `TEST` leaves ZF=0 and the BIOS remains in the loop. The previous note claiming that bit 5 high releases this loop was incorrect.
 - Corrected bootstrap policy: preserve the video-status nibble and force port-62 bit 5 low. This is a targeted boot workaround, not PIT/speaker emulation.
 - Next runtime check: confirm the CPU leaves `FA0D-FA11`; then inspect VGA register writes (`3C0-3DF`) and video-memory writes. Build/runtime remain unverified until a fresh run is supplied.
+
+
+## Runtime follow-up: port-62 bit-5-low correction (2026-11-14)
+
+Observed in `spectrum_out.txt`, blob SHA `e030641b6b53fef02e5bcede1ae4b7edb5fe9e09`:
+
+- Port-62 reads now show `04h` (also `0Fh` when the low video-status bits differ); bit 5 is clear.
+- The first poll at `F000:FA0D` executes `IN AL,62h; TEST AL,20h; LOOPNZ`. With `AL=04h`, ZF=1 and `LOOPNZ` falls through to `FA13`; the earlier forced-high trap is resolved.
+- BIOS then starts a separate delay loop at `F000:FA18`: `IN AL,62h; TEST AL,20h; LOOPZ FA18h` (`E1`). The trace shows CX counting down (`1000h`, `0FFFh`, ...); this is a timed loop, not evidence that port 62h must be changed again.
+- The log later records `OUT 0061=8C` after the diagnostic-output suppression marker, consistent with execution continuing beyond the delay loop. The post-loop CPU address is not captured because the 256 KiB i486 log budget is exhausted.
+- No VGA register writes or video-memory writes are evidenced in the available log. Do not claim POST completion or video output.
+- Next diagnostic action: reduce/rate-limit repetitive per-iteration `BIOS-POLL` / `BIOS-LOOPE` logging (retain first/last samples and periodic CX checkpoints), and emit a compact CPU checkpoint after the delay loop. Then inspect subsequent POST and VGA activity. No further PPI behavior change is justified by this log.
+
+Build/runtime verification of source changes remains pending.
