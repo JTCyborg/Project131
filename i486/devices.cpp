@@ -297,6 +297,9 @@ static void pit_tick(unsigned int ch){
  else if(p.mode==4||p.mode==5){if(p.strobe_low){pit_set_output(ch,1);p.strobe_low=0;if(p.mode==4)p.running=0;}else if(p.counter){--p.counter;if(!p.counter){pit_set_output(ch,0);p.strobe_low=1;}}}
  /* The XT PIC receives IRQ0 on the channel-0 OUT low-to-high edge. */
  if(ch==0&&!old_output&&p.output)pic_master.irr|=1;
+ /* PCem pit_refresh_timer_at(): XT refresh toggles PPI port-B bit 4
+    on the channel-1 OUT rising edge, not when software reads port 61h. */
+ if(ch==1&&!old_output&&p.output)system_refresh_phase^=0x10;
  if(ch==2&&old_output!=p.output){
   char msg[128];
   sprintf(msg,"[I486][PIT] CH2 OUT %u->%u COUNT=%04X PHASE=%u GATE=%u MODE=%u",
@@ -577,7 +580,6 @@ static uint8_t device_in8(uint16_t port)
          * refresh toggle, and bit 5 is the 8253 channel-2 OUT input.
          * The PIT owns OUT; it must not be exposed on PPI port C (62h).
          */
-        system_refresh_phase^=0x10;
         return (uint8_t)((system_control_b&0x0F) | system_refresh_phase |
             (pit[2].output ? 0x20 : 0));
     }
