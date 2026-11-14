@@ -39,7 +39,8 @@ static unsigned int io_trace_count;
  */
 static uint8_t system_control_b;
 static uint8_t system_refresh_phase;
-static uint8_t system_control_a = 0x0E; /* base configuration; bit 5 is the BIOS-polled refresh/status toggle */
+static uint8_t system_control_a = 0x0E; /* XT system-status inputs; bit 5 is PIT channel 2 OUT */
+static unsigned int port62_read_count;
 static void trace(const char *s) { i486::log(s); }
 
 static void uart_reset()
@@ -510,7 +511,23 @@ static uint8_t device_in8(uint16_t port)
     if(port==0x63) return ppi_control;
 
     if (port==0x61) { system_refresh_phase^=0x10; return (uint8_t)((system_control_b&0x0F)|system_refresh_phase); }
-    if (port==0x62) { system_control_a^=0x20; return (uint8_t)(system_control_a|0x08); }
+    if (port==0x62) {
+        /* XT system-status port: bit 5 is the 8253 channel-2 OUT pin.
+         * Do not synthesize a transition on every CPU read; the PIT model
+         * owns the signal and advances it from emulated CPU cycles.
+         */
+        const uint8_t value = (uint8_t)((system_control_a & 0xCF) |
+            (pit[2].output ? 0x20 : 0));
+        if (port62_read_count < 32) {
+            char msg[112];
+            sprintf(msg, "[I486][PPI] IN 0062=%02X PIT2_OUT=%u PIT2_COUNT=%04X",
+                value, pit[2].output ? 1U : 0U,
+                (unsigned int)(pit[2].counter & 0xFFFFU));
+            trace(msg);
+            ++port62_read_count;
+        }
+        return value;
+    }
     if (port==0x63) return ppi_control;
     if (port==0x60) {
         if (!kbc.output_count) return 0;
@@ -601,6 +618,7 @@ void reset()
     fdc_reset();
     cmos_reset();
     io_trace_count = 0;
+    port62_read_count = 0;
     trace("[I486] DEVICES RESET PIC=8259A PIT=8253 DMA=8237 PPI=XT COM1=3F8 LPT1=378 NE2000=300 KBC=60/64 IDE=1F0 FDD=3F0 DRIVE=A:NO_MEDIA HDD=16MB_BLANK");
 }
 
@@ -614,13 +632,26 @@ void advance_cycles(unsigned int cpu_cycles)
         for(unsigned int ch=0; ch<3; ++ch) {
             Pit8253 &p = pit[ch];
             if(!p.running || p.null_count) continue;
+
+            if(p.mode==3) {
+                /* Mode 3 square wave: the 16-bit counter decrements by two.
+                 * OUT changes at the half-period, not once per full reload.
+                 */
+                if(p.counter > 2) p.counter -= 2;
+                else {
+                    p.output ^= 1;
+                    p.counter = p.reload;
+                    if(ch==0 && p.output) pic_master.irr |= 0x01;
+                }
+                continue;
+            }
+
             if(p.counter) --p.counter;
             if(!p.counter) {
                 if(p.mode<=1) { p.output=1; p.running=0; }
                 else if(p.mode==2) { p.output=0; p.counter=p.reload; }
-                else if(p.mode==3) { p.output^=1; p.counter=p.reload; }
                 else { p.output=1; p.counter=p.reload; }
-                if(ch==0 && p.mode<=3) pic_master.irr |= 0x01;
+                if(ch==0 && p.mode<=2) pic_master.irr |= 0x01;
             } else if(ch==2 && p.mode==2 && p.counter==1) p.output=1;
         }
     }}
