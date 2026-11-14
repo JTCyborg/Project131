@@ -4,8 +4,34 @@
 #include "x86_flags.h"
 #include "codegen.h"
 
-/* Shared CPU globals are owned by adapter/pcem_cpu_globals.cpp.
- * This file retains the original interpreter helper implementations. */
+x86seg gdt, ldt, idt, tr;
+
+uint32_t cr2, cr3, cr4;
+uint32_t dr[8];
+
+uint16_t sysenter_cs;
+uint32_t sysenter_eip, sysenter_esp;
+
+uint32_t use32;
+int stack32;
+int optype;
+
+int trap;
+
+uint32_t rmdat;
+
+uint32_t *eal_r, *eal_w;
+
+int nmi_enable = 1;
+
+int cpl_override=0;
+
+int fpucount=0;
+
+uint16_t cpu_cur_status = 0;
+
+uint32_t pccache;
+uint8_t *pccache2;
 
 void x86_int(int num)
 {
