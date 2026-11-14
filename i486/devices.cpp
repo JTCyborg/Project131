@@ -612,6 +612,25 @@ static uint8_t device_in8(uint16_t port)
     }
     if (port==0x63) return ppi_control;
     if (port==0x60) {
+        /*
+         * Match Project130/PCem keyboard_xt_read(). On the IBM PC/XT
+         * keyboard interface, PB7 on port 61h selects the equipment-ID
+         * readback on port 60h. EGA/VGA reports 4Dh; the installed 486DX
+         * FPU contributes bit 1, producing 4Fh. This readback takes
+         * precedence over the ordinary keyboard output buffer.
+         */
+        if (system_control_b & 0x80) {
+            const uint8_t video_fpu_id = 0x4D | 0x02;
+            static unsigned int video_id_reads;
+            if (video_id_reads < 8) {
+                char msg[96];
+                sprintf(msg, "[I486][PPI] IN 0060=%02X VIDEO_ID VGA FPU=1",
+                    video_fpu_id);
+                trace(msg);
+                ++video_id_reads;
+            }
+            return video_fpu_id;
+        }
         if (!kbc.output_count) return 0;
         {
             uint8_t value=kbc.output_data;
