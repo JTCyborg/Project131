@@ -71,3 +71,14 @@ Commit `8a67bfd6237d20574dd10b4a40ccb731dd6f5457` changes the XT PPI port-`62h` 
 - Next milestone: observe the first instruction after the polling loop, continue POST to VGA mode setup, then capture the first framebuffer/text output. Do not spend time perfecting PIT2 unless a later boot/video stage demonstrably depends on it.
 
 Build and runtime verification are pending; this is a targeted POST bypass, not a claim that VGA output is already working.
+
+
+## Latest runtime correction (2026-11-14)
+
+Observed `spectrum_out.txt` blob SHA `e4d943cb80848c054e863bb56185157657e81192`:
+
+- Port `62h` reads are `24h` (and occasionally `2Fh`), so the previous forced-high override is active.
+- The live instruction trace shows `F000:FA0D IN AL,62h`, `F000:FA0F TEST AL,20h`, `F000:FA11 LOOPNZ FA0Dh` (`E0`).
+- `LOOPNZ` repeats while ZF=0; with bit 5 set, `TEST` leaves ZF=0 and the BIOS remains in the loop. The previous note claiming that bit 5 high releases this loop was incorrect.
+- Corrected bootstrap policy: preserve the video-status nibble and force port-62 bit 5 low. This is a targeted boot workaround, not PIT/speaker emulation.
+- Next runtime check: confirm the CPU leaves `FA0D-FA11`; then inspect VGA register writes (`3C0-3DF`) and video-memory writes. Build/runtime remain unverified until a fresh run is supplied.
