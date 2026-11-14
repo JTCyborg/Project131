@@ -33,10 +33,9 @@ struct Ne2000 {
 } nic;
 
 static unsigned int io_trace_count;
-/* XT-compatible system board ports used by the bundled legacy BIOS.
- * Port 62h is the 8255 input/status port; 61h is the system-control latch.
- * The emulated machine has 640 KiB conventional-memory configuration and
- * an installed 486DX x87 unit. No parity/channel-check faults are injected.
+/* XT-compatible system board ports plus isolated 8259A/8253/8237 models.
+ * The emulated machine has 640 KiB conventional memory and an installed
+ * 486DX x87 unit. No parity/channel-check faults are injected.
  */
 static uint8_t system_control_b;
 static uint8_t system_refresh_phase;
@@ -612,7 +611,7 @@ void reset()
     fdc_reset();
     cmos_reset();
     io_trace_count = 0;
-    trace("[I486] DEVICES RESET COM1=3F8 LPT1=378 NE2000=300 KBC=60/64 IDE=1F0 FDD=3F0 DRIVE=A:NO_MEDIA HDD=16MB_BLANK");
+    trace("[I486] DEVICES RESET PIC=8259A PIT=8253 DMA=8237 PPI=XT COM1=3F8 LPT1=378 NE2000=300 KBC=60/64 IDE=1F0 FDD=3F0 DRIVE=A:NO_MEDIA HDD=16MB_BLANK");
 }
 
 void close() {}
