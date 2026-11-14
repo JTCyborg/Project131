@@ -190,16 +190,16 @@ void exec386(int cycs)
                         if (opcode == 0xF4 && !i486_pre_hlt_dumped)
                         {
                                 i486_pre_hlt_dumped = 1;
-                                pclog("[I486][PRE-HLT] CS:EIP=%04X:%08X CS_BASE=%08X CS_LIMIT=%08X CS_ACCESS=%02X EFLAGS=%08X FLAGS=%04X CR0=%08X CR2=%08X CR3=%08X\\n",
+                                pclog("[I486][PRE-HLT] CS:EIP=%04X:%08X CS_BASE=%08X CS_LIMIT=%08X CS_ACCESS=%02X EFLAGS=%08X FLAGS=%04X CR0=%08X CR2=%08X CR3=%08X\n",
                                       CS, cpu_state.pc, cs, cpu_state.seg_cs.limit,
                                       cpu_state.seg_cs.access, cpu_state.eflags,
                                       cpu_state.flags, cr0, cr2, cr3);
-                                pclog("[I486][PRE-HLT] EAX=%08X EBX=%08X ECX=%08X EDX=%08X ESI=%08X EDI=%08X EBP=%08X ESP=%08X\\n",
+                                pclog("[I486][PRE-HLT] EAX=%08X EBX=%08X ECX=%08X EDX=%08X ESI=%08X EDI=%08X EBP=%08X ESP=%08X\n",
                                       EAX, EBX, ECX, EDX, ESI, EDI, EBP, ESP);
-                                pclog("[I486][PRE-HLT] DS=%04X:%08X ES=%04X:%08X FS=%04X:%08X GS=%04X:%08X SS=%04X:%08X\\n",
+                                pclog("[I486][PRE-HLT] DS=%04X:%08X ES=%04X:%08X FS=%04X:%08X GS=%04X:%08X SS=%04X:%08X\n",
                                       DS, ds, ES, es, FS, cpu_state.seg_fs.base,
                                       GS, gs, SS, ss);
-                                pclog("[I486][PRE-HLT] GDTR=%04X:%08X IDTR=%04X:%08X LDTR=%04X:%08X TR=%04X:%08X IF=%u CPL=%u USE32=%u STACK32=%u\\n",
+                                pclog("[I486][PRE-HLT] GDTR=%04X:%08X IDTR=%04X:%08X LDTR=%04X:%08X TR=%04X:%08X IF=%u CPL=%u USE32=%u STACK32=%u\n",
                                       gdt.limit, gdt.base, idt.limit, idt.base,
                                       ldt.seg, ldt.base, tr.seg, tr.base,
                                       (cpu_state.flags & I_FLAG) ? 1U : 0U,
@@ -207,9 +207,21 @@ void exec386(int cycs)
                         }
                         trap = cpu_state.flags & T_FLAG;
 
-                        if (output == 3)
+                        /*
+                         * The legacy output==3 instruction trace is useful for
+                         * short bring-up sessions but otherwise grows the shared
+                         * Spectrum log on every instruction. Bound it to 512 rows.
+                         */
+                        static unsigned int i486_instruction_trace_count = 0;
+                        if (output == 3 && i486_instruction_trace_count < 512U)
                         {
-                                pclog("%04X(%06X):%04X : %08X %08X %08X %08X %04X %04X %04X(%08X) %04X %04X %04X(%08X) %08X %08X %08X SP=%04X:%08X %02X %04X %i %08X  %08X %i %i %02X %02X %02X   %02X %02X\n",CS,cs,cpu_state.pc,EAX,EBX,ECX,EDX,CS,DS,ES,es,FS,GS,SS,ss,EDI,ESI,EBP,SS,ESP,opcode,cpu_state.flags,ins,0, ldt.base, CPL, stack32, pic.pend, pic.mask, pic.mask2, pic2.pend, pic2.mask);
+                                i486_instruction_trace_count++;
+                                pclog("%04X(%06X):%04X : %08X %08X %08X %08X %04X %04X %04X(%08X) %04X %04X %04X(%08X) %08X %08X %08X SP=%04X:%08X %02X %04X %i %08X  %08X %i %i %02X %02X %02X   %02X %02X\\n",CS,cs,cpu_state.pc,EAX,EBX,ECX,EDX,CS,DS,ES,es,FS,GS,SS,ss,EDI,ESI,EBP,SS,ESP,opcode,cpu_state.flags,ins,0, ldt.base, CPL, stack32, pic.pend, pic.mask, pic.mask2, pic2.pend, pic2.mask);
+                        }
+                        else if (output == 3 && i486_instruction_trace_count == 512U)
+                        {
+                                i486_instruction_trace_count++;
+                                pclog("[I486] instruction trace capped at 512 entries\\n");
                         }
                         cpu_state.pc++;
                         x86_opcodes[(opcode | cpu_state.op32) & 0x3ff](fetchdat);
