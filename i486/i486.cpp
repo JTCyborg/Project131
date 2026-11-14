@@ -169,6 +169,29 @@ namespace i486
                 log("[I486][BIOS] F000:E5B2 fixed delay loop (MOV CX,5000h/LOOP -2) bypassed");
             }
 
+
+            /*
+             * Bring-up bypass for the ROM's repeating PIT calibration.
+             * ROM offset 1A0Ah is F000:FA0A (the image is mapped at FE000h).
+             * The verified routine occupies FA0A..FA31 and repeatedly polls
+             * PIT channel 2. Redirect its entry straight to FA4A, the next
+             * executable routine after the calibration table. E9 3D 00 is a
+             * near relative JMP from FA0A to FA4A.
+             */
+            if (file_size == 8192 &&
+                bios[0x1A0A] == 0xB9 && bios[0x1A0B] == 0x00 &&
+                bios[0x1A0C] == 0x10 && bios[0x1A0D] == 0xE4 &&
+                bios[0x1A0E] == 0x62 && bios[0x1A0F] == 0xA8 &&
+                bios[0x1A10] == 0x20 && bios[0x1A28] == 0xE4 &&
+                bios[0x1A29] == 0x61 && bios[0x1A30] == 0xFF &&
+                bios[0x1A31] == 0xE7)
+            {
+                bios[0x1A0A] = 0xE9;
+                bios[0x1A0B] = 0x3D;
+                bios[0x1A0C] = 0x00;
+                log("[I486][BIOS] PIT calibration F000:FA0A bypassed; redirected execution to F000:FA4A");
+            }
+
             bios_loaded = true;
 
             char message[128];
