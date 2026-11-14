@@ -590,12 +590,12 @@ static uint8_t device_in8(uint16_t port)
         return system_control_b;
     }
     if (port==0x62) {
-        /* Match Project130/PCem keyboard_xt_read() exactly for the
-         * non-IBMPC XT board path: PB3 selects VGA (04h) or FPU (0Fh).
-         * Port 62h does NOT contain PIT2/speaker state; that state is
-         * represented by port 61h and the speaker device.
+        /* Match Project130/PCem keyboard_xt_read() for the generic XT
+         * board path: PB3 selects the video/FPU status nibble, and the
+         * PIT channel-2 speaker input is returned in bit 5.
          */
-        const uint8_t value = (system_control_b & 0x08) ? 0x04 : 0x0F;
+        const uint8_t video_status = (system_control_b & 0x08) ? 0x04 : 0x0F;
+        const uint8_t value = (uint8_t)(video_status | (ppispeakon ? 0x20 : 0));
         if (port62_read_count < 32 || (port62_read_count && (port62_read_count & 0x3FFFU) == 0)) {
             char msg[128];
             sprintf(msg, "[I486][PPI] IN 0062=%02X SYS_STATUS READ=%u",
