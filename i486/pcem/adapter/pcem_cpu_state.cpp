@@ -13,6 +13,8 @@
 #include <string.h>
 #include "../../i486.h"
 
+void i486_pcem_cpu_core_init(void);
+
 static void reset_segment(x86seg *segment, uint16_t selector, uint32_t base)
 {
     memset(segment, 0, sizeof(*segment));
