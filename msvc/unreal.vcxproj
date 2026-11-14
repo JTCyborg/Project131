@@ -757,6 +757,7 @@
     <ClCompile Include="..\emul.cpp" />
     <ClCompile Include="..\i486\i486.cpp" />
     <ClCompile Include="..\i486\pcem\adapter\pcem_memory.cpp" />
+    <ClCompile Include="..\i486\pcem\adapter\pcem_cpu_state.cpp" />
     <ClCompile Include="..\emulkeys.cpp" />
     <ClCompile Include="..\fdd.cpp" />
     <ClCompile Include="..\fntsrch.cpp" />
