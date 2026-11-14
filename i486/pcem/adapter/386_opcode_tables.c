@@ -340,6 +340,7 @@ static unsigned int i486_trace_next = 0, i486_trace_count = 0;
 static int i486_hlt_trace_dumped = 0;
 static unsigned int i486_bios_poll_trace_count = 0;
 static int i486_bios_calibration_last_ah = -1;
+static int i486_bios_calibration_last_dx_page = -1;
 static unsigned int i486_bios_loopne_trace_count = 0;
 static unsigned int i486_bios_loope_trace_count = 0;
 static unsigned int i486_bios_loopne_last_cx = 0xFFFFFFFFU;
@@ -555,6 +556,7 @@ unsigned int i486_pcem_execute_instructions(unsigned int instruction_budget)
                 if (CS == 0xF000 && cpu_state.oldpc == 0x0000FA25U)
                 {
                         if (i486_bios_calibration_last_ah != (int)AH ||
+                            i486_bios_calibration_last_dx_page != (int)(DX >> 8) ||
                             cpu_state.pc != 0x0000FA0AU)
                         {
                                 pclog("[I486][BIOS-CAL] AH=%02X AX=%04X BX=%04X CX=%04X DX=%04X FLAGS=%08X CF=%u ZF=%u NEXT=%08X",
@@ -563,6 +565,7 @@ unsigned int i486_pcem_execute_instructions(unsigned int instruction_budget)
                                       cpu_state.pc);
                         }
                         i486_bios_calibration_last_ah = (int)AH;
+                        i486_bios_calibration_last_dx_page = (int)(DX >> 8);
                 }
 
                 /*
