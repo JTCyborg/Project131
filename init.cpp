@@ -172,8 +172,8 @@ void init_all(int argc, char **argv)
          if (i486::load_bios(i486_bios_path))
          {
             printf("i486 BIOS loaded: %s\n", i486_bios_path);
-            if (!i486::execute_reset_vector_bootstrap())
-               i486::log("[I486] RESET BOOTSTRAP FAILED");
+            // Reset-vector transfer is deferred until after main_reset().
+            // The host reset path must not overwrite the expansion CPU state.
          }
          else
          {
@@ -188,6 +188,17 @@ void init_all(int argc, char **argv)
       i486::log("[I486] ERROR: module initialization failed");
    }
    main_reset();
+
+   // main_reset() may reinitialize shared emulator state. Establish the
+   // expansion CPU reset state only after the host reset has completed.
+   if (i486::bios_is_loaded())
+   {
+      i486::reset();
+      i486::log("[I486] CPU RESET AFTER HOST main_reset");
+      if (!i486::execute_reset_vector_bootstrap())
+         i486::log("[I486] RESET BOOTSTRAP FAILED");
+   }
+
    autoload();
    init_bpx();
    temp.PngSupport = PngInit();
