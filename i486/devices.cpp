@@ -39,7 +39,7 @@ static unsigned int io_trace_count;
  */
 static uint8_t system_control_b;
 static uint8_t system_refresh_phase;
-static uint8_t system_control_a = 0x0E; /* 640 KiB + coprocessor, no POST loop */
+static uint8_t system_control_a = 0x0E; /* base configuration; bit 5 is the BIOS-polled refresh/status toggle */
 static void trace(const char *s) { i486::log(s); }
 
 static void uart_reset()
@@ -431,7 +431,13 @@ static uint8_t device_in8(uint16_t port)
         system_refresh_phase ^= 0x10;
         return (uint8_t)((system_control_b & 0x0F) | system_refresh_phase);
     }
-    if (port==0x62) return system_control_a;
+    if (port==0x62) {
+        /* The BIOS POST polls bit 5 at F000:FA0D, waiting for both edges.
+         * Model the system-board status/refresh toggle so both bounded
+         * polling loops can complete deterministically. */
+        system_control_a ^= 0x20;
+        return system_control_a;
+    }
     if (port==0x60) {
         if (!kbc.output_count) return 0;
         {
