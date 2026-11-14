@@ -773,6 +773,7 @@
     <ClCompile Include="..\i486\pcem\adapter\386_opcode_tables.c">
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <ForcedIncludeFiles></ForcedIncludeFiles>
+      <AdditionalIncludeDirectories>..\i486\pcem;..\i486\pcem\adapter;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <CompileAs>CompileAsC</CompileAs>
     </ClCompile>
     <ClCompile Include="..\emulkeys.cpp" />
