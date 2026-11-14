@@ -398,6 +398,7 @@
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <ConformanceMode>true</ConformanceMode>
       <ForcedIncludeFiles>std.h</ForcedIncludeFiles>
+      <AdditionalOptions>-Zc:externConstexpr -constexpr:steps20000000  -experimental:external -external:anglebrackets -external:W0 -Zo -Zf %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <TargetMachine>MachineX86</TargetMachine>

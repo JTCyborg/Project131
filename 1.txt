@@ -1,39 +1,6 @@
-Сборка начата в 8:40...
-1>------ Сборка начата: проект: snd, Конфигурация: Release Win32 ------
-1>  Оптимизирующий компилятор Microsoft (R) C/C++ версии 19.16.27054 для x86
-1>  (C) Корпорация Майкрософт (Microsoft Corporation).  Все права защищены.
-1>  Экспериментальные функции предоставляются в качестве предварительной версии предложенных языковых функций,
-1>  и мы будем рады получить от вас отзывы об ошибках и предложения по улучшению. Тем не менее
-1>  обратите внимание, что эти экспериментальные функции являются нестандартными и предоставляются "как есть", без
-1>  поддержки, а также могут быть изменены или удалены без уведомления. Сведения см. по адресу
-1>  http://go.microsoft.com/fwlink/?LinkID=691081.
-1>  cl /c /Zi /Wall /WX- /diagnostics:caret /MP /O2 /Oi /Oy- /D WIN32 /D NDEBUG /D _LIB /D _M_IX86_FP=2 /D _USING_V110_SDK71_ /D _CRT_SECURE_NO_DEPRECATE /D USE_SND_EXTERNAL_BUFFER /D _PREFIX_ /D _NO_CRT_STDIO_INLINE /GF /Gm- /MT /GS- /Gy /fp:precise /permissive- /Zc:wchar_t /Zc:forScope /Zc:inline /Zc:rvalueCast /GR- /std:c++latest /Fo"snd\Win32\Release\\" /Fd"snd\Win32\Release\snd.pdb" /Gd /TP /wd4061 /wd4062 /wd4146 /wd4191 /wd4200 /wd4201 /wd4310 /wd4458 /wd4459 /wd4464 /wd4514 /wd4577 /wd4626 /wd4668 /wd4820 /wd5045 /analyze- /FC /errorReport:none -Zc:externConstexpr -constexpr:steps20000000  -experimental:external -external:anglebrackets -experimental:preprocessor -external:W0 -Zo -Zf -Zc:threadSafeInit- ..\sndrender\sndrender.cpp
-1>  sndrender.cpp
-1>c:\program files (x86)\windows kits\10\include\10.0.17763.0\shared\wtypes.h(745): message :  в расширении макроса "_VARIANT_BOOL"
-1>c:\program files (x86)\windows kits\10\include\10.0.17763.0\shared\wtypes.h(745): message : #define _VARIANT_BOOL    /##/
-1>c:\program files (x86)\windows kits\10\include\10.0.17763.0\um\oaidl.h(487,17): error C2059:  синтаксическая ошибка: /
-1>c:\program files (x86)\windows kits\10\include\10.0.17763.0\um\oaidl.h(487,17): error C2059:                 _VARIANT_BOOL bool;
-1>c:\program files (x86)\windows kits\10\include\10.0.17763.0\um\oaidl.h(487,17): error C2059:                 ^
-1>c:\program files (x86)\windows kits\10\include\10.0.17763.0\um\oaidl.h(487,35): error C2238:  непредвиденные лексемы перед ";"
-1>c:\program files (x86)\windows kits\10\include\10.0.17763.0\um\oaidl.h(487,35): error C2238:                 _VARIANT_BOOL bool;
-1>c:\program files (x86)\windows kits\10\include\10.0.17763.0\um\oaidl.h(487,35): error C2238:                                   ^
-1>c:\program files (x86)\windows kits\10\include\10.0.17763.0\shared\wtypes.h(745): message :  в расширении макроса "_VARIANT_BOOL"
-1>c:\program files (x86)\windows kits\10\include\10.0.17763.0\shared\wtypes.h(745): message : #define _VARIANT_BOOL    /##/
-1>c:\program files (x86)\windows kits\10\include\10.0.17763.0\um\oaidl.h(502,17): error C2059:  синтаксическая ошибка: /
-1>c:\program files (x86)\windows kits\10\include\10.0.17763.0\um\oaidl.h(502,17): error C2059:                 _VARIANT_BOOL *pbool;
-1>c:\program files (x86)\windows kits\10\include\10.0.17763.0\um\oaidl.h(502,17): error C2059:                 ^
-1>c:\program files (x86)\windows kits\10\include\10.0.17763.0\um\oaidl.h(502,37): error C2238:  непредвиденные лексемы перед ";"
-1>c:\program files (x86)\windows kits\10\include\10.0.17763.0\um\oaidl.h(502,37): error C2238:                 _VARIANT_BOOL *pbool;
-1>c:\program files (x86)\windows kits\10\include\10.0.17763.0\um\oaidl.h(502,37): error C2238:                                     ^
-1>c:\program files (x86)\windows kits\10\include\10.0.17763.0\shared\wtypes.h(745): message :  в расширении макроса "_VARIANT_BOOL"
-1>c:\program files (x86)\windows kits\10\include\10.0.17763.0\shared\wtypes.h(745): message : #define _VARIANT_BOOL    /##/
-1>c:\program files (x86)\windows kits\10\include\10.0.17763.0\um\propidlbase.h(319,24): error C2059:  синтаксическая ошибка: /
-1>c:\program files (x86)\windows kits\10\include\10.0.17763.0\um\propidlbase.h(319,24): error C2059:         /* [case()] */ _VARIANT_BOOL bool;
-1>c:\program files (x86)\windows kits\10\include\10.0.17763.0\um\propidlbase.h(319,24): error C2059:                        ^
-1>c:\program files (x86)\windows kits\10\include\10.0.17763.0\um\propidlbase.h(319,42): error C2238:  непредвиденные лексемы перед ";"
-1>c:\program files (x86)\windows kits\10\include\10.0.17763.0\um\propidlbase.h(319,42): error C2238:         /* [case()] */ _VARIANT_BOOL bool;
-1>c:\program files (x86)\windows kits\10\include\10.0.17763.0\um\propidlbase.h(319,42): error C2238:                                          ^
-2>------ Сборка начата: проект: unreal, Конфигурация: Release Win32 ------
+Сборка начата в 8:47...
+1>------ Сборка начата: проект: z80, Конфигурация: Release Win32 ------
+2>------ Сборка начата: проект: snd, Конфигурация: Release Win32 ------
 2>  Оптимизирующий компилятор Microsoft (R) C/C++ версии 19.16.27054 для x86
 2>  (C) Корпорация Майкрософт (Microsoft Corporation).  Все права защищены.
 2>  Экспериментальные функции предоставляются в качестве предварительной версии предложенных языковых функций,
@@ -41,8 +8,554 @@
 2>  обратите внимание, что эти экспериментальные функции являются нестандартными и предоставляются "как есть", без
 2>  поддержки, а также могут быть изменены или удалены без уведомления. Сведения см. по адресу
 2>  http://go.microsoft.com/fwlink/?LinkID=691081.
-2>  cl /c /Zi /Wall /WX- /diagnostics:caret /MP /O2 /Oi /Oy- /D WIN32 /D NDEBUG /D _CONSOLE /D _M_IX86_FP=2 /D _USING_V110_SDK71_ /D _CRT_SECURE_NO_DEPRECATE /D USE_SND_EXTERNAL_BUFFER /D _PREFIX_ /D _NO_CRT_STDIO_INLINE /GF /Gm- /MT /GS- /Gy /fp:precise /permissive- /Zc:wchar_t /Zc:forScope /Zc:inline /Zc:rvalueCast /GR- /std:c++latest /Yc"std.h" /Fp"unreal\Win32\Release\unreal.pch" /Fo"unreal\Win32\Release\\" /Fd"unreal\Win32\Release\vc141.pdb" /Gd /TP /wd4061 /wd4062 /wd4146 /wd4191 /wd4200 /wd4201 /wd4310 /wd4458 /wd4459 /wd4464 /wd4514 /wd4577 /wd4626 /wd4668 /wd4820 /wd5045 /FIstd.h /analyze- /FC /errorReport:none -Zc:externConstexpr -constexpr:steps20000000  -experimental:external -external:anglebrackets -experimental:preprocessor -external:W0 -Zo -Zf -Zc:threadSafeInit- ..\std.cpp
-2>  std.cpp
+2>  cl /c /Zi /Wall /WX- /diagnostics:caret /MP /O2 /Oi /Oy- /D WIN32 /D NDEBUG /D _LIB /D _M_IX86_FP=2 /D _USING_V110_SDK71_ /D _CRT_SECURE_NO_DEPRECATE /D USE_SND_EXTERNAL_BUFFER /D _PREFIX_ /D _NO_CRT_STDIO_INLINE /GF /Gm- /MT /GS- /Gy /fp:precise /permissive- /Zc:wchar_t /Zc:forScope /Zc:inline /Zc:rvalueCast /GR- /std:c++latest /Fo"snd\Win32\Release\\" /Fd"snd\Win32\Release\snd.pdb" /Gd /TP /wd4061 /wd4062 /wd4146 /wd4191 /wd4200 /wd4201 /wd4310 /wd4458 /wd4459 /wd4464 /wd4514 /wd4577 /wd4626 /wd4668 /wd4820 /wd5045 /analyze- /FC /errorReport:none -Zc:externConstexpr -constexpr:steps20000000  -experimental:external -external:anglebrackets -external:W0 -Zo -Zf -Zc:externConstexpr -constexpr:steps20000000  -experimental:external -external:anglebrackets -experimental:preprocessor -external:W0 -Zo -Zf -Zc:threadSafeInit- ..\sndrender\sndrender.cpp
+2>  sndrender.cpp
+1>  Оптимизирующий компилятор Microsoft (R) C/C++ версии 19.16.27054 для x86
+1>  (C) Корпорация Майкрософт (Microsoft Corporation).  Все права защищены.
+1>  Экспериментальные функции предоставляются в качестве предварительной версии предложенных языковых функций,
+1>  и мы будем рады получить от вас отзывы об ошибках и предложения по улучшению. Тем не менее
+1>  обратите внимание, что эти экспериментальные функции являются нестандартными и предоставляются "как есть", без
+1>  поддержки, а также могут быть изменены или удалены без уведомления. Сведения см. по адресу
+1>  http://go.microsoft.com/fwlink/?LinkID=691081.
+1>  cl /c /Zi /Wall /WX- /diagnostics:caret /MP /O2 /Oi /Oy- /D WIN32 /D NDEBUG /D _LIB /D _M_IX86_FP=2 /D _USING_V110_SDK71_ /D _CRT_SECURE_NO_DEPRECATE /D USE_SND_EXTERNAL_BUFFER /D _PREFIX_ /D _NO_CRT_STDIO_INLINE /GF /Gm- /MT /GS- /Gy /fp:precise /permissive- /Zc:wchar_t /Zc:forScope /Zc:inline /Zc:rvalueCast /GR- /std:c++latest /Fo"z80\Win32\Release\\" /Fd"z80\Win32\Release\z80.pdb" /Gd /TP /wd4061 /wd4062 /wd4146 /wd4191 /wd4200 /wd4201 /wd4310 /wd4458 /wd4459 /wd4464 /wd4514 /wd4577 /wd4626 /wd4668 /wd4820 /wd5045 /analyze- /FC /errorReport:none -Zc:externConstexpr -constexpr:steps20000000  -experimental:external -external:anglebrackets -external:W0 -Zo -Zf -Zc:externConstexpr -constexpr:steps20000000  -experimental:external -external:anglebrackets -experimental:preprocessor -external:W0 -Zo -Zf -Zc:threadSafeInit- ..\z80\daa_tabs.cpp ..\z80\op_cb.cpp ..\z80\op_dd.cpp ..\z80\op_ddcb.cpp ..\z80\op_ed.cpp ..\z80\op_fd.cpp ..\z80\op_noprefix.cpp ..\z80\tables.cpp
+1>  cl /c /Zi /Wall /WX- /diagnostics:caret /MP /O2 /Oi /Oy- /D WIN32 /D NDEBUG /D _LIB /D _M_IX86_FP=2 /D _USING_V110_SDK71_ /D _CRT_SECURE_NO_DEPRECATE /D USE_SND_EXTERNAL_BUFFER /D _PREFIX_ /D _NO_CRT_STDIO_INLINE /GF /Gm- /MT /GS- /Gy /fp:precise /permissive- /Zc:wchar_t /Zc:forScope /Zc:inline /Zc:rvalueCast /GR- /std:c++latest /Fo"z80\Win32\Release\\" /Fd"z80\Win32\Release\z80.pdb" /Gd /TP /wd4061 /wd4062 /wd4146 /wd4191 /wd4200 /wd4201 /wd4310 /wd4458 /wd4459 /wd4464 /wd4514 /wd4577 /wd4626 /wd4668 /wd4820 /wd5045 /analyze- /FC /errorReport:none -Zc:externConstexpr -constexpr:steps20000000  -experimental:external -external:anglebrackets -external:W0 -Zo -Zf -Zc:externConstexpr -constexpr:steps20000000  -experimental:external -external:anglebrackets -experimental:preprocessor -external:W0 -Zo -Zf -Zc:threadSafeInit- ..\z80\daa_tabs.cpp ..\z80\op_cb.cpp ..\z80\op_dd.cpp ..\z80\op_ddcb.cpp ..\z80\op_ed.cpp ..\z80\op_fd.cpp ..\z80\op_noprefix.cpp ..\z80\tables.cpp
+1>  daa_tabs.cpp
+1>  cl /c /Zi /Wall /WX- /diagnostics:caret /MP /O2 /Oi /Oy- /D WIN32 /D NDEBUG /D _LIB /D _M_IX86_FP=2 /D _USING_V110_SDK71_ /D _CRT_SECURE_NO_DEPRECATE /D USE_SND_EXTERNAL_BUFFER /D _PREFIX_ /D _NO_CRT_STDIO_INLINE /GF /Gm- /MT /GS- /Gy /fp:precise /permissive- /Zc:wchar_t /Zc:forScope /Zc:inline /Zc:rvalueCast /GR- /std:c++latest /Fo"z80\Win32\Release\\" /Fd"z80\Win32\Release\z80.pdb" /Gd /TP /wd4061 /wd4062 /wd4146 /wd4191 /wd4200 /wd4201 /wd4310 /wd4458 /wd4459 /wd4464 /wd4514 /wd4577 /wd4626 /wd4668 /wd4820 /wd5045 /analyze- /FC /errorReport:none -Zc:externConstexpr -constexpr:steps20000000  -experimental:external -external:anglebrackets -external:W0 -Zo -Zf -Zc:externConstexpr -constexpr:steps20000000  -experimental:external -external:anglebrackets -experimental:preprocessor -external:W0 -Zo -Zf -Zc:threadSafeInit- ..\z80\daa_tabs.cpp ..\z80\op_cb.cpp ..\z80\op_dd.cpp ..\z80\op_ddcb.cpp ..\z80\op_ed.cpp ..\z80\op_fd.cpp ..\z80\op_noprefix.cpp ..\z80\tables.cpp
+1>  op_cb.cpp
+1>  cl /c /Zi /Wall /WX- /diagnostics:caret /MP /O2 /Oi /Oy- /D WIN32 /D NDEBUG /D _LIB /D _M_IX86_FP=2 /D _USING_V110_SDK71_ /D _CRT_SECURE_NO_DEPRECATE /D USE_SND_EXTERNAL_BUFFER /D _PREFIX_ /D _NO_CRT_STDIO_INLINE /GF /Gm- /MT /GS- /Gy /fp:precise /permissive- /Zc:wchar_t /Zc:forScope /Zc:inline /Zc:rvalueCast /GR- /std:c++latest /Fo"z80\Win32\Release\\" /Fd"z80\Win32\Release\z80.pdb" /Gd /TP /wd4061 /wd4062 /wd4146 /wd4191 /wd4200 /wd4201 /wd4310 /wd4458 /wd4459 /wd4464 /wd4514 /wd4577 /wd4626 /wd4668 /wd4820 /wd5045 /analyze- /FC /errorReport:none -Zc:externConstexpr -constexpr:steps20000000  -experimental:external -external:anglebrackets -external:W0 -Zo -Zf -Zc:externConstexpr -constexpr:steps20000000  -experimental:external -external:anglebrackets -experimental:preprocessor -external:W0 -Zo -Zf -Zc:threadSafeInit- ..\z80\daa_tabs.cpp ..\z80\op_cb.cpp ..\z80\op_dd.cpp ..\z80\op_ddcb.cpp ..\z80\op_ed.cpp ..\z80\op_fd.cpp ..\z80\op_noprefix.cpp ..\z80\tables.cpp
+1>  cl /c /Zi /Wall /WX- /diagnostics:caret /MP /O2 /Oi /Oy- /D WIN32 /D NDEBUG /D _LIB /D _M_IX86_FP=2 /D _USING_V110_SDK71_ /D _CRT_SECURE_NO_DEPRECATE /D USE_SND_EXTERNAL_BUFFER /D _PREFIX_ /D _NO_CRT_STDIO_INLINE /GF /Gm- /MT /GS- /Gy /fp:precise /permissive- /Zc:wchar_t /Zc:forScope /Zc:inline /Zc:rvalueCast /GR- /std:c++latest /Fo"z80\Win32\Release\\" /Fd"z80\Win32\Release\z80.pdb" /Gd /TP /wd4061 /wd4062 /wd4146 /wd4191 /wd4200 /wd4201 /wd4310 /wd4458 /wd4459 /wd4464 /wd4514 /wd4577 /wd4626 /wd4668 /wd4820 /wd5045 /analyze- /FC /errorReport:none -Zc:externConstexpr -constexpr:steps20000000  -experimental:external -external:anglebrackets -external:W0 -Zo -Zf -Zc:externConstexpr -constexpr:steps20000000  -experimental:external -external:anglebrackets -experimental:preprocessor -external:W0 -Zo -Zf -Zc:threadSafeInit- ..\z80\daa_tabs.cpp ..\z80\op_cb.cpp ..\z80\op_dd.cpp ..\z80\op_ddcb.cpp ..\z80\op_ed.cpp ..\z80\op_fd.cpp ..\z80\op_noprefix.cpp ..\z80\tables.cpp
+1>  cl /c /Zi /Wall /WX- /diagnostics:caret /MP /O2 /Oi /Oy- /D WIN32 /D NDEBUG /D _LIB /D _M_IX86_FP=2 /D _USING_V110_SDK71_ /D _CRT_SECURE_NO_DEPRECATE /D USE_SND_EXTERNAL_BUFFER /D _PREFIX_ /D _NO_CRT_STDIO_INLINE /GF /Gm- /MT /GS- /Gy /fp:precise /permissive- /Zc:wchar_t /Zc:forScope /Zc:inline /Zc:rvalueCast /GR- /std:c++latest /Fo"z80\Win32\Release\\" /Fd"z80\Win32\Release\z80.pdb" /Gd /TP /wd4061 /wd4062 /wd4146 /wd4191 /wd4200 /wd4201 /wd4310 /wd4458 /wd4459 /wd4464 /wd4514 /wd4577 /wd4626 /wd4668 /wd4820 /wd5045 /analyze- /FC /errorReport:none -Zc:externConstexpr -constexpr:steps20000000  -experimental:external -external:anglebrackets -external:W0 -Zo -Zf -Zc:externConstexpr -constexpr:steps20000000  -experimental:external -external:anglebrackets -experimental:preprocessor -external:W0 -Zo -Zf -Zc:threadSafeInit- ..\z80\daa_tabs.cpp ..\z80\op_cb.cpp ..\z80\op_dd.cpp ..\z80\op_ddcb.cpp ..\z80\op_ed.cpp ..\z80\op_fd.cpp ..\z80\op_noprefix.cpp ..\z80\tables.cpp
+1>  op_dd.cpp
+1>  op_ddcb.cpp
+1>  op_ed.cpp
+1>  cl /c /Zi /Wall /WX- /diagnostics:caret /MP /O2 /Oi /Oy- /D WIN32 /D NDEBUG /D _LIB /D _M_IX86_FP=2 /D _USING_V110_SDK71_ /D _CRT_SECURE_NO_DEPRECATE /D USE_SND_EXTERNAL_BUFFER /D _PREFIX_ /D _NO_CRT_STDIO_INLINE /GF /Gm- /MT /GS- /Gy /fp:precise /permissive- /Zc:wchar_t /Zc:forScope /Zc:inline /Zc:rvalueCast /GR- /std:c++latest /Fo"z80\Win32\Release\\" /Fd"z80\Win32\Release\z80.pdb" /Gd /TP /wd4061 /wd4062 /wd4146 /wd4191 /wd4200 /wd4201 /wd4310 /wd4458 /wd4459 /wd4464 /wd4514 /wd4577 /wd4626 /wd4668 /wd4820 /wd5045 /analyze- /FC /errorReport:none -Zc:externConstexpr -constexpr:steps20000000  -experimental:external -external:anglebrackets -external:W0 -Zo -Zf -Zc:externConstexpr -constexpr:steps20000000  -experimental:external -external:anglebrackets -experimental:preprocessor -external:W0 -Zo -Zf -Zc:threadSafeInit- ..\z80\daa_tabs.cpp ..\z80\op_cb.cpp ..\z80\op_dd.cpp ..\z80\op_ddcb.cpp ..\z80\op_ed.cpp ..\z80\op_fd.cpp ..\z80\op_noprefix.cpp ..\z80\tables.cpp
+1>  cl /c /Zi /Wall /WX- /diagnostics:caret /MP /O2 /Oi /Oy- /D WIN32 /D NDEBUG /D _LIB /D _M_IX86_FP=2 /D _USING_V110_SDK71_ /D _CRT_SECURE_NO_DEPRECATE /D USE_SND_EXTERNAL_BUFFER /D _PREFIX_ /D _NO_CRT_STDIO_INLINE /GF /Gm- /MT /GS- /Gy /fp:precise /permissive- /Zc:wchar_t /Zc:forScope /Zc:inline /Zc:rvalueCast /GR- /std:c++latest /Fo"z80\Win32\Release\\" /Fd"z80\Win32\Release\z80.pdb" /Gd /TP /wd4061 /wd4062 /wd4146 /wd4191 /wd4200 /wd4201 /wd4310 /wd4458 /wd4459 /wd4464 /wd4514 /wd4577 /wd4626 /wd4668 /wd4820 /wd5045 /analyze- /FC /errorReport:none -Zc:externConstexpr -constexpr:steps20000000  -experimental:external -external:anglebrackets -external:W0 -Zo -Zf -Zc:externConstexpr -constexpr:steps20000000  -experimental:external -external:anglebrackets -experimental:preprocessor -external:W0 -Zo -Zf -Zc:threadSafeInit- ..\z80\daa_tabs.cpp ..\z80\op_cb.cpp ..\z80\op_dd.cpp ..\z80\op_ddcb.cpp ..\z80\op_ed.cpp ..\z80\op_fd.cpp ..\z80\op_noprefix.cpp ..\z80\tables.cpp
+1>  cl /c /Zi /Wall /WX- /diagnostics:caret /MP /O2 /Oi /Oy- /D WIN32 /D NDEBUG /D _LIB /D _M_IX86_FP=2 /D _USING_V110_SDK71_ /D _CRT_SECURE_NO_DEPRECATE /D USE_SND_EXTERNAL_BUFFER /D _PREFIX_ /D _NO_CRT_STDIO_INLINE /GF /Gm- /MT /GS- /Gy /fp:precise /permissive- /Zc:wchar_t /Zc:forScope /Zc:inline /Zc:rvalueCast /GR- /std:c++latest /Fo"z80\Win32\Release\\" /Fd"z80\Win32\Release\z80.pdb" /Gd /TP /wd4061 /wd4062 /wd4146 /wd4191 /wd4200 /wd4201 /wd4310 /wd4458 /wd4459 /wd4464 /wd4514 /wd4577 /wd4626 /wd4668 /wd4820 /wd5045 /analyze- /FC /errorReport:none -Zc:externConstexpr -constexpr:steps20000000  -experimental:external -external:anglebrackets -external:W0 -Zo -Zf -Zc:externConstexpr -constexpr:steps20000000  -experimental:external -external:anglebrackets -experimental:preprocessor -external:W0 -Zo -Zf -Zc:threadSafeInit- ..\z80\daa_tabs.cpp ..\z80\op_cb.cpp ..\z80\op_dd.cpp ..\z80\op_ddcb.cpp ..\z80\op_ed.cpp ..\z80\op_fd.cpp ..\z80\op_noprefix.cpp ..\z80\tables.cpp
+1>  op_fd.cpp
+1>  op_noprefix.cpp
+1>  tables.cpp
+1>c:\temp\trdos\131\z80\tables.h(95,31): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\tables.h(95,31): warning C4365:    cpu->f = log_f[cpu->a] | HF;
+1>c:\temp\trdos\131\z80\tables.h(95,31): warning C4365:                               ^ (компилируется исходный файл ..\z80\op_cb.cpp)
+1>c:\temp\trdos\131\z80\tables.h(112,57): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\tables.h(112,57): warning C4365:    cpu->f = log_f[src & (1 << bit)] | HF | (cpu->f & CF);
+1>c:\temp\trdos\131\z80\tables.h(112,57): warning C4365:                                                         ^ (компилируется исходный файл ..\z80\op_cb.cpp)
+1>c:\temp\trdos\131\z80\tables.h(113,56): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\tables.h(113,56): warning C4365:    cpu->f = (cpu->f & ~(F3|F5)) | (cpu->memh & (F3|F5));
+1>c:\temp\trdos\131\z80\tables.h(113,56): warning C4365:                                                        ^ (компилируется исходный файл ..\z80\op_cb.cpp)
+1>c:\temp\trdos\131\z80\tables.h(128,75): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\tables.h(128,75): warning C4365:    cpu->f = log_f[src & (1 << bit)] | HF | (cpu->f & CF) | (src & (F3|F5));
+1>c:\temp\trdos\131\z80\tables.h(128,75): warning C4365:                                                                           ^ (компилируется исходный файл ..\z80\op_cb.cpp)
+1>c:\temp\trdos\131\z80\tables.h(133,28): warning C4365:  return: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\tables.h(133,28): warning C4365:    return src & ~(1 << bit);
+1>c:\temp\trdos\131\z80\tables.h(133,28): warning C4365:                            ^ (компилируется исходный файл ..\z80\op_cb.cpp)
+1>c:\temp\trdos\131\z80\tables.h(143,36): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\tables.h(143,36): warning C4365:    cpu->f = incf[x] | (cpu->f & CF);
+1>c:\temp\trdos\131\z80\tables.h(143,36): warning C4365:                                    ^ (компилируется исходный файл ..\z80\op_cb.cpp)
+1>c:\temp\trdos\131\z80\tables.h(149,36): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\tables.h(149,36): warning C4365:    cpu->f = decf[x] | (cpu->f & CF);
+1>c:\temp\trdos\131\z80\tables.h(149,36): warning C4365:                                    ^ (компилируется исходный файл ..\z80\op_cb.cpp)
+1>c:\temp\trdos\131\z80\tables.h(167,41): warning C4365:  инициализация: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\tables.h(167,41): warning C4365:    unsigned char carry = ((cpu->f) & CF);
+1>c:\temp\trdos\131\z80\tables.h(167,41): warning C4365:                                         ^ (компилируется исходный файл ..\z80\op_cb.cpp)
+1>c:\temp\trdos\131\z80\tables.h(174,41): warning C4365:  инициализация: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\tables.h(174,41): warning C4365:    unsigned char carry = ((cpu->f) & CF);
+1>c:\temp\trdos\131\z80\tables.h(174,41): warning C4365:                                         ^ (компилируется исходный файл ..\z80\op_cb.cpp)
+1>c:\temp\trdos\131\z80\op_cb.cpp(190,38): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_cb.cpp(190,38): warning C4365:         cpu->b = (cpu->b >> 1) | 0x80;
+1>c:\temp\trdos\131\z80\op_cb.cpp(190,38): warning C4365:                                      ^
+1>c:\temp\trdos\131\z80\op_cb.cpp(195,31): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_cb.cpp(195,31): warning C4365:         cpu->b = (cpu->b >> 1);
+1>c:\temp\trdos\131\z80\op_cb.cpp(195,31): warning C4365:                               ^
+1>c:\temp\trdos\131\z80\op_cb.cpp(202,38): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_cb.cpp(202,38): warning C4365:         cpu->c = (cpu->c >> 1) | 0x80;
+1>c:\temp\trdos\131\z80\op_cb.cpp(202,38): warning C4365:                                      ^
+1>c:\temp\trdos\131\z80\op_cb.cpp(207,31): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_cb.cpp(207,31): warning C4365:         cpu->c = (cpu->c >> 1);
+1>c:\temp\trdos\131\z80\op_cb.cpp(207,31): warning C4365:                               ^
+1>c:\temp\trdos\131\z80\op_cb.cpp(214,38): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_cb.cpp(214,38): warning C4365:         cpu->d = (cpu->d >> 1) | 0x80;
+1>c:\temp\trdos\131\z80\op_cb.cpp(214,38): warning C4365:                                      ^
+1>c:\temp\trdos\131\z80\op_cb.cpp(219,31): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_cb.cpp(219,31): warning C4365:         cpu->d = (cpu->d >> 1);
+1>c:\temp\trdos\131\z80\op_cb.cpp(219,31): warning C4365:                               ^
+1>c:\temp\trdos\131\z80\op_cb.cpp(226,38): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_cb.cpp(226,38): warning C4365:         cpu->e = (cpu->e >> 1) | 0x80;
+1>c:\temp\trdos\131\z80\op_cb.cpp(226,38): warning C4365:                                      ^
+1>c:\temp\trdos\131\z80\op_cb.cpp(231,31): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_cb.cpp(231,31): warning C4365:         cpu->e = (cpu->e >> 1);
+1>c:\temp\trdos\131\z80\op_cb.cpp(231,31): warning C4365:                               ^
+1>c:\temp\trdos\131\z80\op_cb.cpp(238,38): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_cb.cpp(238,38): warning C4365:         cpu->h = (cpu->h >> 1) | 0x80;
+1>c:\temp\trdos\131\z80\op_cb.cpp(238,38): warning C4365:                                      ^
+1>c:\temp\trdos\131\z80\op_cb.cpp(243,31): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_cb.cpp(243,31): warning C4365:         cpu->h = (cpu->h >> 1);
+1>c:\temp\trdos\131\z80\op_cb.cpp(243,31): warning C4365:                               ^
+1>c:\temp\trdos\131\z80\op_cb.cpp(250,38): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_cb.cpp(250,38): warning C4365:         cpu->l = (cpu->l >> 1) | 0x80;
+1>c:\temp\trdos\131\z80\op_cb.cpp(250,38): warning C4365:                                      ^
+1>c:\temp\trdos\131\z80\op_cb.cpp(255,31): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_cb.cpp(255,31): warning C4365:         cpu->l = (cpu->l >> 1);
+1>c:\temp\trdos\131\z80\op_cb.cpp(255,31): warning C4365:                               ^
+1>c:\temp\trdos\131\z80\op_cb.cpp(265,27): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_cb.cpp(265,27): warning C4365:        t = (t >> 1) | 0x80;
+1>c:\temp\trdos\131\z80\op_cb.cpp(265,27): warning C4365:                           ^
+1>c:\temp\trdos\131\z80\op_cb.cpp(270,20): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_cb.cpp(270,20): warning C4365:        t = (t >> 1);
+1>c:\temp\trdos\131\z80\op_cb.cpp(270,20): warning C4365:                    ^
+1>c:\temp\trdos\131\z80\op_cb.cpp(281,38): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_cb.cpp(281,38): warning C4365:         cpu->a = (cpu->a >> 1) | 0x80;
+1>c:\temp\trdos\131\z80\op_cb.cpp(281,38): warning C4365:                                      ^
+1>c:\temp\trdos\131\z80\op_cb.cpp(286,31): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_cb.cpp(286,31): warning C4365:         cpu->a = (cpu->a >> 1);
+1>c:\temp\trdos\131\z80\op_cb.cpp(286,31): warning C4365:                               ^
+1>c:\temp\trdos\131\z80\op_cb.cpp(330,45): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_cb.cpp(330,45): warning C4365:     cpu->b = (cpu->b >> 1) + (cpu->b & 0x80);
+1>c:\temp\trdos\131\z80\op_cb.cpp(330,45): warning C4365:                                             ^
+1>c:\temp\trdos\131\z80\op_cb.cpp(334,45): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_cb.cpp(334,45): warning C4365:     cpu->c = (cpu->c >> 1) + (cpu->c & 0x80);
+1>c:\temp\trdos\131\z80\op_cb.cpp(334,45): warning C4365:                                             ^
+1>c:\temp\trdos\131\z80\op_cb.cpp(337,68): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_cb.cpp(337,68): warning C4365:     cpu->f = sraf[cpu->d]; cpu->d = (cpu->d >> 1) + (cpu->d & 0x80);
+1>c:\temp\trdos\131\z80\op_cb.cpp(337,68): warning C4365:                                                                    ^
+1>c:\temp\trdos\131\z80\op_cb.cpp(340,68): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_cb.cpp(340,68): warning C4365:     cpu->f = sraf[cpu->e]; cpu->e = (cpu->e >> 1) + (cpu->e & 0x80);
+1>c:\temp\trdos\131\z80\op_cb.cpp(340,68): warning C4365:                                                                    ^
+1>c:\temp\trdos\131\z80\op_cb.cpp(344,45): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_cb.cpp(344,45): warning C4365:     cpu->h = (cpu->h >> 1) + (cpu->h & 0x80);
+1>c:\temp\trdos\131\z80\op_cb.cpp(344,45): warning C4365:                                             ^
+1>c:\temp\trdos\131\z80\op_cb.cpp(348,45): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_cb.cpp(348,45): warning C4365:     cpu->l = (cpu->l >> 1) + (cpu->l & 0x80);
+1>c:\temp\trdos\131\z80\op_cb.cpp(348,45): warning C4365:                                             ^
+1>c:\temp\trdos\131\z80\op_cb.cpp(355,29): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_cb.cpp(355,29): warning C4365:    t = (t >> 1) + (t & 0x80);
+1>c:\temp\trdos\131\z80\op_cb.cpp(355,29): warning C4365:                             ^
+1>c:\temp\trdos\131\z80\op_cb.cpp(363,45): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_cb.cpp(363,45): warning C4365:     cpu->a = (cpu->a >> 1) + (cpu->a & 0x80);
+1>c:\temp\trdos\131\z80\op_cb.cpp(363,45): warning C4365:                                             ^
+1>c:\temp\trdos\131\z80\op_cb.cpp(406,27): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_cb.cpp(406,27): warning C4365:     cpu->b = (cpu->b >> 1);
+1>c:\temp\trdos\131\z80\op_cb.cpp(406,27): warning C4365:                           ^
+1>c:\temp\trdos\131\z80\op_cb.cpp(410,27): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_cb.cpp(410,27): warning C4365:     cpu->c = (cpu->c >> 1);
+1>c:\temp\trdos\131\z80\op_cb.cpp(410,27): warning C4365:                           ^
+1>c:\temp\trdos\131\z80\op_cb.cpp(414,27): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_cb.cpp(414,27): warning C4365:     cpu->d = (cpu->d >> 1);
+1>c:\temp\trdos\131\z80\op_cb.cpp(414,27): warning C4365:                           ^
+1>c:\temp\trdos\131\z80\op_cb.cpp(418,27): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_cb.cpp(418,27): warning C4365:     cpu->e = (cpu->e >> 1);
+1>c:\temp\trdos\131\z80\op_cb.cpp(418,27): warning C4365:                           ^
+1>c:\temp\trdos\131\z80\op_cb.cpp(422,27): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_cb.cpp(422,27): warning C4365:     cpu->h = (cpu->h >> 1);
+1>c:\temp\trdos\131\z80\op_cb.cpp(422,27): warning C4365:                           ^
+1>c:\temp\trdos\131\z80\op_cb.cpp(426,27): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_cb.cpp(426,27): warning C4365:     cpu->l = (cpu->l >> 1);
+1>c:\temp\trdos\131\z80\op_cb.cpp(426,27): warning C4365:                           ^
+1>c:\temp\trdos\131\z80\op_cb.cpp(433,16): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_cb.cpp(433,16): warning C4365:    t = (t >> 1);
+1>c:\temp\trdos\131\z80\op_cb.cpp(433,16): warning C4365:                ^
+1>c:\temp\trdos\131\z80\op_cb.cpp(441,27): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_cb.cpp(441,27): warning C4365:     cpu->a = (cpu->a >> 1);
+1>c:\temp\trdos\131\z80\op_cb.cpp(441,27): warning C4365:                           ^
+1>c:\temp\trdos\131\z80\tables.h(95,31): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\tables.h(95,31): warning C4365:    cpu->f = log_f[cpu->a] | HF;
+1>c:\temp\trdos\131\z80\tables.h(95,31): warning C4365:                               ^ (компилируется исходный файл ..\z80\op_fd.cpp)
+1>c:\temp\trdos\131\z80\tables.h(112,57): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\tables.h(112,57): warning C4365:    cpu->f = log_f[src & (1 << bit)] | HF | (cpu->f & CF);
+1>c:\temp\trdos\131\z80\tables.h(112,57): warning C4365:                                                         ^ (компилируется исходный файл ..\z80\op_fd.cpp)
+1>c:\temp\trdos\131\z80\tables.h(113,56): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\tables.h(113,56): warning C4365:    cpu->f = (cpu->f & ~(F3|F5)) | (cpu->memh & (F3|F5));
+1>c:\temp\trdos\131\z80\tables.h(113,56): warning C4365:                                                        ^ (компилируется исходный файл ..\z80\op_fd.cpp)
+1>c:\temp\trdos\131\z80\tables.h(128,75): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\tables.h(128,75): warning C4365:    cpu->f = log_f[src & (1 << bit)] | HF | (cpu->f & CF) | (src & (F3|F5));
+1>c:\temp\trdos\131\z80\tables.h(128,75): warning C4365:                                                                           ^ (компилируется исходный файл ..\z80\op_fd.cpp)
+1>c:\temp\trdos\131\z80\tables.h(133,28): warning C4365:  return: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\tables.h(133,28): warning C4365:    return src & ~(1 << bit);
+1>c:\temp\trdos\131\z80\tables.h(133,28): warning C4365:                            ^ (компилируется исходный файл ..\z80\op_fd.cpp)
+1>c:\temp\trdos\131\z80\tables.h(143,36): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\tables.h(143,36): warning C4365:    cpu->f = incf[x] | (cpu->f & CF);
+1>c:\temp\trdos\131\z80\tables.h(143,36): warning C4365:                                    ^ (компилируется исходный файл ..\z80\op_fd.cpp)
+1>c:\temp\trdos\131\z80\tables.h(149,36): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\tables.h(149,36): warning C4365:    cpu->f = decf[x] | (cpu->f & CF);
+1>c:\temp\trdos\131\z80\tables.h(149,36): warning C4365:                                    ^ (компилируется исходный файл ..\z80\op_fd.cpp)
+1>c:\temp\trdos\131\z80\tables.h(167,41): warning C4365:  инициализация: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\tables.h(167,41): warning C4365:    unsigned char carry = ((cpu->f) & CF);
+1>c:\temp\trdos\131\z80\tables.h(167,41): warning C4365:                                         ^ (компилируется исходный файл ..\z80\op_fd.cpp)
+1>c:\temp\trdos\131\z80\tables.h(174,41): warning C4365:  инициализация: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\tables.h(174,41): warning C4365:    unsigned char carry = ((cpu->f) & CF);
+1>c:\temp\trdos\131\z80\tables.h(174,41): warning C4365:                                         ^ (компилируется исходный файл ..\z80\op_fd.cpp)
+1>c:\temp\trdos\131\z80\op_fd.cpp(11,49): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_fd.cpp(11,49): warning C4365:    cpu->f = (cpu->f & ~(NF | CF | F5 | F3 | HF));
+1>c:\temp\trdos\131\z80\op_fd.cpp(11,49): warning C4365:                                                 ^
+1>c:\temp\trdos\131\z80\op_fd.cpp(20,49): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_fd.cpp(20,49): warning C4365:    cpu->f = (cpu->f & ~(NF | CF | F5 | F3 | HF));
+1>c:\temp\trdos\131\z80\op_fd.cpp(20,49): warning C4365:                                                 ^
+1>c:\temp\trdos\131\z80\tables.h(95,31): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\tables.h(95,31): warning C4365:    cpu->f = log_f[cpu->a] | HF;
+1>c:\temp\trdos\131\z80\tables.h(95,31): warning C4365:                               ^ (компилируется исходный файл ..\z80\op_ed.cpp)
+1>c:\temp\trdos\131\z80\op_fd.cpp(64,49): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_fd.cpp(64,49): warning C4365:    cpu->f = (cpu->f & ~(NF | CF | F5 | F3 | HF));
+1>c:\temp\trdos\131\z80\op_fd.cpp(64,49): warning C4365:                                                 ^
+1>c:\temp\trdos\131\z80\tables.h(112,57): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\tables.h(112,57): warning C4365:    cpu->f = log_f[src & (1 << bit)] | HF | (cpu->f & CF);
+1>c:\temp\trdos\131\z80\tables.h(112,57): warning C4365:                                                         ^ (компилируется исходный файл ..\z80\op_ed.cpp)
+1>c:\temp\trdos\131\z80\tables.h(113,56): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\tables.h(113,56): warning C4365:    cpu->f = (cpu->f & ~(F3|F5)) | (cpu->memh & (F3|F5));
+1>c:\temp\trdos\131\z80\tables.h(113,56): warning C4365:                                                        ^ (компилируется исходный файл ..\z80\op_ed.cpp)
+1>c:\temp\trdos\131\z80\tables.h(128,75): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\tables.h(128,75): warning C4365:    cpu->f = log_f[src & (1 << bit)] | HF | (cpu->f & CF) | (src & (F3|F5));
+1>c:\temp\trdos\131\z80\tables.h(128,75): warning C4365:                                                                           ^ (компилируется исходный файл ..\z80\op_ed.cpp)
+1>c:\temp\trdos\131\z80\tables.h(133,28): warning C4365:  return: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\tables.h(133,28): warning C4365:    return src & ~(1 << bit);
+1>c:\temp\trdos\131\z80\tables.h(133,28): warning C4365:                            ^ (компилируется исходный файл ..\z80\op_ed.cpp)
+1>c:\temp\trdos\131\z80\op_fd.cpp(122,49): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_fd.cpp(122,49): warning C4365:    cpu->f = (cpu->f & ~(NF | CF | F5 | F3 | HF));
+1>c:\temp\trdos\131\z80\op_fd.cpp(122,49): warning C4365:                                                 ^
+1>c:\temp\trdos\131\z80\tables.h(143,36): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\tables.h(143,36): warning C4365:    cpu->f = incf[x] | (cpu->f & CF);
+1>c:\temp\trdos\131\z80\tables.h(143,36): warning C4365:                                    ^ (компилируется исходный файл ..\z80\op_ed.cpp)
+1>c:\temp\trdos\131\z80\tables.h(149,36): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\tables.h(149,36): warning C4365:    cpu->f = decf[x] | (cpu->f & CF);
+1>c:\temp\trdos\131\z80\tables.h(149,36): warning C4365:                                    ^ (компилируется исходный файл ..\z80\op_ed.cpp)
+1>c:\temp\trdos\131\z80\tables.h(167,41): warning C4365:  инициализация: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\tables.h(167,41): warning C4365:    unsigned char carry = ((cpu->f) & CF);
+1>c:\temp\trdos\131\z80\tables.h(167,41): warning C4365:                                         ^ (компилируется исходный файл ..\z80\op_ed.cpp)
+1>c:\temp\trdos\131\z80\tables.h(174,41): warning C4365:  инициализация: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\tables.h(174,41): warning C4365:    unsigned char carry = ((cpu->f) & CF);
+1>c:\temp\trdos\131\z80\tables.h(174,41): warning C4365:                                         ^ (компилируется исходный файл ..\z80\op_ed.cpp)
+1>c:\temp\trdos\131\z80\op_ed.cpp(13,42): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_ed.cpp(13,42): warning C4365:    cpu->f = log_f[cpu->b] | (cpu->f & CF);
+1>c:\temp\trdos\131\z80\op_ed.cpp(13,42): warning C4365:                                          ^
+1>c:\temp\trdos\131\z80\op_ed.cpp(32,39): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_ed.cpp(32,39): warning C4365:    cpu->f = fl | (cpu->h & (F3|F5|SF));
+1>c:\temp\trdos\131\z80\op_ed.cpp(32,39): warning C4365:                                       ^
+1>c:\temp\trdos\131\z80\op_fd.cpp(421,78): warning C4365:  инициализация: преобразование "int" в "unsigned int", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_fd.cpp(421,78): warning C4365:    unsigned tmp = cpu->MemIf->rm(cpu->sp) + 0x100*cpu->MemIf->rm(cpu->sp + 1);
+1>c:\temp\trdos\131\z80\op_fd.cpp(421,78): warning C4365:                                                                              ^
+1>c:\temp\trdos\131\z80\op_ed.cpp(49,20): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_ed.cpp(49,20): warning C4365:    cpu->a = -cpu->a;
+1>c:\temp\trdos\131\z80\op_ed.cpp(49,20): warning C4365:                    ^
+1>c:\temp\trdos\131\z80\op_ed.cpp(78,42): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_ed.cpp(78,42): warning C4365:    cpu->f = log_f[cpu->c] | (cpu->f & CF);
+1>c:\temp\trdos\131\z80\op_ed.cpp(78,42): warning C4365:                                          ^
+1>c:\temp\trdos\131\z80\op_ed.cpp(96,39): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_ed.cpp(96,39): warning C4365:    cpu->f = fl | (cpu->h & (F3|F5|SF));
+1>c:\temp\trdos\131\z80\op_ed.cpp(96,39): warning C4365:                                       ^
+1>c:\temp\trdos\131\z80\op_ed.cpp(126,29): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_ed.cpp(126,29): warning C4365:    cpu->r_hi = cpu->a & 0x80;
+1>c:\temp\trdos\131\z80\op_ed.cpp(126,29): warning C4365:                             ^
+1>c:\temp\trdos\131\z80\op_ed.cpp(135,42): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_ed.cpp(135,42): warning C4365:    cpu->f = log_f[cpu->d] | (cpu->f & CF);
+1>c:\temp\trdos\131\z80\op_ed.cpp(135,42): warning C4365:                                          ^
+1>c:\temp\trdos\131\z80\op_ed.cpp(154,39): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_ed.cpp(154,39): warning C4365:    cpu->f = fl | (cpu->h & (F3|F5|SF));
+1>c:\temp\trdos\131\z80\op_ed.cpp(154,39): warning C4365:                                       ^
+1>c:\temp\trdos\131\z80\op_ed.cpp(180,50): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_ed.cpp(180,50): warning C4365:    cpu->f = (log_f[cpu->a] | (cpu->f & CF)) & ~PV;
+1>c:\temp\trdos\131\z80\op_ed.cpp(180,50): warning C4365:                                                  ^
+1>c:\temp\trdos\131\z80\op_ed.cpp(191,42): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_ed.cpp(191,42): warning C4365:    cpu->f = log_f[cpu->e] | (cpu->f & CF);
+1>c:\temp\trdos\131\z80\op_ed.cpp(191,42): warning C4365:                                          ^
+1>c:\temp\trdos\131\z80\op_ed.cpp(209,39): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_ed.cpp(209,39): warning C4365:    cpu->f = fl | (cpu->h & (F3|F5|SF));
+1>c:\temp\trdos\131\z80\op_ed.cpp(209,39): warning C4365:                                       ^
+1>c:\temp\trdos\131\z80\op_ed.cpp(234,44): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_ed.cpp(234,44): warning C4365:    cpu->a = (cpu->r_low & 0x7F) | cpu->r_hi;
+1>c:\temp\trdos\131\z80\op_ed.cpp(234,44): warning C4365:                                            ^
+1>c:\temp\trdos\131\z80\op_ed.cpp(235,50): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_ed.cpp(235,50): warning C4365:    cpu->f = (log_f[cpu->a] | (cpu->f & CF)) & ~PV;
+1>c:\temp\trdos\131\z80\op_ed.cpp(235,50): warning C4365:                                                  ^
+1>c:\temp\trdos\131\z80\op_ed.cpp(246,42): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_ed.cpp(246,42): warning C4365:    cpu->f = log_f[cpu->h] | (cpu->f & CF);
+1>c:\temp\trdos\131\z80\op_ed.cpp(246,42): warning C4365:                                          ^
+1>c:\temp\trdos\131\z80\op_ed.cpp(264,39): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_ed.cpp(264,39): warning C4365:    cpu->f = fl | (cpu->h & (F3|F5|SF));
+1>c:\temp\trdos\131\z80\op_ed.cpp(264,39): warning C4365:                                       ^
+1>c:\temp\trdos\131\z80\op_ed.cpp(278,58): warning C4365:  аргумент: преобразование "int" в "u8", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_ed.cpp(278,58): warning C4365:    cpu->MemIf->wm(cpu->hl, u8(cpu->a << 4) | u8(tmp >> 4));
+1>c:\temp\trdos\131\z80\op_ed.cpp(278,58): warning C4365:                                                          ^
+1>c:\temp\trdos\131\z80\op_ed.cpp(279,43): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_ed.cpp(279,43): warning C4365:    cpu->a = (cpu->a & 0xF0) | (tmp & 0x0F);
+1>c:\temp\trdos\131\z80\op_ed.cpp(279,43): warning C4365:                                           ^
+1>c:\temp\trdos\131\z80\op_ed.cpp(280,42): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_ed.cpp(280,42): warning C4365:    cpu->f = log_f[cpu->a] | (cpu->f & CF);
+1>c:\temp\trdos\131\z80\op_ed.cpp(280,42): warning C4365:                                          ^
+1>c:\temp\trdos\131\z80\op_ed.cpp(289,42): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_ed.cpp(289,42): warning C4365:    cpu->f = log_f[cpu->l] | (cpu->f & CF);
+1>c:\temp\trdos\131\z80\op_ed.cpp(289,42): warning C4365:                                          ^
+1>c:\temp\trdos\131\z80\op_ed.cpp(300,45): warning C4365:  инициализация: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_ed.cpp(300,45): warning C4365:    unsigned char fl = ((cpu->h << 1) & 0x10); /* HF */
+1>c:\temp\trdos\131\z80\op_ed.cpp(300,45): warning C4365:                                             ^
+1>c:\temp\trdos\131\z80\op_ed.cpp(307,39): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_ed.cpp(307,39): warning C4365:    cpu->f = fl | (cpu->h & (F3|F5|SF));
+1>c:\temp\trdos\131\z80\op_ed.cpp(307,39): warning C4365:                                       ^
+1>c:\temp\trdos\131\z80\tables.h(95,31): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\tables.h(95,31): warning C4365:    cpu->f = log_f[cpu->a] | HF;
+1>c:\temp\trdos\131\z80\tables.h(95,31): warning C4365:                               ^ (компилируется исходный файл ..\z80\op_dd.cpp)
+1>c:\temp\trdos\131\z80\op_ed.cpp(321,60): warning C4365:  аргумент: преобразование "int" в "u8", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_ed.cpp(321,60): warning C4365:    cpu->MemIf->wm(cpu->hl, u8(cpu->a & 0x0F) | u8(tmp << 4));
+1>c:\temp\trdos\131\z80\op_ed.cpp(321,60): warning C4365:                                                            ^
+1>c:\temp\trdos\131\z80\tables.h(112,57): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\tables.h(112,57): warning C4365:    cpu->f = log_f[src & (1 << bit)] | HF | (cpu->f & CF);
+1>c:\temp\trdos\131\z80\tables.h(112,57): warning C4365:                                                         ^ (компилируется исходный файл ..\z80\op_dd.cpp)
+1>c:\temp\trdos\131\z80\op_ed.cpp(322,41): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_ed.cpp(322,41): warning C4365:    cpu->a = (cpu->a & 0xF0) | (tmp >> 4);
+1>c:\temp\trdos\131\z80\op_ed.cpp(322,41): warning C4365:                                         ^
+1>c:\temp\trdos\131\z80\tables.h(113,56): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\tables.h(113,56): warning C4365:    cpu->f = (cpu->f & ~(F3|F5)) | (cpu->memh & (F3|F5));
+1>c:\temp\trdos\131\z80\tables.h(113,56): warning C4365:                                                        ^ (компилируется исходный файл ..\z80\op_dd.cpp)
+1>c:\temp\trdos\131\z80\op_ed.cpp(323,42): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_ed.cpp(323,42): warning C4365:    cpu->f = log_f[cpu->a] | (cpu->f & CF);
+1>c:\temp\trdos\131\z80\op_ed.cpp(323,42): warning C4365:                                          ^
+1>c:\temp\trdos\131\z80\tables.h(128,75): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\tables.h(128,75): warning C4365:    cpu->f = log_f[src & (1 << bit)] | HF | (cpu->f & CF) | (src & (F3|F5));
+1>c:\temp\trdos\131\z80\tables.h(128,75): warning C4365:                                                                           ^ (компилируется исходный файл ..\z80\op_dd.cpp)
+1>c:\temp\trdos\131\z80\op_ed.cpp(329,52): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_ed.cpp(329,52): warning C4365:    cpu->f = log_f[cpu->in(cpu->bc)] | (cpu->f & CF);
+1>c:\temp\trdos\131\z80\op_ed.cpp(329,52): warning C4365:                                                    ^
+1>c:\temp\trdos\131\z80\tables.h(133,28): warning C4365:  return: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\tables.h(133,28): warning C4365:    return src & ~(1 << bit);
+1>c:\temp\trdos\131\z80\tables.h(133,28): warning C4365:                            ^ (компилируется исходный файл ..\z80\op_dd.cpp)
+1>c:\temp\trdos\131\z80\op_ed.cpp(348,39): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_ed.cpp(348,39): warning C4365:    cpu->f = fl | (cpu->h & (F3|F5|SF));
+1>c:\temp\trdos\131\z80\op_ed.cpp(348,39): warning C4365:                                       ^
+1>c:\temp\trdos\131\z80\tables.h(143,36): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\tables.h(143,36): warning C4365:    cpu->f = incf[x] | (cpu->f & CF);
+1>c:\temp\trdos\131\z80\tables.h(143,36): warning C4365:                                    ^ (компилируется исходный файл ..\z80\op_dd.cpp)
+1>c:\temp\trdos\131\z80\tables.h(149,36): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\tables.h(149,36): warning C4365:    cpu->f = decf[x] | (cpu->f & CF);
+1>c:\temp\trdos\131\z80\tables.h(149,36): warning C4365:                                    ^ (компилируется исходный файл ..\z80\op_dd.cpp)
+1>c:\temp\trdos\131\z80\op_ed.cpp(379,42): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_ed.cpp(379,42): warning C4365:    cpu->f = log_f[cpu->a] | (cpu->f & CF);
+1>c:\temp\trdos\131\z80\op_ed.cpp(379,42): warning C4365:                                          ^
+1>c:\temp\trdos\131\z80\tables.h(167,41): warning C4365:  инициализация: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\tables.h(167,41): warning C4365:    unsigned char carry = ((cpu->f) & CF);
+1>c:\temp\trdos\131\z80\tables.h(167,41): warning C4365:                                         ^ (компилируется исходный файл ..\z80\op_dd.cpp)
+1>c:\temp\trdos\131\z80\tables.h(174,41): warning C4365:  инициализация: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\tables.h(174,41): warning C4365:    unsigned char carry = ((cpu->f) & CF);
+1>c:\temp\trdos\131\z80\tables.h(174,41): warning C4365:                                         ^ (компилируется исходный файл ..\z80\op_dd.cpp)
+1>c:\temp\trdos\131\z80\op_ed.cpp(397,39): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_ed.cpp(397,39): warning C4365:    cpu->f = fl | (cpu->h & (F3|F5|SF));
+1>c:\temp\trdos\131\z80\op_ed.cpp(397,39): warning C4365:                                       ^
+1>c:\temp\trdos\131\z80\op_ed.cpp(422,75): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_ed.cpp(422,75): warning C4365:    tempbyte += cpu->a; tempbyte = (tempbyte & F3) + ((tempbyte << 4) & F5);
+1>c:\temp\trdos\131\z80\op_ed.cpp(422,75): warning C4365:                                                                           ^
+1>c:\temp\trdos\131\z80\op_ed.cpp(423,52): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_ed.cpp(423,52): warning C4365:    cpu->f = (cpu->f & ~(NF|HF|PV|F3|F5)) + tempbyte;
+1>c:\temp\trdos\131\z80\op_ed.cpp(423,52): warning C4365:                                                    ^
+1>c:\temp\trdos\131\z80\op_ed.cpp(428,34): warning C4365:  инициализация: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_ed.cpp(428,34): warning C4365:    unsigned char cf = cpu->f & CF;
+1>c:\temp\trdos\131\z80\op_ed.cpp(428,34): warning C4365:                                  ^
+1>c:\temp\trdos\131\z80\op_ed.cpp(430,48): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_ed.cpp(430,48): warning C4365:    cpu->f = cpf8b[cpu->a*0x100 + tempbyte] + cf;
+1>c:\temp\trdos\131\z80\op_ed.cpp(430,48): warning C4365:                                                ^
+1>c:\temp\trdos\131\z80\op_dd.cpp(11,49): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_dd.cpp(11,49): warning C4365:    cpu->f = (cpu->f & ~(NF | CF | F5 | F3 | HF));
+1>c:\temp\trdos\131\z80\op_dd.cpp(11,49): warning C4365:                                                 ^
+1>c:\temp\trdos\131\z80\op_ed.cpp(440,30): warning C4365:  инициализация: преобразование "int" в "u8", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_ed.cpp(440,30): warning C4365:    u8 ftmp = tmp + cpu->c + 1;
+1>c:\temp\trdos\131\z80\op_ed.cpp(440,30): warning C4365:                              ^
+1>c:\temp\trdos\131\z80\op_dd.cpp(20,49): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_dd.cpp(20,49): warning C4365:    cpu->f = (cpu->f & ~(NF | CF | F5 | F3 | HF));
+1>c:\temp\trdos\131\z80\op_dd.cpp(20,49): warning C4365:                                                 ^
+1>c:\temp\trdos\131\z80\op_ed.cpp(441,32): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_ed.cpp(441,32): warning C4365:    cpu->f = log_f[cpu->b] & ~PV;
+1>c:\temp\trdos\131\z80\op_ed.cpp(441,32): warning C4365:                                ^
+1>c:\temp\trdos\131\z80\op_dd.cpp(64,49): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_dd.cpp(64,49): warning C4365:    cpu->f = (cpu->f & ~(NF | CF | F5 | F3 | HF));
+1>c:\temp\trdos\131\z80\op_dd.cpp(64,49): warning C4365:                                                 ^
+1>c:\temp\trdos\131\z80\tables.h(95,31): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\tables.h(95,31): warning C4365:    cpu->f = log_f[cpu->a] | HF;
+1>c:\temp\trdos\131\z80\tables.h(95,31): warning C4365:                               ^ (компилируется исходный файл ..\z80\tables.cpp)
+1>c:\temp\trdos\131\z80\op_ed.cpp(452,26): warning C4365:  инициализация: преобразование "int" в "u8", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_ed.cpp(452,26): warning C4365:    u8 ftmp = tmp + cpu->l;
+1>c:\temp\trdos\131\z80\op_ed.cpp(452,26): warning C4365:                          ^
+1>c:\temp\trdos\131\z80\tables.h(112,57): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\tables.h(112,57): warning C4365:    cpu->f = log_f[src & (1 << bit)] | HF | (cpu->f & CF);
+1>c:\temp\trdos\131\z80\tables.h(112,57): warning C4365:                                                         ^ (компилируется исходный файл ..\z80\tables.cpp)
+1>c:\temp\trdos\131\z80\op_ed.cpp(453,32): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_ed.cpp(453,32): warning C4365:    cpu->f = log_f[cpu->b] & ~PV;
+1>c:\temp\trdos\131\z80\op_ed.cpp(453,32): warning C4365:                                ^
+1>c:\temp\trdos\131\z80\tables.h(113,56): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\tables.h(113,56): warning C4365:    cpu->f = (cpu->f & ~(F3|F5)) | (cpu->memh & (F3|F5));
+1>c:\temp\trdos\131\z80\tables.h(113,56): warning C4365:                                                        ^ (компилируется исходный файл ..\z80\tables.cpp)
+1>c:\temp\trdos\131\z80\op_dd.cpp(122,49): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_dd.cpp(122,49): warning C4365:    cpu->f = (cpu->f & ~(NF | CF | F5 | F3 | HF));
+1>c:\temp\trdos\131\z80\op_dd.cpp(122,49): warning C4365:                                                 ^
+1>c:\temp\trdos\131\z80\op_ed.cpp(464,75): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_ed.cpp(464,75): warning C4365:    tempbyte += cpu->a; tempbyte = (tempbyte & F3) + ((tempbyte << 4) & F5);
+1>c:\temp\trdos\131\z80\op_ed.cpp(464,75): warning C4365:                                                                           ^
+1>c:\temp\trdos\131\z80\tables.h(128,75): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\tables.h(128,75): warning C4365:    cpu->f = log_f[src & (1 << bit)] | HF | (cpu->f & CF) | (src & (F3|F5));
+1>c:\temp\trdos\131\z80\tables.h(128,75): warning C4365:                                                                           ^ (компилируется исходный файл ..\z80\tables.cpp)
+1>c:\temp\trdos\131\z80\op_ed.cpp(465,52): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_ed.cpp(465,52): warning C4365:    cpu->f = (cpu->f & ~(NF|HF|PV|F3|F5)) + tempbyte;
+1>c:\temp\trdos\131\z80\op_ed.cpp(465,52): warning C4365:                                                    ^
+1>c:\temp\trdos\131\z80\tables.h(133,28): warning C4365:  return: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\tables.h(133,28): warning C4365:    return src & ~(1 << bit);
+1>c:\temp\trdos\131\z80\tables.h(133,28): warning C4365:                            ^ (компилируется исходный файл ..\z80\tables.cpp)
+1>c:\temp\trdos\131\z80\op_ed.cpp(470,34): warning C4365:  инициализация: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_ed.cpp(470,34): warning C4365:    unsigned char cf = cpu->f & CF;
+1>c:\temp\trdos\131\z80\op_ed.cpp(470,34): warning C4365:                                  ^
+1>c:\temp\trdos\131\z80\op_ed.cpp(472,48): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_ed.cpp(472,48): warning C4365:    cpu->f = cpf8b[cpu->a*0x100 + tempbyte] + cf;
+1>c:\temp\trdos\131\z80\op_ed.cpp(472,48): warning C4365:                                                ^
+1>c:\temp\trdos\131\z80\tables.h(143,36): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\tables.h(143,36): warning C4365:    cpu->f = incf[x] | (cpu->f & CF);
+1>c:\temp\trdos\131\z80\tables.h(143,36): warning C4365:                                    ^ (компилируется исходный файл ..\z80\tables.cpp)
+1>c:\temp\trdos\131\z80\op_ed.cpp(482,30): warning C4365:  инициализация: преобразование "int" в "u8", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_ed.cpp(482,30): warning C4365:    u8 ftmp = tmp + cpu->c - 1;
+1>c:\temp\trdos\131\z80\op_ed.cpp(482,30): warning C4365:                              ^
+1>c:\temp\trdos\131\z80\tables.h(149,36): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\tables.h(149,36): warning C4365:    cpu->f = decf[x] | (cpu->f & CF);
+1>c:\temp\trdos\131\z80\tables.h(149,36): warning C4365:                                    ^ (компилируется исходный файл ..\z80\tables.cpp)
+1>c:\temp\trdos\131\z80\op_ed.cpp(483,32): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_ed.cpp(483,32): warning C4365:    cpu->f = log_f[cpu->b] & ~PV;
+1>c:\temp\trdos\131\z80\op_ed.cpp(483,32): warning C4365:                                ^
+1>c:\temp\trdos\131\z80\op_dd.cpp(421,78): warning C4365:  инициализация: преобразование "int" в "unsigned int", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_dd.cpp(421,78): warning C4365:    unsigned tmp = cpu->MemIf->rm(cpu->sp) + 0x100*cpu->MemIf->rm(cpu->sp + 1);
+1>c:\temp\trdos\131\z80\op_dd.cpp(421,78): warning C4365:                                                                              ^
+1>c:\temp\trdos\131\z80\tables.h(167,41): warning C4365:  инициализация: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\tables.h(167,41): warning C4365:    unsigned char carry = ((cpu->f) & CF);
+1>c:\temp\trdos\131\z80\tables.h(167,41): warning C4365:                                         ^ (компилируется исходный файл ..\z80\tables.cpp)
+1>c:\temp\trdos\131\z80\op_ed.cpp(495,26): warning C4365:  инициализация: преобразование "int" в "u8", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_ed.cpp(495,26): warning C4365:    u8 ftmp = tmp + cpu->l;
+1>c:\temp\trdos\131\z80\op_ed.cpp(495,26): warning C4365:                          ^
+1>c:\temp\trdos\131\z80\tables.h(174,41): warning C4365:  инициализация: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\tables.h(174,41): warning C4365:    unsigned char carry = ((cpu->f) & CF);
+1>c:\temp\trdos\131\z80\tables.h(174,41): warning C4365:                                         ^ (компилируется исходный файл ..\z80\tables.cpp)
+1>c:\temp\trdos\131\z80\op_ed.cpp(496,32): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_ed.cpp(496,32): warning C4365:    cpu->f = log_f[cpu->b] & ~PV;
+1>c:\temp\trdos\131\z80\op_ed.cpp(496,32): warning C4365:                                ^
+1>c:\temp\trdos\131\z80\op_ed.cpp(507,76): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_ed.cpp(507,76): warning C4365:     tempbyte += cpu->a; tempbyte = (tempbyte & F3) + ((tempbyte << 4) & F5);
+1>c:\temp\trdos\131\z80\op_ed.cpp(507,76): warning C4365:                                                                            ^
+1>c:\temp\trdos\131\z80\op_ed.cpp(508,61): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_ed.cpp(508,61): warning C4365:     cpu->f = (cpu->f & ~(NF | HF | PV | F3 | F5)) + tempbyte;
+1>c:\temp\trdos\131\z80\op_ed.cpp(508,61): warning C4365:                                                             ^
+1>c:\temp\trdos\131\z80\op_ed.cpp(520,35): warning C4365:  инициализация: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_ed.cpp(520,35): warning C4365:     unsigned char cf = cpu->f & CF;
+1>c:\temp\trdos\131\z80\op_ed.cpp(520,35): warning C4365:                                   ^
+1>c:\temp\trdos\131\z80\op_ed.cpp(522,51): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_ed.cpp(522,51): warning C4365:     cpu->f = cpf8b[cpu->a * 0x100 + tempbyte] + cf;
+1>c:\temp\trdos\131\z80\op_ed.cpp(522,51): warning C4365:                                                   ^
+1>c:\temp\trdos\131\z80\tables.h(95,31): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\tables.h(95,31): warning C4365:    cpu->f = log_f[cpu->a] | HF;
+1>c:\temp\trdos\131\z80\tables.h(95,31): warning C4365:                               ^ (компилируется исходный файл ..\z80\op_ddcb.cpp)
+1>c:\temp\trdos\131\z80\op_ed.cpp(565,76): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_ed.cpp(565,76): warning C4365:     tempbyte += cpu->a; tempbyte = (tempbyte & F3) | ((tempbyte << 4) & F5);
+1>c:\temp\trdos\131\z80\op_ed.cpp(565,76): warning C4365:                                                                            ^
+1>c:\temp\trdos\131\z80\op_ed.cpp(566,61): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_ed.cpp(566,61): warning C4365:     cpu->f = (cpu->f & ~(NF | HF | PV | F3 | F5)) | tempbyte;
+1>c:\temp\trdos\131\z80\op_ed.cpp(566,61): warning C4365:                                                             ^
+1>c:\temp\trdos\131\z80\tables.h(112,57): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\tables.h(112,57): warning C4365:    cpu->f = log_f[src & (1 << bit)] | HF | (cpu->f & CF);
+1>c:\temp\trdos\131\z80\tables.h(112,57): warning C4365:                                                         ^ (компилируется исходный файл ..\z80\op_ddcb.cpp)
+1>c:\temp\trdos\131\z80\op_ed.cpp(578,35): warning C4365:  инициализация: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_ed.cpp(578,35): warning C4365:     unsigned char cf = cpu->f & CF;
+1>c:\temp\trdos\131\z80\op_ed.cpp(578,35): warning C4365:                                   ^
+1>c:\temp\trdos\131\z80\tables.h(113,56): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\tables.h(113,56): warning C4365:    cpu->f = (cpu->f & ~(F3|F5)) | (cpu->memh & (F3|F5));
+1>c:\temp\trdos\131\z80\tables.h(113,56): warning C4365:                                                        ^ (компилируется исходный файл ..\z80\op_ddcb.cpp)
+1>c:\temp\trdos\131\z80\op_ed.cpp(580,51): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_ed.cpp(580,51): warning C4365:     cpu->f = cpf8b[cpu->a * 0x100 + tempbyte] + cf;
+1>c:\temp\trdos\131\z80\op_ed.cpp(580,51): warning C4365:                                                   ^
+1>c:\temp\trdos\131\z80\tables.h(128,75): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\tables.h(128,75): warning C4365:    cpu->f = log_f[src & (1 << bit)] | HF | (cpu->f & CF) | (src & (F3|F5));
+1>c:\temp\trdos\131\z80\tables.h(128,75): warning C4365:                                                                           ^ (компилируется исходный файл ..\z80\op_ddcb.cpp)
+1>c:\temp\trdos\131\z80\tables.h(95,31): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\tables.h(95,31): warning C4365:    cpu->f = log_f[cpu->a] | HF;
+1>c:\temp\trdos\131\z80\tables.h(95,31): warning C4365:                               ^ (компилируется исходный файл ..\z80\op_noprefix.cpp)
+1>c:\temp\trdos\131\z80\tables.h(133,28): warning C4365:  return: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\tables.h(133,28): warning C4365:    return src & ~(1 << bit);
+1>c:\temp\trdos\131\z80\tables.h(133,28): warning C4365:                            ^ (компилируется исходный файл ..\z80\op_ddcb.cpp)
+1>c:\temp\trdos\131\z80\tables.h(112,57): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\tables.h(112,57): warning C4365:    cpu->f = log_f[src & (1 << bit)] | HF | (cpu->f & CF);
+1>c:\temp\trdos\131\z80\tables.h(112,57): warning C4365:                                                         ^ (компилируется исходный файл ..\z80\op_noprefix.cpp)
+1>c:\temp\trdos\131\z80\tables.h(143,36): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\tables.h(143,36): warning C4365:    cpu->f = incf[x] | (cpu->f & CF);
+1>c:\temp\trdos\131\z80\tables.h(143,36): warning C4365:                                    ^ (компилируется исходный файл ..\z80\op_ddcb.cpp)
+1>c:\temp\trdos\131\z80\tables.h(113,56): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\tables.h(113,56): warning C4365:    cpu->f = (cpu->f & ~(F3|F5)) | (cpu->memh & (F3|F5));
+1>c:\temp\trdos\131\z80\tables.h(113,56): warning C4365:                                                        ^ (компилируется исходный файл ..\z80\op_noprefix.cpp)
+1>c:\temp\trdos\131\z80\tables.h(149,36): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\tables.h(149,36): warning C4365:    cpu->f = decf[x] | (cpu->f & CF);
+1>c:\temp\trdos\131\z80\tables.h(149,36): warning C4365:                                    ^ (компилируется исходный файл ..\z80\op_ddcb.cpp)
+1>c:\temp\trdos\131\z80\tables.h(167,41): warning C4365:  инициализация: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\tables.h(167,41): warning C4365:    unsigned char carry = ((cpu->f) & CF);
+1>c:\temp\trdos\131\z80\tables.h(167,41): warning C4365:                                         ^ (компилируется исходный файл ..\z80\op_ddcb.cpp)
+1>c:\temp\trdos\131\z80\tables.h(174,41): warning C4365:  инициализация: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\tables.h(174,41): warning C4365:    unsigned char carry = ((cpu->f) & CF);
+1>c:\temp\trdos\131\z80\tables.h(174,41): warning C4365:                                         ^ (компилируется исходный файл ..\z80\op_ddcb.cpp)
+1>c:\temp\trdos\131\z80\tables.h(128,75): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\tables.h(128,75): warning C4365:    cpu->f = log_f[src & (1 << bit)] | HF | (cpu->f & CF) | (src & (F3|F5));
+1>c:\temp\trdos\131\z80\tables.h(128,75): warning C4365:                                                                           ^ (компилируется исходный файл ..\z80\op_noprefix.cpp)
+1>c:\temp\trdos\131\z80\op_ddcb.cpp(32,52): warning C4365:  return: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_ddcb.cpp(32,52): warning C4365:       cpu->f = rr1[byte]; return (byte >> 1) + 0x80;
+1>c:\temp\trdos\131\z80\op_ddcb.cpp(32,52): warning C4365:                                                    ^
+1>c:\temp\trdos\131\z80\op_ddcb.cpp(34,45): warning C4365:  return: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_ddcb.cpp(34,45): warning C4365:       cpu->f = rr0[byte]; return (byte >> 1);
+1>c:\temp\trdos\131\z80\op_ddcb.cpp(34,45): warning C4365:                                             ^
+1>c:\temp\trdos\131\z80\tables.h(133,28): warning C4365:  return: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\tables.h(133,28): warning C4365:    return src & ~(1 << bit);
+1>c:\temp\trdos\131\z80\tables.h(133,28): warning C4365:                            ^ (компилируется исходный файл ..\z80\op_noprefix.cpp)
+1>c:\temp\trdos\131\z80\op_ddcb.cpp(42,59): warning C4365:  return: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_ddcb.cpp(42,59): warning C4365:    cpu->f = sraf[byte]; return (byte >> 1) + (byte & 0x80);
+1>c:\temp\trdos\131\z80\op_ddcb.cpp(42,59): warning C4365:                                                           ^
+1>c:\temp\trdos\131\z80\tables.h(143,36): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\tables.h(143,36): warning C4365:    cpu->f = incf[x] | (cpu->f & CF);
+1>c:\temp\trdos\131\z80\tables.h(143,36): warning C4365:                                    ^ (компилируется исходный файл ..\z80\op_noprefix.cpp)
+1>c:\temp\trdos\131\z80\op_ddcb.cpp(49,42): warning C4365:  return: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_ddcb.cpp(49,42): warning C4365:    cpu->f = rr0[byte]; return (byte >> 1);
+1>c:\temp\trdos\131\z80\op_ddcb.cpp(49,42): warning C4365:                                          ^
+1>c:\temp\trdos\131\z80\tables.h(149,36): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\tables.h(149,36): warning C4365:    cpu->f = decf[x] | (cpu->f & CF);
+1>c:\temp\trdos\131\z80\tables.h(149,36): warning C4365:                                    ^ (компилируется исходный файл ..\z80\op_noprefix.cpp)
+1>c:\temp\trdos\131\z80\tables.h(167,41): warning C4365:  инициализация: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\tables.h(167,41): warning C4365:    unsigned char carry = ((cpu->f) & CF);
+1>c:\temp\trdos\131\z80\tables.h(167,41): warning C4365:                                         ^ (компилируется исходный файл ..\z80\op_noprefix.cpp)
+1>c:\temp\trdos\131\z80\tables.h(174,41): warning C4365:  инициализация: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\tables.h(174,41): warning C4365:    unsigned char carry = ((cpu->f) & CF);
+1>c:\temp\trdos\131\z80\tables.h(174,41): warning C4365:                                         ^ (компилируется исходный файл ..\z80\op_noprefix.cpp)
+1>c:\temp\trdos\131\z80\op_system.h(9,43): warning C4365:  инициализация: преобразование "int" в "unsigned int", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_system.h(9,43): warning C4365:       unsigned vec = vector + cpu->i*0x100;
+1>c:\temp\trdos\131\z80\op_system.h(9,43): warning C4365:                                           ^ (компилируется исходный файл ..\z80\op_noprefix.cpp)
+1>c:\temp\trdos\131\z80\op_system.h(10,64): warning C4365:  =: преобразование "int" в "unsigned int", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_system.h(10,64): warning C4365:       intad = cpu->MemIf->rm(vec) + 0x100*cpu->MemIf->rm(vec+1);
+1>c:\temp\trdos\131\z80\op_system.h(10,64): warning C4365:                                                                ^ (компилируется исходный файл ..\z80\op_noprefix.cpp)
+1>c:\temp\trdos\131\z80\op_noprefix.cpp(50,54): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_noprefix.cpp(50,54): warning C4365:    cpu->f = rlcaf[cpu->a] | (cpu->f & (SF | ZF | PV));
+1>c:\temp\trdos\131\z80\op_noprefix.cpp(50,54): warning C4365:                                                      ^
+1>c:\temp\trdos\131\z80\op_noprefix.cpp(60,49): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_noprefix.cpp(60,49): warning C4365:    cpu->f = (cpu->f & ~(NF | CF | F5 | F3 | HF));
+1>c:\temp\trdos\131\z80\op_noprefix.cpp(60,49): warning C4365:                                                 ^
+1>c:\temp\trdos\131\z80\op_noprefix.cpp(95,54): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_noprefix.cpp(95,54): warning C4365:    cpu->f = rrcaf[cpu->a] | (cpu->f & (SF | ZF | PV));
+1>c:\temp\trdos\131\z80\op_noprefix.cpp(95,54): warning C4365:                                                      ^
+1>c:\temp\trdos\131\z80\op_noprefix.cpp(148,54): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_noprefix.cpp(148,54): warning C4365:    cpu->f = rlcaf[cpu->a] | (cpu->f & (SF | ZF | PV)); // use same table with rlca
+1>c:\temp\trdos\131\z80\op_noprefix.cpp(148,54): warning C4365:                                                      ^
+1>c:\temp\trdos\131\z80\op_noprefix.cpp(164,49): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_noprefix.cpp(164,49): warning C4365:    cpu->f = (cpu->f & ~(NF | CF | F5 | F3 | HF));
+1>c:\temp\trdos\131\z80\op_noprefix.cpp(164,49): warning C4365:                                                 ^
+1>c:\temp\trdos\131\z80\op_noprefix.cpp(200,54): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_noprefix.cpp(200,54): warning C4365:    cpu->f = rrcaf[cpu->a] | (cpu->f & (SF | ZF | PV)); // use same table with rrca
+1>c:\temp\trdos\131\z80\op_noprefix.cpp(200,54): warning C4365:                                                      ^
+1>c:\temp\trdos\131\z80\op_noprefix.cpp(281,49): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_noprefix.cpp(281,49): warning C4365:    cpu->f = (cpu->f & ~(NF | CF | F5 | F3 | HF));
+1>c:\temp\trdos\131\z80\op_noprefix.cpp(281,49): warning C4365:                                                 ^
+1>c:\temp\trdos\131\z80\op_noprefix.cpp(320,63): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_noprefix.cpp(320,63): warning C4365:    cpu->f = (cpu->f & ~(F3|F5)) | NF | HF | (cpu->a & (F3|F5));
+1>c:\temp\trdos\131\z80\op_noprefix.cpp(320,63): warning C4365:                                                               ^
+1>c:\temp\trdos\131\z80\op_noprefix.cpp(382,64): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_noprefix.cpp(382,64): warning C4365:    cpu->f = (cpu->f & ~(HF|NF|F3|F5)) | (cpu->a & (F3|F5)) | CF;
+1>c:\temp\trdos\131\z80\op_noprefix.cpp(382,64): warning C4365:                                                                ^
+1>c:\temp\trdos\131\z80\op_noprefix.cpp(404,49): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_noprefix.cpp(404,49): warning C4365:    cpu->f = (cpu->f & ~(NF | CF | F5 | F3 | HF));
+1>c:\temp\trdos\131\z80\op_noprefix.cpp(404,49): warning C4365:                                                 ^
+1>c:\temp\trdos\131\z80\op_noprefix.cpp(441,83): warning C4365:  =: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_noprefix.cpp(441,83): warning C4365:    cpu->f = ((cpu->f & ~(NF|HF)) | ((cpu->f << 4) & HF) | (cpu->a & (F3|F5))) ^ CF;
+1>c:\temp\trdos\131\z80\op_noprefix.cpp(441,83): warning C4365:                                                                                   ^
 2>c:\program files (x86)\windows kits\10\include\10.0.17763.0\shared\wtypes.h(745): message :  в расширении макроса "_VARIANT_BOOL"
 2>c:\program files (x86)\windows kits\10\include\10.0.17763.0\shared\wtypes.h(745): message : #define _VARIANT_BOOL    /##/
 2>c:\program files (x86)\windows kits\10\include\10.0.17763.0\um\oaidl.h(487,17): error C2059:  синтаксическая ошибка: /
@@ -67,5 +580,64 @@
 2>c:\program files (x86)\windows kits\10\include\10.0.17763.0\um\propidlbase.h(319,42): error C2238:  непредвиденные лексемы перед ";"
 2>c:\program files (x86)\windows kits\10\include\10.0.17763.0\um\propidlbase.h(319,42): error C2238:         /* [case()] */ _VARIANT_BOOL bool;
 2>c:\program files (x86)\windows kits\10\include\10.0.17763.0\um\propidlbase.h(319,42): error C2238:                                          ^
-========== Сборка: успешно выполнено — 0 , со сбоем — 2, в актуальном состоянии — 1, пропущено — 0 ==========
-========== Сборка завершено в 8:40 и заняло 04,656 с ==========
+1>c:\temp\trdos\131\z80\op_noprefix.cpp(1190,78): warning C4365:  инициализация: преобразование "int" в "unsigned int", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\op_noprefix.cpp(1190,78): warning C4365:    unsigned tmp = cpu->MemIf->rm(cpu->sp) + 0x100*cpu->MemIf->rm(cpu->sp + 1);
+1>c:\temp\trdos\131\z80\op_noprefix.cpp(1190,78): warning C4365:                                                                              ^
+1>c:\temp\trdos\131\z80\tables.cpp(190,58): warning C4365:  =: преобразование "int" в "u8", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\tables.cpp(190,58): warning C4365:         cpf[i] = (sbcf[i] & ~(F3 | F5)) | (i & (F3 | F5));
+1>c:\temp\trdos\131\z80\tables.cpp(190,58): warning C4365:                                                          ^
+1>c:\temp\trdos\131\z80\tables.cpp(192,95): warning C4365:  =: преобразование "int" в "u8", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\tables.cpp(192,95): warning C4365:         cpf8b[i] = (sbcf[i] & ~(F3 | F5 | PV | CF)) + (tempbyte & F3) + ((tempbyte << 4) & F5);
+1>c:\temp\trdos\131\z80\tables.cpp(192,95): warning C4365:                                                                                               ^
+1>c:\temp\trdos\131\z80\tables.cpp(219,46): warning C4365:  инициализация: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\tables.cpp(219,46): warning C4365:         unsigned char fl = x & (F3 | F5 | SF);
+1>c:\temp\trdos\131\z80\tables.cpp(219,46): warning C4365:                                              ^
+1>c:\temp\trdos\131\z80\tables.cpp(223,26): warning C4365:  =: преобразование "int" в "u8", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\tables.cpp(223,26): warning C4365:         log_f[x] = fl | p;
+1>c:\temp\trdos\131\z80\tables.cpp(223,26): warning C4365:                          ^
+1>c:\temp\trdos\131\z80\tables.cpp(228,21): warning C4365:  инициализация: преобразование "int" в "unsigned char", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\tables.cpp(228,21): warning C4365: constexpr TLogf Logf;
+1>c:\temp\trdos\131\z80\tables.cpp(228,21): warning C4365:                     ^
+1>c:\temp\trdos\131\z80\tables.cpp(329,34): warning C4365:  =: преобразование "int" в "u8", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\tables.cpp(329,34): warning C4365:         rlcaf[i] = rlcf[i] & 0x3B;        // rra,rla uses same tables
+1>c:\temp\trdos\131\z80\tables.cpp(329,34): warning C4365:                                  ^
+1>c:\temp\trdos\131\z80\tables.cpp(330,34): warning C4365:  =: преобразование "int" в "u8", несоответствие типов со знаком и без
+1>c:\temp\trdos\131\z80\tables.cpp(330,34): warning C4365:         rrcaf[i] = rrcf[i] & 0x3B;
+1>c:\temp\trdos\131\z80\tables.cpp(330,34): warning C4365:                                  ^
+1>  z80.vcxproj -> C:\Temp\trdos\131\msvc\z80\Win32\Release\z80.lib
+3>------ Сборка начата: проект: unreal, Конфигурация: Release Win32 ------
+3>  Оптимизирующий компилятор Microsoft (R) C/C++ версии 19.16.27054 для x86
+3>  (C) Корпорация Майкрософт (Microsoft Corporation).  Все права защищены.
+3>  Экспериментальные функции предоставляются в качестве предварительной версии предложенных языковых функций,
+3>  и мы будем рады получить от вас отзывы об ошибках и предложения по улучшению. Тем не менее
+3>  обратите внимание, что эти экспериментальные функции являются нестандартными и предоставляются "как есть", без
+3>  поддержки, а также могут быть изменены или удалены без уведомления. Сведения см. по адресу
+3>  http://go.microsoft.com/fwlink/?LinkID=691081.
+3>  cl /c /Zi /Wall /WX- /diagnostics:caret /MP /O2 /Oi /Oy- /D WIN32 /D NDEBUG /D _CONSOLE /D _M_IX86_FP=2 /D _USING_V110_SDK71_ /D _CRT_SECURE_NO_DEPRECATE /D USE_SND_EXTERNAL_BUFFER /D _PREFIX_ /D _NO_CRT_STDIO_INLINE /GF /Gm- /MT /GS- /Gy /fp:precise /permissive- /Zc:wchar_t /Zc:forScope /Zc:inline /Zc:rvalueCast /GR- /std:c++latest /Yc"std.h" /Fp"unreal\Win32\Release\unreal.pch" /Fo"unreal\Win32\Release\\" /Fd"unreal\Win32\Release\vc141.pdb" /Gd /TP /wd4061 /wd4062 /wd4146 /wd4191 /wd4200 /wd4201 /wd4310 /wd4458 /wd4459 /wd4464 /wd4514 /wd4577 /wd4626 /wd4668 /wd4820 /wd5045 /FIstd.h /analyze- /FC /errorReport:none -Zc:externConstexpr -constexpr:steps20000000  -experimental:external -external:anglebrackets -external:W0 -Zo -Zf -Zc:externConstexpr -constexpr:steps20000000  -experimental:external -external:anglebrackets -experimental:preprocessor -external:W0 -Zo -Zf -Zc:threadSafeInit- ..\std.cpp
+3>  std.cpp
+3>c:\program files (x86)\windows kits\10\include\10.0.17763.0\shared\wtypes.h(745): message :  в расширении макроса "_VARIANT_BOOL"
+3>c:\program files (x86)\windows kits\10\include\10.0.17763.0\shared\wtypes.h(745): message : #define _VARIANT_BOOL    /##/
+3>c:\program files (x86)\windows kits\10\include\10.0.17763.0\um\oaidl.h(487,17): error C2059:  синтаксическая ошибка: /
+3>c:\program files (x86)\windows kits\10\include\10.0.17763.0\um\oaidl.h(487,17): error C2059:                 _VARIANT_BOOL bool;
+3>c:\program files (x86)\windows kits\10\include\10.0.17763.0\um\oaidl.h(487,17): error C2059:                 ^
+3>c:\program files (x86)\windows kits\10\include\10.0.17763.0\um\oaidl.h(487,35): error C2238:  непредвиденные лексемы перед ";"
+3>c:\program files (x86)\windows kits\10\include\10.0.17763.0\um\oaidl.h(487,35): error C2238:                 _VARIANT_BOOL bool;
+3>c:\program files (x86)\windows kits\10\include\10.0.17763.0\um\oaidl.h(487,35): error C2238:                                   ^
+3>c:\program files (x86)\windows kits\10\include\10.0.17763.0\shared\wtypes.h(745): message :  в расширении макроса "_VARIANT_BOOL"
+3>c:\program files (x86)\windows kits\10\include\10.0.17763.0\shared\wtypes.h(745): message : #define _VARIANT_BOOL    /##/
+3>c:\program files (x86)\windows kits\10\include\10.0.17763.0\um\oaidl.h(502,17): error C2059:  синтаксическая ошибка: /
+3>c:\program files (x86)\windows kits\10\include\10.0.17763.0\um\oaidl.h(502,17): error C2059:                 _VARIANT_BOOL *pbool;
+3>c:\program files (x86)\windows kits\10\include\10.0.17763.0\um\oaidl.h(502,17): error C2059:                 ^
+3>c:\program files (x86)\windows kits\10\include\10.0.17763.0\um\oaidl.h(502,37): error C2238:  непредвиденные лексемы перед ";"
+3>c:\program files (x86)\windows kits\10\include\10.0.17763.0\um\oaidl.h(502,37): error C2238:                 _VARIANT_BOOL *pbool;
+3>c:\program files (x86)\windows kits\10\include\10.0.17763.0\um\oaidl.h(502,37): error C2238:                                     ^
+3>c:\program files (x86)\windows kits\10\include\10.0.17763.0\shared\wtypes.h(745): message :  в расширении макроса "_VARIANT_BOOL"
+3>c:\program files (x86)\windows kits\10\include\10.0.17763.0\shared\wtypes.h(745): message : #define _VARIANT_BOOL    /##/
+3>c:\program files (x86)\windows kits\10\include\10.0.17763.0\um\propidlbase.h(319,24): error C2059:  синтаксическая ошибка: /
+3>c:\program files (x86)\windows kits\10\include\10.0.17763.0\um\propidlbase.h(319,24): error C2059:         /* [case()] */ _VARIANT_BOOL bool;
+3>c:\program files (x86)\windows kits\10\include\10.0.17763.0\um\propidlbase.h(319,24): error C2059:                        ^
+3>c:\program files (x86)\windows kits\10\include\10.0.17763.0\um\propidlbase.h(319,42): error C2238:  непредвиденные лексемы перед ";"
+3>c:\program files (x86)\windows kits\10\include\10.0.17763.0\um\propidlbase.h(319,42): error C2238:         /* [case()] */ _VARIANT_BOOL bool;
+3>c:\program files (x86)\windows kits\10\include\10.0.17763.0\um\propidlbase.h(319,42): error C2238:                                          ^
+========== Сборка: успешно выполнено — 1 , со сбоем — 2, в актуальном состоянии — 0, пропущено — 0 ==========
+========== Сборка завершено в 8:48 и заняло 38,413 с ==========
