@@ -1,6 +1,7 @@
 #include <new>
 #include "i486.h"
 #include "devices.h"
+#include "vga.h"
 #include "pcem/adapter/pcem_memory.h"
 
 void i486_pcem_cpu_reset(void);
@@ -54,6 +55,7 @@ namespace i486
         pcem_memory_rebuild();
         i486_pcem_cpu_reset();
         devices::reset();
+        vga::init();
         return true;
     }
 
@@ -63,6 +65,7 @@ namespace i486
         ram = 0;
         ram_size = 0;
         devices::close();
+        vga::close();
         bios_loaded = false;
         memset(bios, 0xFF, sizeof(bios));
         pcem_memory_rebuild();
@@ -166,7 +169,9 @@ namespace i486
 
     unsigned char read8(unsigned int address)
     {
-        return read8_internal(address);
+        bool handled = false;
+        unsigned char value = vga::memory_read(address, &handled);
+        return handled ? value : read8_internal(address);
     }
 
     unsigned short read16(unsigned int address)
@@ -185,6 +190,9 @@ namespace i486
 
     void write8(unsigned int address, unsigned char value)
     {
+        bool handled = false;
+        vga::memory_write(address, value, &handled);
+        if (handled) return;
         if (address >= 0xFFFF0000U ||
             (address >= 0x000F0000U && address <= 0x000FFFFFU))
             return;
@@ -209,7 +217,9 @@ namespace i486
 
     unsigned char in8(unsigned short port)
     {
-        return devices::in8(port);
+        bool handled = false;
+        unsigned char value = vga::in8(port, &handled);
+        return handled ? value : devices::in8(port);
     }
 
     unsigned short in16(unsigned short port)
@@ -225,7 +235,9 @@ namespace i486
 
     void out8(unsigned short port, unsigned char value)
     {
-        devices::out8(port, value);
+        bool handled = false;
+        vga::out8(port, value, &handled);
+        if (!handled) devices::out8(port, value);
     }
 
     void out16(unsigned short port, unsigned short value)
