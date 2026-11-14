@@ -21,13 +21,13 @@ This file is the acceptance checklist for every i486 change. Update it when a ph
 | Area | Observed result | Status |
 |---|---|---|
 | BIOS PIT2 calibration | Latest supplied log reaches `AH=00`, `ZF=1`, then continues at `F000:FA27`. | PASS for this observed calibration path |
-| BIOS later control flow | Log reaches `F000:E1B6` (`HLT`). Why BIOS reaches this instruction is not yet established. | FAIL / unresolved |
+| BIOS later control flow | Freshly re-read branch log reaches `F000:E1B6` (`HLT`). Trace shows `F000:E5B4 DEC SI` changes `SI=0000` to `FFFF`; `JS` at `E5B5` branches to `E5BD` (`RET`), which returns to `E1B6`. Exact caller condition that produced `SI=0000` is still unresolved. | FAIL / unresolved |
 | VGA memory aperture | Latest log reports `A000_WRITES=0`, `B000_WRITES=0`, `B800_WRITES=0`. | NOT TESTED by BIOS; no guest video-memory write observed |
 | BIOS video mode | Latest log reports `BDA_MODE=00`. | NOT PASS; expected mode transition not observed |
 | Display output | No BIOS-generated text or graphics has been demonstrated in the supplied run. | NOT TESTED |
 | PCem parity | Source-level reference is available, but the complete failing BIOS path has not yet been shown equivalent. | IN PROGRESS |
 
-Important interpretation: reaching HLT is an observation, not a diagnosis. Do not call it a successful boot or an infinite loop without proving the control-flow reason and expected PCem behavior.
+Important interpretation: reaching HLT is an observation, not a diagnosis. The latest trace proves the immediate return path into HLT, but not why the caller supplied `SI=0000` or whether the resulting BIOS HALT is expected. Do not call it a successful boot or an infinite loop without proving the control-flow reason and expected PCem behavior.
 
 ## Phase 1 — Reset and BIOS mapping
 
@@ -80,11 +80,13 @@ Acceptance:
 - [ ] Disassemble the exact BIOS image used by the run and identify the instruction sequence surrounding the observed HLT.
 - [ ] Capture the full CPU state at the HLT: CS:EIP, EFLAGS, general registers, segment registers, CR0, stack pointer, and relevant memory.
 - [ ] Trace the immediately preceding branch/call/return chain and stack contents.
-- [ ] Determine from PCem's matching BIOS/machine configuration whether this HLT is expected, an idle wait, or an erroneous path.
+- [ ] Determine from PCem's matching BIOS/machine configuration whether this HLT is expected, an idle wait, or an erroneous path. Project130 contains the same `bios/27c64d.bin` blob (SHA-1 `ebeaaaded91f9d930b1daf65e48b7ab757b9b42f`) and a source `bios/bios.asm` with a `HALT: HLT` target used by CPU flag tests; exact address-to-source mapping and the branch condition still need proof.
 - [ ] Identify which interrupt, device event, or BIOS condition should resume execution, if any.
 - [ ] Compare the exact BIOS bytes and execution state with the PCem reference; do not infer intent from the address alone.
 
-Required evidence: disassembly with byte offsets, a trace of at least 100 instructions before HLT, stack dump, and matching PCem trace. Until these exist, this checkpoint remains unresolved and no workaround is accepted.
+Latest binary evidence: ROM bytes at offset `05AF` (`F000:E5AF`) are `B9 00 50 E2 FE 4E 78 06 ... C3`: `MOV CX,5000; LOOP`; then `DEC SI; JS +6`; then `RET` at `E5BD`. Runtime shows `SI=0000` before DEC and `SI=FFFF` after, so the signed branch is taken and RET returns to `F000:E1B6`. HLT snapshot: `SS:SP=F000:E1B5`, `IF=0`, `PIC_PENDING=0`, `CR0=60000010`. The 228-entry HLT trace is a backward trace, not the required forward trace. Still missing: stack contents, the caller's setup of SI, forward trace around the caller, and a matching PCem runtime trace. Therefore Phase 4 remains unresolved.
+
+Required evidence: disassembly with byte offsets, a forward trace of at least 100 instructions before HLT, stack dump, and matching PCem trace. Until these exist, this checkpoint remains unresolved and no workaround is accepted.
 
 ## Phase 5 — VGA initialization and memory access
 
@@ -118,7 +120,8 @@ Append one entry per change; never overwrite an earlier result.
 
 | Date | Commit | Hypothesis / PCem mismatch | Files changed | Build | Runtime evidence | Scenario result |
 |---|---|---|---|---|---|---|
-| 2026-11-14 | baseline: branch `feature/i486dx-bootstrap` | Current log reaches HLT at F000:E1B6 after PIT2 calibration; cause not yet proven. | — | Not recorded here | Log: 10.17 MB / 109,112 lines; PIT2 calibration completes; no A0000h/B0000h/B8000h writes; BDA mode 00h. | Phase 4 unresolved; Phase 5 not reached |
+| 2026-11-14 | baseline: branch `feature/i486dx-bootstrap` | Current log reaches HLT at F000:E1B6 after PIT2 calibration; latest trace proves DEC SI -> JS -> RET into HLT, but not caller's reason for SI=0. | — | Not recorded here | Log blob `50d361e9ccc1e7e9ddb7c4b9faad0d9dfe0cfadb`, 10.17 MB / 109,112 lines; PIT2 calibration completes; HLT snapshot and 228-entry backward trace present; no A0000h/B0000h/B8000h writes; BDA mode 00h. Project130 has identical BIOS blob SHA. | Phase 4 unresolved (narrowed); Phase 5 not reached |
+| 2026-11-14 | `608c848` follow-up evidence update (this commit) | No code change. Recorded exact BIOS byte/branch path and remaining missing evidence. | `i486/IMPLEMENTATION_SCENARIO.md` | Not run (documentation only) | Re-read current log and BIOS blob; matched Project130 BIOS SHA. | Phase 4 still unresolved; no fix claimed |
 
 ## Required format for future commits
 
