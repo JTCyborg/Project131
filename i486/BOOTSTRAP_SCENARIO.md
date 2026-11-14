@@ -96,3 +96,8 @@ Observed in `spectrum_out.txt`, blob SHA `e030641b6b53fef02e5bcede1ae4b7edb5fe9e
 - Next diagnostic action: reduce/rate-limit repetitive per-iteration `BIOS-POLL` / `BIOS-LOOPE` logging (retain first/last samples and periodic CX checkpoints), and emit a compact CPU checkpoint after the delay loop. Then inspect subsequent POST and VGA activity. No further PPI behavior change is justified by this log.
 
 Build/runtime verification of source changes remains pending.
+
+
+## Diagnostic capture extension (2026-11-14)
+
+Commit `57aa405584a401f54d9b79ead5a74d46229c1a3e` raises the per-run i486 diagnostic budget from 256 KiB to 2 MiB and updates the suppression marker. This is a diagnostic-only change: CPU/device behavior is unchanged. It is intended to retain the BIOS trace through the `F000:FA18` delay and expose the following POST/VGA activity in the next run. Build/runtime are not verified here.
