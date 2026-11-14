@@ -335,6 +335,39 @@ unsigned int i486_pcem_execute_instructions(unsigned int instruction_budget)
         pccache = 0xFFFFFFFFU;
         cycles = 0x7fffffff;
 
+        /*
+         * The first dispatch must start exactly at the 27C64D reset target.
+         * Refuse to execute zero-filled expansion RAM if the host reset path
+         * or segment state has overwritten the bootstrap transfer.
+         */
+        static int first_fetch_validated = 0;
+        if (!first_fetch_validated)
+        {
+                uint32_t first_physical;
+                uint32_t first_fetch;
+
+                if (CS != 0xF000 || cs != 0x000F0000U || cpu_state.pc != 0x0000E05BU)
+                {
+                        pclog("[I486] BOOT STATE INVALID: CS=%04X BASE=%08X EIP=%08X",
+                              CS, cs, cpu_state.pc);
+                        return 0;
+                }
+
+                first_physical = cs + cpu_state.pc;
+                first_fetch = fastreadl(first_physical);
+                if ((first_fetch & 0xFFU) != 0xFAU)
+                {
+                        pclog("[I486] BIOS FETCH INVALID: PHYS=%08X DWORD=%08X EXPECTED=FAxxxxxx",
+                              first_physical, first_fetch);
+                        return 0;
+                }
+
+                first_fetch_validated = 1;
+                pclog("[I486] BIOS FETCH VERIFIED: CS=%04X BASE=%08X EIP=%08X PHYS=%08X BYTE=%02X",
+                      CS, cs, cpu_state.pc, first_physical, first_fetch & 0xFFU);
+                pccache = 0xFFFFFFFFU;
+        }
+
         while (executed < instruction_budget)
         {
                 uint32_t physical;
