@@ -585,12 +585,12 @@ static uint8_t device_in8(uint16_t port)
     if(port==0x63) return ppi_control;
 
     if (port==0x61) {
-        /* IBM XT PPI port B: bits 0-3 are system control, bit 4 is the
-         * refresh toggle, and bit 5 is the 8253 channel-2 OUT input.
-         * The PIT owns OUT; it must not be exposed on PPI port C (62h).
+        /* Match Project130/PCem keyboard_xt_read(): port 61h reads back
+         * the complete PPI port-B latch written by the BIOS.  PIT channel-2
+         * OUT and the speaker status are exposed through the PCem-compatible
+         * port-62 path, not synthesized into this readback value.
          */
-        return (uint8_t)((system_control_b&0x0F) | system_refresh_phase |
-            (pit[2].output ? 0x20 : 0));
+        return system_control_b;
     }
     if (port==0x62) {
         /* PCem keyboard_xt_read(): port 62h reports the selected video
