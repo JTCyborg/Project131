@@ -1,5 +1,6 @@
 #include <new>
 #include "i486.h"
+#include "devices.h"
 #include "pcem/adapter/pcem_memory.h"
 
 void i486_pcem_cpu_reset(void);
@@ -52,6 +53,7 @@ namespace i486
         bios_loaded = false;
         pcem_memory_rebuild();
         i486_pcem_cpu_reset();
+        devices::reset();
         return true;
     }
 
@@ -60,6 +62,7 @@ namespace i486
         delete[] ram;
         ram = 0;
         ram_size = 0;
+        devices::close();
         bios_loaded = false;
         memset(bios, 0xFF, sizeof(bios));
         pcem_memory_rebuild();
@@ -69,6 +72,7 @@ namespace i486
     {
         // Reset CPU registers and hidden segment state; RAM and BIOS persist.
         i486_pcem_cpu_reset();
+        devices::reset();
     }
 
     bool load_bios(const char *path)
@@ -205,16 +209,7 @@ namespace i486
 
     unsigned char in8(unsigned short port)
     {
-        static unsigned int trace_count = 0;
-        const unsigned char value = 0xFF;
-        if (trace_count < 128)
-        {
-            char message[96];
-            sprintf(message, "[I486] IO IN8 #%u PORT=%04X VALUE=%02X",
-                ++trace_count, port, value);
-            log(message);
-        }
-        return value;
+        return devices::in8(port);
     }
 
     unsigned short in16(unsigned short port)
@@ -231,14 +226,7 @@ namespace i486
 
     void out8(unsigned short port, unsigned char value)
     {
-        static unsigned int trace_count = 0;
-        if (trace_count < 128)
-        {
-            char message[96];
-            sprintf(message, "[I486] IO OUT8 #%u PORT=%04X VALUE=%02X",
-                ++trace_count, port, value);
-            log(message);
-        }
+        devices::out8(port, value);
     }
 
     void out16(unsigned short port, unsigned short value)
