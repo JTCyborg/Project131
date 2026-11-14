@@ -15,9 +15,17 @@
 #include "../../i486.h"
 #include <string.h>
 #include "../x86.h"
+/* These headers declare globals consumed by the C opcode-table TU.
+ * Preserve C language linkage for their declarations in this C++ adapter. */
+#ifdef __cplusplus
+extern "C" {
+#endif
 #include "../x86_flags.h"
-#include "../x87.h"
 #include "../x87_timings.h"
+#ifdef __cplusplus
+}
+#endif
+#include "../x87.h"
 
 extern "C" {
 x86seg gdt, ldt, idt, tr;
