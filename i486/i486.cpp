@@ -205,8 +205,16 @@ namespace i486
 
     unsigned char in8(unsigned short port)
     {
-        (void)port;
-        return 0xFF;
+        static unsigned int trace_count = 0;
+        const unsigned char value = 0xFF;
+        if (trace_count < 128)
+        {
+            char message[96];
+            sprintf(message, "[I486] IO IN8 #%u PORT=%04X VALUE=%02X",
+                ++trace_count, port, value);
+            log(message);
+        }
+        return value;
     }
 
     unsigned short in16(unsigned short port)
@@ -223,8 +231,14 @@ namespace i486
 
     void out8(unsigned short port, unsigned char value)
     {
-        (void)port;
-        (void)value;
+        static unsigned int trace_count = 0;
+        if (trace_count < 128)
+        {
+            char message[96];
+            sprintf(message, "[I486] IO OUT8 #%u PORT=%04X VALUE=%02X",
+                ++trace_count, port, value);
+            log(message);
+        }
     }
 
     void out16(unsigned short port, unsigned short value)
