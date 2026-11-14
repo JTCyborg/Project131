@@ -188,6 +188,30 @@ void fatal(const char *format, ...);
 #define CLOCK_CYCLES(c) cycles -= (c)
 #define CLOCK_CYCLES_ALWAYS(c) cycles -= (c)
 
+/* Fixed Intel i486DX/33 CPU feature compatibility from PCem cpu.h.
+ * The 486DX has no RDTSC, MSR, MMX, CR4, VME, CX8, 3DNow or SYSCALL.
+ * Keep the opcode handlers compiled, but make unsupported instructions
+ * take their normal #UD path through cpu_has_feature().
+ */
+#define CPU_FEATURE_RDTSC   (1 << 0)
+#define CPU_FEATURE_MSR     (1 << 1)
+#define CPU_FEATURE_MMX     (1 << 2)
+#define CPU_FEATURE_CR4     (1 << 3)
+#define CPU_FEATURE_VME     (1 << 4)
+#define CPU_FEATURE_CX8     (1 << 5)
+#define CPU_FEATURE_3DNOW   (1 << 6)
+#define CPU_FEATURE_SYSCALL (1 << 7)
+
+static inline int cpu_has_feature(int feature)
+{
+    (void)feature;
+    return 0;
+}
+
+/* Reached only after an MSR feature check; retained as link-safe stubs. */
+static inline void cpu_RDMSR(void) {}
+static inline void cpu_WRMSR(void) {}
+
 /* Original PCem opcode handlers and tables, including integrated x87. */
 #include "386_ops.h"
 
