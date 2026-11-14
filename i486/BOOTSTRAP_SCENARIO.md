@@ -125,3 +125,12 @@ Commit `b6a35fb1fe426193a760354b7f933a2c44def823` changes BIOS loading for the c
 - Other BIOS image sizes and any image whose byte does not match the observed HLT are unchanged.
 
 This is an intentional CPU-self-test bypass for the current video bring-up milestone. It is not a CPU-core fix and does not claim that VGA output is already working. Next runtime should inspect actual writes to VGA ports `3C0-3DF` and video memory `A0000/B8000`.
+
+
+## XT PPI port 62 speaker-input polling fix (2026-11-14)
+
+- Latest runtime log confirms the CPU-test HLT bypass is active.
+- BIOS reaches the polling loop at F000:FA18-FA1C: IN AL,62h / TEST AL,20h / LOOPE.
+- Project130/PCem `PCem/keyboard_xt.c::keyboard_xt_read()` returns bit 5 from `ppispeakon`; Project131 incorrectly forced bit 5 low.
+- `i486/devices.cpp` now returns `video_status | (ppispeakon ? 0x20 : 0)`, preserving VGA status bits and restoring the PCem speaker-input behavior.
+- Expected effect: the BIOS can leave the FA18-FA1C wait loop when the speaker-input bit is asserted and continue POST. VGA register writes/framebuffer activity remain UNVERIFIED until the next runtime log.
