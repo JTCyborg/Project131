@@ -459,6 +459,30 @@ unsigned int i486_pcem_execute_instructions(unsigned int instruction_budget)
                 }
                 ++executed;
 
+                /* The BIOS speaker-calibration helper at F000:E5A0
+                 * preserves the caller's AX in SI, then decrements SI after
+                 * calibration. A negative result takes the RET path to the
+                 * terminal CLI/HLT at E1B5. Record the input and decision so
+                 * the next trace identifies why the BIOS rejects POST.
+                 */
+                if (CS == 0xF000 && cpu_state.oldpc == 0x0000E5A5U)
+                {
+                        pclog("[I486][BIOS-POST-CHECK] E5A5 XCHG AX,SI RESULT AX=%04X SI=%04X BX=%04X CX=%04X DX=%04X FLAGS=%08X NEXT=%08X",
+                              AX, SI, BX, CX, DX, cpu_state.flags, cpu_state.pc);
+                }
+                else if (CS == 0xF000 && cpu_state.oldpc == 0x0000E5B4U)
+                {
+                        pclog("[I486][BIOS-POST-CHECK] E5B4 DEC SI RESULT SI=%04X FLAGS=%08X SF=%u NEXT=%08X",
+                              SI, cpu_state.flags, NF_SET() ? 1U : 0U,
+                              cpu_state.pc);
+                }
+                else if (CS == 0xF000 && cpu_state.oldpc == 0x0000E5B5U)
+                {
+                        pclog("[I486][BIOS-POST-CHECK] E5B5 JS DECISION SI=%04X FLAGS=%08X SF=%u NEXT=%08X",
+                              SI, cpu_state.flags, NF_SET() ? 1U : 0U,
+                              cpu_state.pc);
+                }
+
                 /* Capture the BIOS PIT/system-status polling decision without
                  * flooding the log: this diagnostic is limited to the known
                  * POST routine at F000:FA0A-FA25.
