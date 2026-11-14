@@ -8,7 +8,7 @@
  */
 #include <stdint.h>
 #define I486_X86_STATE_DEFINE
-#include "x86.h"
+#include "../x86.h"
 #include <string.h>
 
 static void reset_segment(x86seg *segment, uint16_t selector, uint32_t base)
