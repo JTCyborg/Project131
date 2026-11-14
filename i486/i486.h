@@ -11,6 +11,7 @@ namespace i486
     bool init(unsigned long ram_size = DefaultRamSize);
     void close();
     void reset();
+    bool execute_reset_vector_bootstrap();
     bool load_bios(const char *path);
     bool bios_is_loaded();
 
