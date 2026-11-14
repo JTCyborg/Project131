@@ -40,24 +40,22 @@ Runtime build and test have not been run by this commit. The scenario remains **
 
 ## Latest runtime observation (2026-11-14)
 
-Observed in `spectrum_out.txt` on `feature/i486dx-bootstrap`:
+Observed in `spectrum_out.txt` (blob SHA `08fcbc39c6b08dce5d8d09e5474ae7cc1a1bda05`):
 
-- The BIOS does not reach HLT: no `HLT` or `[I486][PRE-HLT]` marker is present.
-- Execution repeatedly returns to `F000:FA18`: `IN AL,14h`, `TEST AL,imm8`, `LOOPZ`. The reported CX value decreases while the loop continues.
-- The log contains 2,865 `[I486][BIOS-POLL]` records. These records continue after the 256 KiB `i486::log()` suppression marker, so this diagnostic stream is not governed by that logger budget.
-- Source inspection confirms `i486::in8()` routes non-VGA reads to `devices::in8()`. In `devices.cpp`, port `14h` is not in the handled-port dispatch list; the default read result is `FFh`. This does not match the AL values shown in the BIOS-POLL excerpt (typically `14h`/`04h`). Therefore the BIOS-POLL AL field cannot yet be treated as proof of the actual value returned by the CPU I/O read.
+- The BIOS executes the polling loop at `F000:FA18` and does not reach HLT in this run.
+- The exact BIOS bytes at ROM offset `1A18h` are `E4 62 A8 20 E1 FA`: `IN AL,62h`; `TEST AL,20h`; `LOOPZ FA18h`. The loop is polling port `62h`, not `14h`.
+- The previous port-`14h` bootstrap stub was based on an incorrect port identification and did not affect this BIOS read. It has been removed.
+- The log shows port-`62h` values alternating between `04h` and `14h`, while bit 5 remains clear. Source inspection found that the current port-`62h` handler synthesized bit 4 on every read, which is not the PCem behavior for the VGA/FPU branch.
+- PCem reference: `PCem/keyboard_xt.c::keyboard_xt_read()` returns the video-status nibble and ORs bit 5 from `ppispeakon`; the speaker input is driven by PIT channel 2 via `PCem/pit.c::pit_speaker_timer()`.
+- The latest log includes PIT2 channel-2 OUT transitions before the BIOS polling loop, but the BIOS poll trace does not show bit 5 set. The precise PIT2/port-`62h` state during the loop still needs runtime capture.
 
-## Next required diagnostic
+## Current diagnostic patch
 
-- Locate the exact producer of `[I486][BIOS-POLL]` and establish whether its AL field is sampled before or after the IN instruction.
-- Add a bounded counter at that producer (maximum 64 BIOS-POLL records per run), without changing guest-visible I/O behavior.
-- Capture the actual value returned by `devices::in8(0x14)` at the CPU I/O boundary and compare the same instruction path against Project130/PCem.
-- Do not add a port-14h device response or alter BIOS/CPU semantics until the AL discrepancy is resolved.
+Commit `9ec71a4bb68f161b4c4590bee93483cfb0842fb7`:
 
-Runtime build/test for this observation has not been run in this environment.
+- Removes the incorrect port-`14h` stub and its dispatch entry.
+- Removes the synthetic bit-4 toggle from port `62h`.
+- Keeps the VGA/FPU status nibble and returns bit 5 strictly from the PIT2 speaker-input state.
+- Adds a one-shot-bounded trace (maximum 64 reads per device reset) containing the actual port-`62h` return value, port-`61h` latch, speaker input, PIT2 OUT, gate and phase remaining.
 
-## Temporary port-14h POST stub (2026-11-14)
-
-Commit `39931afb45b205592cc51328a4c474387bc78c04` adds a deterministic readback for port `14h`: `IN AL,14h` returns `20h`. The read is explicitly added to the device dispatch list. This sets bit 5 for the observed `TEST AL,20h` polling sequence so `LOOPZ` can leave the wait loop. It is a temporary bootstrap stub only; it does not model a real device and must be replaced after the corresponding Project130/PCem port behavior is verified.
-
-Runtime build/test remains pending; confirm that execution advances beyond `F000:FA18` and reaches the next BIOS stage.
+Build and runtime verification are pending. On the next run, inspect the first `[I486][PPI] IN 0062=` records and correlate them with PIT2 OUT transitions. Do not add another guessed port stub.
