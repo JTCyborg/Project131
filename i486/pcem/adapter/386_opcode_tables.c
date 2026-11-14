@@ -326,6 +326,7 @@ void i486_pcem_set_interpreter_tables(void)
  */
 extern void pclog(const char *format, ...);
 extern int i486_pcem_irq_pending(void);
+extern void i486_pcem_advance_cycles(unsigned int cpu_cycles);
 extern int i486_pcem_irq_acknowledge(void);
 extern void x86_int(int vector);
 
@@ -436,7 +437,20 @@ unsigned int i486_pcem_execute_instructions(unsigned int instruction_budget)
                 fetchdat >>= 8;
                 trap = cpu_state.flags & T_FLAG;
                 cpu_state.pc++;
-                x86_opcodes[(opcode | cpu_state.op32) & 0x3ff](fetchdat);
+                {
+                        /* Advance the XT PIT in lockstep with the actual
+                         * interpreter timing, so BIOS polling loops can see
+                         * channel-2 OUT transitions between IN instructions.
+                         */
+                        int cycles_before = cycles;
+                        x86_opcodes[(opcode | cpu_state.op32) & 0x3ff](fetchdat);
+                        {
+                                int consumed = cycles_before - cycles;
+                                if (consumed < 1) consumed = 1;
+                                if (consumed > 1000) consumed = 1000;
+                                i486_pcem_advance_cycles((unsigned int)consumed);
+                        }
+                }
                 ++executed;
 
                 /*
