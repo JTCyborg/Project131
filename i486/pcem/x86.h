@@ -124,9 +124,21 @@ typedef struct
 } x86_cpu_state;
 
 #ifdef I486_X86_STATE_DEFINE
+#ifdef __cplusplus
+extern "C" {
+#endif
 x86_cpu_state cpu_state;
+#ifdef __cplusplus
+}
+#endif
 #else
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern x86_cpu_state cpu_state;
+#ifdef __cplusplus
+}
+#endif
 #endif
 
 #define cpu_state_offset(MEMBER) ((uintptr_t)&cpu_state.MEMBER - (uintptr_t)&cpu_state - 128)
@@ -180,6 +192,9 @@ extern int cycles_main;
 
 #define IOPLp ((!(msw&1)) || (CPL<=IOPL))
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern x86seg gdt, ldt, idt, tr;
 
 extern uint32_t cr2, cr3, cr4;
@@ -348,9 +363,24 @@ typedef struct i486_cyrix_state
 } i486_cyrix_state;
 
 #ifdef I486_X86_STATE_DEFINE
+#ifdef __cplusplus
+extern "C" {
+#endif
 i486_cyrix_state cyrix;
+#ifdef __cplusplus
+}
+#endif
 #else
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern i486_cyrix_state cyrix;
+#ifdef __cplusplus
+}
+#endif
+#endif
+#ifdef __cplusplus
+}
 #endif
 
 #endif
