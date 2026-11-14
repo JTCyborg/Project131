@@ -152,6 +152,23 @@ namespace i486
                 log("[I486][BIOS] CPU self-test HLT at F000:E1B6 bypassed; continuing at CPU_OK F000:E1B7");
             }
 
+            /*
+             * Skip the fixed BIOS delay loop at F000:E5B2. The verified ROM
+             * bytes are B9 00 50 E2 FE (MOV CX,5000h / LOOP $-2).
+             * Replace only LOOP E2 FE with two NOPs when the full signature
+             * matches. This preserves the following DEC SI / JS / RET path
+             * and does not alter CPU instruction semantics.
+             */
+            if (file_size == 8192 &&
+                bios[0xE5AF] == 0xB9 && bios[0xE5B0] == 0x00 &&
+                bios[0xE5B1] == 0x50 && bios[0xE5B2] == 0xE2 &&
+                bios[0xE5B3] == 0xFE)
+            {
+                bios[0xE5B2] = 0x90;
+                bios[0xE5B3] = 0x90;
+                log("[I486][BIOS] F000:E5B2 fixed delay loop (MOV CX,5000h/LOOP -2) bypassed");
+            }
+
             bios_loaded = true;
 
             char message[128];
