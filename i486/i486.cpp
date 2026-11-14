@@ -193,16 +193,16 @@ namespace i486
 
     unsigned short read16(unsigned int address)
     {
-        return (unsigned short)(read8_internal(address) |
-            ((unsigned short)read8_internal(address + 1U) << 8));
+        return (unsigned short)(read8(address) |
+            ((unsigned short)read8(address + 1U) << 8));
     }
 
     unsigned int read32(unsigned int address)
     {
-        return (unsigned int)read8_internal(address) |
-            ((unsigned int)read8_internal(address + 1U) << 8) |
-            ((unsigned int)read8_internal(address + 2U) << 16) |
-            ((unsigned int)read8_internal(address + 3U) << 24);
+        return (unsigned int)read8(address) |
+            ((unsigned int)read8(address + 1U) << 8) |
+            ((unsigned int)read8(address + 2U) << 16) |
+            ((unsigned int)read8(address + 3U) << 24);
     }
 
     void write8(unsigned int address, unsigned char value)
