@@ -2,6 +2,7 @@
 
 #include "emul.h"
 #include "i486/i486.h"
+#include "i486/vga.h"
 #include "vars.h"
 #include "config.h"
 #include "dx.h"
