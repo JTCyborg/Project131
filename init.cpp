@@ -135,9 +135,16 @@ void init_all(int argc, char **argv)
    set_priority();
    applyconfig();
    if (i486::init())
-      printf("i486DX/33 module initialized: reset vector FFFFFFF0h (BIOS not loaded)\n");
+   {
+      printf("i486DX/33 module initialized: reset vector FFFFFFF0h (BIOS not loaded)\\n");
+      i486::log("[I486] module initialized");
+      i486::log("[I486] RESET CS=F000 EIP=FFF0 PHYS=FFFFFFF0");
+   }
    else
-      printf("warning: i486DX module initialization failed\n");
+   {
+      printf("warning: i486DX module initialization failed\\n");
+      i486::log("[I486] ERROR: module initialization failed");
+   }
    main_reset();
    autoload();
    init_bpx();
