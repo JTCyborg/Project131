@@ -125,6 +125,8 @@ Append one entry per change; never overwrite an earlier result.
 
 | 2026-11-14 | `b1d792f` | User-requested BIOS polling stub: port `0034h` returns stable `00h` so `TEST AL,08h` sees bit 3 clear and `LOOPNZ` exits. This is an explicit compatibility workaround, not a PCem-equivalent hardware model. | `i486/devices.cpp` | Not run here | Source change only; runtime/build evidence pending. | UNVERIFIED; inspect next `spectrum_out.txt` for progress beyond `F000:FA0F` and confirm no repeated calibration loop. |
 
+| 2026-11-14 | `9745007` | Latest `spectrum_out.txt` (4,420,671 bytes; 56,997 lines) passes the first polling loop at `F000:FA0D` but remains in the second `LOOPE` loop at `F000:FA18–FA1C`. Read values alternate `04h/14h`; XT PPI port-B readback lacks bit 3. Added explicit BIOS-ready stub: port `61h` returns `system_control_b | 08h`. | `i486/devices.cpp` | Not run here | Source change only; runtime/build evidence pending. | UNVERIFIED; next log must leave `FA18–FA1C` and proceed through POST. |
+
 ## Required format for future commits
 
 For every proposed commit, record:
