@@ -772,6 +772,7 @@
     <ClCompile Include="..\i486\pcem\adapter\pcem_cpu_globals.cpp" />
     <ClCompile Include="..\i486\pcem\adapter\386_opcode_tables.c">
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <ForcedIncludeFiles></ForcedIncludeFiles>
       <CompileAs>CompileAsC</CompileAs>
     </ClCompile>
     <ClCompile Include="..\emulkeys.cpp" />
