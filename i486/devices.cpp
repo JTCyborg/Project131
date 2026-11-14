@@ -206,7 +206,7 @@ static bool pic_has_pending() {
 static int pic_first(uint8_t bits) { for(int i=0;i<8;i++) if(bits&(1U<<i)) return i; return -1; }
 static int pic_acknowledge() {
     uint8_t pending=pic_pending_bits(pic_master);
-    if(pic_pending_bits(pic_slave)) pending|=0x04;
+    if(pic_pending_bits(pic_slave) && !(pic_master.imr&0x04)) pending|=0x04;
     int irq=pic_first(pending); if(irq<0) return -1;
     pic_master.irr&=(uint8_t)~(1U<<irq);
     if(!pic_master.auto_eoi) pic_master.isr|=(uint8_t)(1U<<irq);
