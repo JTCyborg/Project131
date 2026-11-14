@@ -13,6 +13,7 @@
 #include <stdio.h>
 #include <fenv.h>
 #include "../../i486.h"
+#include "../../devices.h"
 #include <string.h>
 #include "../x86.h"
 /* These headers declare globals consumed by the C opcode-table TU.
