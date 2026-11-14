@@ -39,7 +39,7 @@ static unsigned int io_trace_count;
  */
 static uint8_t system_control_b;
 static uint8_t system_refresh_phase;
-static uint8_t system_control_a = 0x0E; /* XT system-status inputs; bit 5 is PIT channel 2 OUT */
+static uint8_t system_control_a = 0x2E; /* XT system-status inputs; bit 5 high means no I/O-channel-check fault */
 static unsigned int port62_read_count;
 static void trace(const char *s) { i486::log(s); }
 
@@ -582,8 +582,9 @@ static uint8_t device_in8(uint16_t port)
             (pit[2].output ? 0x20 : 0));
     }
     if (port==0x62) {
-        /* PPI port C is the system-status input port. Keep its input pins
-         * independent of PIT channel 2; PIT2 OUT is wired to port B bit 5.
+        /* PPI port C is the system-status input port. Bit 5 is the
+         * active-high I/O-channel-check status (no fault when set).
+         * PIT2 OUT remains on port B bit 5 (61h).
          */
         const uint8_t value = system_control_a;
         if (port62_read_count < 32 || (port62_read_count && (port62_read_count & 0x3FFFU) == 0)) {
@@ -684,7 +685,7 @@ void reset()
 {
     system_control_b = 0;
     system_refresh_phase = 0;
-    system_control_a = 0x0E;
+    system_control_a = 0x2E;
     pic_reset(); pit_reset(); dma_reset(); ppi_control=0x9B; ppi_port_b=0; ppi_port_c=0x20;
     uart_reset();
     memset(&lpt1, 0, sizeof(lpt1));
