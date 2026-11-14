@@ -15,6 +15,9 @@ static uint8_t vram[256 * 1024];
 static uint8_t seq[5], gc[9], crtc[0x19], attr[32], dac[256][3];
 static uint8_t seq_index, gc_index, crtc_index, attr_index, dac_write_index, dac_component;
 static uint8_t attr_data_phase, status_toggle, dac_mask = 0xFF;
+/* IBM CGA-compatible mode/color latches are decoded on VGA adapters too.
+ * The XT BIOS writes 3D8h/3B8h before probing and selecting the display. */
+static uint8_t cga_mode_control, cga_color_select;
 static HWND window_handle;
 static unsigned long a000_write_count, b000_write_count, b800_write_count, logged_video_writes;
 static const char *ClassName = "PROJECT131_I486_VGA";
@@ -72,6 +75,7 @@ void init() {
     wc.lpszClassName=ClassName; RegisterClassExA(&wc);
     memset(vram,0,sizeof(vram)); memset(seq,0,sizeof(seq)); memset(gc,0,sizeof(gc));
     memset(crtc,0,sizeof(crtc)); memset(attr,0,sizeof(attr)); status_toggle=0;
+    cga_mode_control=0; cga_color_select=0;
     a000_write_count=0; b000_write_count=0; b800_write_count=0; logged_video_writes=0;
     for(unsigned int i=0;i<256;i++) for(unsigned int c=0;c<3;c++) dac[i][c]=(uint8_t)(i&63);
     window_handle=CreateWindowExA(0,ClassName,"PC Screen - i486 VGA",WS_OVERLAPPEDWINDOW,
@@ -158,6 +162,8 @@ uint8_t in8(uint16_t p,bool *handled) {
     case 0x3D4: case 0x3B4: return crtc_index;
     case 0x3D5: case 0x3B5: return crtc[crtc_index%0x19];
     case 0x3DA: case 0x3BA: attr_data_phase=0; status_toggle^=0x08; return status_toggle;
+    case 0x3D8: case 0x3B8: return cga_mode_control;
+    case 0x3D9: case 0x3B9: return cga_color_select;
     default: *handled=false; return 0xFF;
     }
 }
@@ -177,6 +183,10 @@ void out8(uint16_t p,uint8_t v,bool *handled) {
     case 0x3D4: case 0x3B4: crtc_index=v; break;
     case 0x3D5: case 0x3B5: crtc[crtc_index%0x19]=v; break;
     case 0x3DA: case 0x3BA: attr_data_phase=0; break;
+    /* These are not VGA sequencer/CRTC ports, but remain decoded by the
+       IBM-compatible VGA adapter as CGA mode/color aliases. */
+    case 0x3D8: case 0x3B8: cga_mode_control=v; break;
+    case 0x3D9: case 0x3B9: cga_color_select=v; break;
     default: *handled=false; break;
     }
 }
