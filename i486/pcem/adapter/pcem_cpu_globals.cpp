@@ -79,6 +79,7 @@ int insc;
 float mips, flops;
 int cpu_end_block_after_ins;
 int pic_intpending;
+int i486_halted;
 int tempc;
 int cycles_main;
 
