@@ -39,3 +39,19 @@ and Windows socket dependencies are not yet connected.
 - Keep PC-compatible I/O isolated within this module.
 - Import PCem code with its original copyright and license notices.
 - Do not import PCem motherboard, PCI/ISA, video, or dynarec subsystems.
+
+## Added PC-compatible devices
+
+- AT/PS/2 keyboard controller (8042) at 60h/64h. Controller self-test and
+  interface-test replies are provided; the keyboard is present and idle.
+  No key make/break scan codes are generated.
+- CMOS equipment bytes report one 1.44 MB floppy drive (A:).
+- Primary ATA/IDE master at 1F0h-1F7h and 3F6h. IDENTIFY DEVICE reports a
+  16 MiB LBA disk. Its initial contents are all zero (no MBR, partitions,
+  filesystem, or formatting); writes are held in volatile emulator memory.
+- Floppy controller at 3F2h/3F4h/3F5h/3F7h reports drive A: but no inserted
+  medium. Disk-change is asserted and data commands return a no-data result.
+
+These devices are isolated inside the i486 module. Their IRQ outputs are not
+connected until the i486 interrupt-controller stage; BIOS polling/status paths
+are provided where applicable.
