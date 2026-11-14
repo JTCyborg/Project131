@@ -191,12 +191,11 @@ extern "C" void fatal(const char *format, ...)
     i486::log(message);
 }
 
-/* Isolated PCem port-I/O bridge. The module's current port map returns FFh
- * for reads and ignores writes; no UnrealSpeccy/ATM devices are touched.
+/* Isolated PCem port-I/O and interrupt bridges. No host ATM/Spectrum device
+ * is visible in the expansion PC address or I/O spaces.
  */
 extern "C" int i486_pcem_irq_pending(void) { return i486::devices::interrupt_pending() ? 1 : 0; }
 extern "C" int i486_pcem_irq_acknowledge(void) { return i486::devices::acknowledge_interrupt(); }
-extern "C" void i486_pcem_pit_advance(unsigned int cpu_cycles) { i486::devices::advance_cycles(cpu_cycles); }
 
 extern "C" uint8_t i486_pcem_in8(uint16_t port) { return i486::in8(port); }
 extern "C" uint16_t i486_pcem_in16(uint16_t port) { return i486::in16(port); }
