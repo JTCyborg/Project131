@@ -307,7 +307,7 @@ void x87_settag(uint16_t new_tag)
     unsigned int i;
     for (i = 0; i < 8; ++i)
     {
-        unsigned int index = (unsigned int)((cpu_state.TOP + (int)i) & 7);
+        unsigned int index = i;
         unsigned int tag = (new_tag >> (i * 2)) & 3;
         if (tag == 3)
             cpu_state.tag[index] = I486_TAG_EMPTY;
