@@ -103,8 +103,6 @@ void i486_pcem_cpu_core_init(void)
     cpu_cur_status = 0;
     pccache = 0xFFFFFFFFU;
     pccache2 = 0;
-    cgate16 = cgate32 = 0;
-    abrt_error = 0;
     insc = 0;
     mips = flops = 0.0f;
     cpu_end_block_after_ins = 0;
