@@ -173,21 +173,24 @@ namespace i486
             /*
              * Bring-up bypass for the ROM's repeating PIT calibration.
              * BIOS storage is a 64-KiB address image: F000:FA0A is indexed
-             * as 0xFA0A (not 0x1A0A). Redirect FA0A directly to FA4A.
-             * E9 3D 00 is a near relative JMP from FA0A to FA4A.
+             * as 0xFA0A (not 0x1A0A). The calibration routine ends by
+             * restoring PPI port 61h and jumping through DI. Preserve that
+             * epilogue: replace only LOOPNZ at FA11 with a short jump to
+             * FA27, which skips both PIT polling loops and calibration math.
+             * EB 14 is relative to FA13 and lands exactly at FA27.
              */
             if (file_size == 8192 &&
                 bios[0xFA0A] == 0xB9 && bios[0xFA0B] == 0x00 &&
                 bios[0xFA0C] == 0x10 && bios[0xFA0D] == 0xE4 &&
                 bios[0xFA0E] == 0x62 && bios[0xFA0F] == 0xA8 &&
-                bios[0xFA10] == 0x20 && bios[0xFA28] == 0xE4 &&
-                bios[0xFA29] == 0x61 && bios[0xFA30] == 0xFF &&
-                bios[0xFA31] == 0xE7)
+                bios[0xFA10] == 0x20 && bios[0xFA11] == 0xE0 &&
+                bios[0xFA12] == 0xFA && bios[0xFA27] == 0xE4 &&
+                bios[0xFA28] == 0x61 && bios[0xFA2F] == 0xFF &&
+                bios[0xFA30] == 0xE7)
             {
-                bios[0xFA0A] = 0xE9;
-                bios[0xFA0B] = 0x3D;
-                bios[0xFA0C] = 0x00;
-                log("[I486][BIOS] PIT calibration F000:FA0A bypassed; redirected execution to F000:FA4A");
+                bios[0xFA11] = 0xEB;
+                bios[0xFA12] = 0x14;
+                log("[I486][BIOS] PIT polling bypassed at F000:FA11; calibration epilogue retained at F000:FA27");
             }
 
             bios_loaded = true;
