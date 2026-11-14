@@ -17,6 +17,7 @@
 #include "fdd.h"
 #include "z80/tables.h"
 #include "dbgbpx.h"
+#include "vga_adapter.h"
 
 #include "util.h"
 
