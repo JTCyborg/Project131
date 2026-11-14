@@ -62,6 +62,40 @@ void i486_pcem_cpu_reset(void)
 
 
 /*
+ * The host's frame/reset path can clear the segment cache after startup.
+ * Re-establish the completed reset-vector transfer immediately before the
+ * first interpreter slice, but only while EIP still identifies its target.
+ */
+extern "C" bool i486_pcem_prepare_first_instruction(void)
+{
+    if (cpu_state.pc != 0x0000E05BU)
+        return false;
+
+    if (cpu_state.seg_cs.seg == 0xF000 &&
+        cpu_state.seg_cs.base == 0x000F0000U)
+        return true;
+
+    char message[160];
+    sprintf(message,
+        "[I486] BOOT STATE RESTORE: before CS=%04X BASE=%08X EIP=%08X",
+        cpu_state.seg_cs.seg, cpu_state.seg_cs.base, cpu_state.pc);
+    i486::log(message);
+
+    cpu_state.seg_cs.seg = 0xF000;
+    cpu_state.seg_cs.base = 0x000F0000U;
+    cpu_state.seg_cs.limit = 0xFFFF;
+    cpu_state.seg_cs.limit_raw = 0xFFFF;
+    cpu_state.seg_cs.limit_low = 0;
+    cpu_state.seg_cs.limit_high = 0xFFFF;
+    cpu_state.seg_cs.access = 0x9B;
+    cpu_state.seg_cs.access2 = 0;
+    cpu_state.seg_cs.checked = 1;
+
+    i486::log("[I486] BOOT STATE RESTORE: CS=F000 BASE=000F0000 EIP=0000E05B");
+    return true;
+}
+
+/*
  * First architectural instruction at the 486 reset vector.
  * This deliberately implements only the reset-vector FAR JMP bootstrap;
  * subsequent instructions must be dispatched by the PCem interpreter.
