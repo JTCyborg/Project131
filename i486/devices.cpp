@@ -9,6 +9,7 @@
 #include <string.h>
 #include "i486.h"
 #include "devices.h"
+#include "vga.h"
 
 namespace i486 { namespace devices {
 namespace {
@@ -531,6 +532,7 @@ void close() {}
 
 uint8_t in8(uint16_t port)
 {
+    if ((port>=0x3B0 && port<=0x3DF)) { bool handled=false; uint8_t value=i486::vga::in8(port,&handled); if(handled) return value; return 0xFF; }
     if (port==0x60 || port==0x61 || port==0x62 || port==0x64 || port==0x71 ||
         (port>=0x1F0 && port<=0x1F7) || port==0x3F2 || port==0x3F4 || port==0x3F5 || port==0x3F6 || port==0x3F7)
         return device_in8(port);
@@ -564,6 +566,7 @@ uint8_t in8(uint16_t port)
 
 void out8(uint16_t port, uint8_t value)
 {
+    if ((port>=0x3B0 && port<=0x3DF)) { bool handled=false; i486::vga::out8(port,value,&handled); return; }
     if (port==0x60 || port==0x61 || port==0x62 || port==0x64 || port==0x70 ||
         (port>=0x1F0 && port<=0x1F7) || port==0x3F2 || port==0x3F5 || port==0x3F6 || port==0x3F7) {
         device_out8(port,value); return;
