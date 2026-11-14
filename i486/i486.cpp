@@ -2,6 +2,7 @@
 #include "i486.h"
 #include "devices.h"
 #include "vga.h"
+extern "C" int i486_halted;
 #include "pcem/adapter/pcem_memory.h"
 
 void i486_pcem_cpu_reset(void);
@@ -170,7 +171,15 @@ namespace i486
          * keeps its real 1.193182 MHz rate despite the bounded instruction
          * budget used to keep the host responsive.
          */
-        unsigned int executed = i486_pcem_execute_instructions(instruction_budget);
+        static bool hlt_text_dumped = false;
+    unsigned int executed = i486_pcem_execute_instructions(instruction_budget);
+    if (i486_halted && !hlt_text_dumped)
+    {
+        vga::dump_text();
+        hlt_text_dumped = true;
+    }
+    else if (!i486_halted)
+        hlt_text_dumped = false;
         devices::advance_cycles(660000U);
         return executed;
     }
