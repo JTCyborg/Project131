@@ -188,4 +188,20 @@ namespace i486
     {
         return ram != 0;
     }
+
+    void log(const char *message)
+    {
+        if (!message || !*message)
+            return;
+
+        FILE *file = fopen("C:\\Temp\\spectrum_out.txt", "a");
+        if (!file)
+            return;
+
+        fputs(message, file);
+        const size_t length = strlen(message);
+        if (length == 0 || message[length - 1] != '\\n')
+            fputs("\\r\\n", file);
+        fclose(file);
+    }
 }
