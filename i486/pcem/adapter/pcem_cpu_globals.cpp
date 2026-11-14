@@ -44,8 +44,9 @@ uint8_t znptable8[256];
 uint16_t *mod1add[2][8];
 uint32_t *mod1seg[8];
 
-int cgate16, cgate32;
-uint32_t abrt_error;
+/* abrt_error and cgate16/cgate32 are owned by the segment/exception core
+ * (upstream x86seg.c); do not define them in this shared-state adapter.
+ */
 int insc;
 float mips, flops;
 int cpu_end_block_after_ins;
