@@ -717,6 +717,12 @@
     </Manifest>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <Content Include="..\i486\bios\27c64d.bin">
+      <TargetPath>i486\bios\27c64d.bin</TargetPath>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
     <ClCompile Include="..\atm.cpp" />
     <ClCompile Include="..\cheat.cpp" />
     <ClCompile Include="..\config.cpp" />

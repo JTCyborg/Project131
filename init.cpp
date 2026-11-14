@@ -107,6 +107,7 @@ void init_all(int argc, char **argv)
    cpu_info();
 
    char *config = nullptr, *i486_bios_path = nullptr;
+   char i486_bios_ini_path[FILENAME_MAX] = { 0 };
    char legacy = 0;
    for (int i = 0; i < argc; i++) {
       if (argv[i][0] != '/' && argv[i][0] != '-') continue;
@@ -133,6 +134,27 @@ void init_all(int argc, char **argv)
    video_permanent_tables();
    init_ie_help();
    load_config(config);
+   if (!i486_bios_path)
+   {
+      char configured_bios[FILENAME_MAX] = { 0 };
+      GetPrivateProfileString("I486", "BIOS", "i486\\bios\\27c64d.bin",
+         configured_bios, sizeof configured_bios, ininame);
+      if (configured_bios[0])
+      {
+         if ((configured_bios[1] == ':') || (configured_bios[0] == '\\' && configured_bios[1] == '\\') || configured_bios[0] == '/')
+            strcpy(i486_bios_ini_path, configured_bios);
+         else
+         {
+            strcpy(i486_bios_ini_path, ininame);
+            char *slash = strrchr(i486_bios_ini_path, '\\');
+            if (slash) slash[1] = 0;
+            else i486_bios_ini_path[0] = 0;
+            strncat(i486_bios_ini_path, configured_bios,
+               sizeof(i486_bios_ini_path) - strlen(i486_bios_ini_path) - 1);
+         }
+         i486_bios_path = i486_bios_ini_path;
+      }
+   }
    //make_samples();
    init_leds();
    init_tape();
