@@ -146,3 +146,5 @@ For every proposed commit, record:
 - **Scenario:** which checkboxes changed, and why the evidence is sufficient.
 
 A commit without this evidence is a source change, not a verified fix.
+
+| 2026-11-14 | latest runtime evidence `e030641` | Port-62 bit-5-low correction is confirmed by live trace: first `LOOPNZ` at `F000:FA0D` falls through (`AL=04h, ZF=1`). BIOS enters a distinct `LOOPZ` delay at `F000:FA18`, with CX decrementing; later `OUT 0061=8C` appears after log suppression, indicating progress beyond that loop. | No code change; scenario update only. | No build run. | Log blob SHA `e030641b6b53fef02e5bcede1ae4b7edb5fe9e09`; diagnostic cap reached before a post-delay CPU checkpoint; no VGA register/framebuffer writes confirmed. | First poll resolved; delay loop likely completed; POST/VGA still UNVERIFIED. Next: rate-limit poll tracing and capture CPU state immediately after delay. |
