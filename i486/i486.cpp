@@ -2,6 +2,8 @@
 #include "i486.h"
 #include "pcem/adapter/pcem_memory.h"
 
+void i486_pcem_cpu_reset(void);
+
 namespace i486
 {
     static unsigned char *ram = 0;
@@ -47,6 +49,7 @@ namespace i486
         memset(bios, 0xFF, sizeof(bios));
         bios_loaded = false;
         pcem_memory_rebuild();
+        i486_pcem_cpu_reset();
         return true;
     }
 
@@ -62,8 +65,8 @@ namespace i486
 
     void reset()
     {
-        // CPU architectural reset state is established by the PCem core.
-        // Platform reset intentionally preserves RAM and the BIOS image.
+        // Reset CPU registers and hidden segment state; RAM and BIOS persist.
+        i486_pcem_cpu_reset();
     }
 
     bool load_bios(const char *path)
