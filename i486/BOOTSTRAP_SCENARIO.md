@@ -113,3 +113,15 @@ Commit `b4abdaa63b4b985fbfa7c5153278c5e8accfae22` changes only diagnostic output
 - PCem reference `Project130/PCem/x86_ops_jump.h::opLOOP_w()` decrements CX and branches only while CX is nonzero; the reference behavior matches the expected finite loop. No CPU opcode behavior is changed.
 
 Next runtime check: confirm a summary reports the suppressed iterations, then inspect the following BIOS instruction address and VGA register/framebuffer activity. Build/runtime verification is pending; do not claim POST or VGA success yet.
+
+
+## Video bring-up: bypass CPU self-test HLT (2026-11-14)
+
+Commit `b6a35fb1fe426193a760354b7f933a2c44def823` changes BIOS loading for the current 8-KiB 27C64 image:
+
+- Runtime trace reaches opcode `F4` at `F000:E1B6` and stops before the BIOS video initialization code.
+- Reference source `Project130/bios/bios.asm` places the one-byte `HALT: HLT` immediately before `CPU_OK:`; the next byte is the normal POST continuation.
+- For an 8-KiB BIOS only, if the mapped byte at `F000:E1B6` is exactly `F4`, replace it with `90` (NOP). The CPU then falls through to `CPU_OK` at `F000:E1B7` and executes the BIOS chipset/video initialization path.
+- Other BIOS image sizes and any image whose byte does not match the observed HLT are unchanged.
+
+This is an intentional CPU-self-test bypass for the current video bring-up milestone. It is not a CPU-core fix and does not claim that VGA output is already working. Next runtime should inspect actual writes to VGA ports `3C0-3DF` and video memory `A0000/B8000`.
