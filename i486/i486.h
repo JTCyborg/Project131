@@ -12,6 +12,7 @@ namespace i486
     void close();
     void reset();
     bool execute_reset_vector_bootstrap();
+    unsigned int execute_instructions(unsigned int instruction_budget);
     bool load_bios(const char *path);
     bool bios_is_loaded();
 
