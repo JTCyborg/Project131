@@ -20,12 +20,6 @@ extern "C" {
 
 uint32_t abrt_error = 0;
 
-static void i486_raise_ud(void)
-{
-    cpu_state.abrt = ABRT_NONE;
-    x86_int(6);
-}
-
 static void i486_raise_gp(uint16_t error)
 {
     cpu_state.abrt = ABRT_GPF;
@@ -144,7 +138,7 @@ void pmodeiret(int is32)
     i486_raise_gp(0);
 }
 
-void x86_int(int vector)
+static void i486_deliver_real_interrupt(int vector, uint32_t return_pc)
 {
     uint32_t entry;
     uint16_t new_ip, new_cs;
@@ -167,7 +161,7 @@ void x86_int(int vector)
     flags_rebuild();
     i486_push16(cpu_state.flags);
     i486_push16(CS);
-    i486_push16((uint16_t)cpu_state.pc);
+    i486_push16((uint16_t)return_pc);
 
     cpu_state.flags &= (uint16_t)~(I_FLAG | T_FLAG);
     cpu_state.eflags &= (uint16_t)~(I_FLAG | T_FLAG);
@@ -177,9 +171,14 @@ void x86_int(int vector)
     i486_load_real_cs(new_cs);
 }
 
+void x86_int(int vector)
+{
+    i486_deliver_real_interrupt(vector, cpu_state.oldpc);
+}
+
 void x86_int_sw(int vector)
 {
-    x86_int(vector);
+    i486_deliver_real_interrupt(vector, cpu_state.pc);
 }
 
 int x86_int_sw_rm(int vector)
@@ -189,7 +188,7 @@ int x86_int_sw_rm(int vector)
         i486_raise_gp((uint16_t)(vector * 8 + 2));
         return 1;
     }
-    x86_int(vector);
+    i486_deliver_real_interrupt(vector, cpu_state.pc);
     return cpu_state.abrt ? 1 : 0;
 }
 
@@ -288,7 +287,7 @@ uint16_t x87_gettag(void)
     unsigned int i;
     for (i = 0; i < 8; ++i)
     {
-        unsigned int index = (unsigned int)((cpu_state.TOP + (int)i) & 7);
+        unsigned int index = i;
         uint16_t tag;
         if (cpu_state.tag[index] == I486_TAG_EMPTY)
             tag = 3;
