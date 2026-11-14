@@ -65,6 +65,7 @@ These files are unmodified reference imports from `JTCyborg/Project130`, path `P
 
 - `adapter/386_opcode_tables.c` — extracted opcode-table translation unit; based on PCem `386_dynarec.c` and `386.c`, with dynarec removed and i486 prefetch callbacks disabled.
 - `adapter/pcem_memory.h` — narrow memory/MMU interface required by the interpreter.
+- `adapter/pcem_memory.cpp` — initial identity-mapped RAM and BIOS lookup adapter; paging is not implemented yet.
 - `adapter/interpreter_tables.h` — declaration for fixed interpreter-table selection.
 
 These adapter files are not upstream files. The table translation unit is not included in the build yet and has not been compiled.

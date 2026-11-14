@@ -1,7 +1,7 @@
 #pragma once
 
 // Isolated platform interface for the Intel 486DX expansion module.
-// The CPU interpreter is imported from PCem in a later integration step.
+// The PCem opcode-table adapter is staged; the interpreter execution loop is not connected yet.
 
 namespace i486
 {

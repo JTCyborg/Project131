@@ -24,7 +24,11 @@ The PCem interpreter entry point is `exec386(int cycs)` in `386.c`. It dispatche
 
 PCem defines the interpreter opcode tables by including `386_ops.h` from `386_dynarec.c`, not from `386.c`. Importing that whole translation unit would also pull in the dynarec backend. Project131 now has a separate table translation unit at `i486/pcem/adapter/386_opcode_tables.c`. It reuses the PCem 386 addressing helpers and opcode handlers, selects the `ops_386` / `ops_386_0f` tables and integrated x87 tables, and disables the legacy 286/386 prefetch-queue callbacks.
 
-The table adapter is **not yet in either build system** and has not been compiled. Its narrow memory contract is declared in `i486/pcem/adapter/pcem_memory.h`; the next required work is the isolated RAM/MMU/lookup implementation and the remaining CPU platform hooks. Do not link it until those interfaces are implemented and verified.
+The table adapter is **not yet in either build system** and has not been compiled. Its narrow memory contract is declared in `i486/pcem/adapter/pcem_memory.h`.
+
+The first memory adapter is now implemented in `i486/pcem/adapter/pcem_memory.cpp` and included in both the Makefile and `msvc/unreal.vcxproj`. It builds 4-KiB direct lookup entries for module RAM, read-only low BIOS alias `F0000h–FFFFFh`, and high reset BIOS alias `FFFF0000h–FFFFFFFFh`. Slow reads/writes route through the isolated `i486::read/write` API. This stage supports identity-mapped real mode (and protected mode with paging disabled) only; page-table translation and page-fault reporting are still pending. The memory adapter has not yet been compiled in the user's environment.
+
+The next required work is the CPU state/reset/segment adapter and then the interpreter execution loop. Do not add the opcode-table translation unit to the build until the remaining PCem dependencies are isolated and verified.
 
 ## Reset-vector correction
 
