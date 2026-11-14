@@ -316,7 +316,7 @@ namespace i486
             return;
 
         /*
-         * The BIOS executes a 20,000-iteration delay at F000:E5B2
+         * The BIOS executes a 20,480-iteration delay at F000:E5B2
          * (LOOP -2). Logging every iteration consumes the entire diagnostic
          * budget before POST/VGA activity becomes visible. Keep the first
          * instruction sample and report how many subsequent iterations were
