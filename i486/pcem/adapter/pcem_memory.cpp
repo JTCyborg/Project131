@@ -7,7 +7,6 @@
  * inside the i486 module and never uses Spectrum/ATM memory.
  */
 
-#include "../../../std.h"
 #include "../../i486.h"
 #include "pcem_memory.h"
 
