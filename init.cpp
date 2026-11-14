@@ -106,12 +106,18 @@ void init_all(int argc, char **argv)
 //   printf("%s\n", __FUNCTION__);
    cpu_info();
 
-   char *config = nullptr, legacy = 0;
+   char *config = nullptr, *i486_bios_path = nullptr;
+   char legacy = 0;
    for (int i = 0; i < argc; i++) {
       if (argv[i][0] != '/' && argv[i][0] != '-') continue;
       if(!stricmp(argv[i] + 1, "i") && i + 1 < argc)
       {
           config = argv[i + 1];
+          i++;
+      }
+      else if(!stricmp(argv[i] + 1, "i486bios") && i + 1 < argc)
+      {
+          i486_bios_path = argv[i + 1];
           i++;
       }
       #ifdef MOD_9X
@@ -139,6 +145,16 @@ void init_all(int argc, char **argv)
       printf("i486DX/33 module initialized: reset vector FFFFFFF0h (BIOS not loaded)\n");
       i486::log("[I486] module initialized");
       i486::log("[I486] RESET CS=F000 EIP=FFF0 PHYS=FFFFFFF0");
+      if (i486_bios_path)
+      {
+         if (i486::load_bios(i486_bios_path))
+            printf("i486 BIOS loaded: %s\\n", i486_bios_path);
+         else
+         {
+            printf("warning: unable to load i486 BIOS: %s\\n", i486_bios_path);
+            i486::log("[I486] ERROR: BIOS load failed");
+         }
+      }
    }
    else
    {
