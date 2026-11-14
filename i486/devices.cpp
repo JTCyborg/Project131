@@ -591,9 +591,9 @@ static uint8_t device_in8(uint16_t port)
     if(port==0x63) return ppi_control;
 
     if (port==0x61) {
-        /* Match Project130/PCem keyboard_xt_read(): port 61h reads back
-         * the complete PPI port-B latch written by the BIOS. */
-        return system_control_b;
+        /* BIOS POST polling workaround: report the expected ready bit 3
+         * while preserving the PPI port-B latch's other bits. */
+        return (uint8_t)(system_control_b | 0x08);
     }
     if (port==0x62) {
         /*
