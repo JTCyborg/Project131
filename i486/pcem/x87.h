@@ -34,4 +34,10 @@ void x87_reset();
 #define X87_ROUNDING_UP      2
 #define X87_ROUNDING_CHOP    3
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 void codegen_set_rounding_mode(int mode);
+#ifdef __cplusplus
+}
+#endif
