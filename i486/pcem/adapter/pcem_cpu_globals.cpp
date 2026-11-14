@@ -196,6 +196,7 @@ extern "C" void fatal(const char *format, ...)
  * is visible in the expansion PC address or I/O spaces.
  */
 extern "C" int i486_pcem_irq_pending(void) { return i486::devices::interrupt_pending() ? 1 : 0; }
+extern "C" void i486_pcem_advance_cycles(unsigned int cpu_cycles) { i486::devices::advance_cycles(cpu_cycles); }
 extern "C" int i486_pcem_irq_acknowledge(void) { return i486::devices::acknowledge_interrupt(); }
 
 extern "C" uint8_t i486_pcem_in8(uint16_t port) { return i486::in8(port); }
