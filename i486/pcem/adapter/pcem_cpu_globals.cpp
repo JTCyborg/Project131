@@ -48,6 +48,10 @@ uint32_t *eal_r, *eal_w;
 
 int oldcpl;
 uint32_t oldss;
+
+/* Flat-segment hints referenced by PCem segment-load helpers. */
+int codegen_flat_ds = 0;
+int codegen_flat_ss = 0;
 int nmi_enable;
 int cpl_override;
 int fpucount;
