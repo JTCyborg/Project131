@@ -1,0 +1,134 @@
+# i486DX implementation and verification scenario
+
+Target: Project131, branch `feature/i486dx-bootstrap`.
+Reference: Project130 `PCem/` on `main`. PCem is the behavioral reference for the emulated PC-compatible CPU/device behavior; Project131 remains an isolated implementation and must not call the ATM/Z80 I/O handlers directly.
+
+This file is the acceptance checklist for every i486 change. Update it when a phase is completed, with the exact commit and test evidence. A code change is not considered complete merely because it compiles or produces a new log.
+
+## Rules of work
+
+1. Read the current Project131 implementation and the matching Project130/PCem implementation before changing behavior.
+2. Identify one concrete behavioral mismatch, cite both source locations/functions, and describe the expected observable difference.
+3. Make the smallest change that removes that mismatch. Do not add unrelated devices, guessed BIOS workarounds, fake success states, or skip BIOS instructions.
+4. Build the exact branch/commit. Record build result and warnings.
+5. Run the emulator from a clean reset and inspect the new `spectrum_out.txt`. Compare the relevant trace against this scenario and PCem.
+6. Mark a criterion **PASS** only when the runtime log or a reproducible test proves it. Use **FAIL** for a contradicted criterion and **NOT TESTED** when evidence is absent.
+7. Every implementation commit must be followed by a verification entry below. If build/runtime verification is unavailable, explicitly label the commit unverified and do not claim the bug is fixed.
+8. Do not change the Spectrum/ATM/Z80 subsystems to compensate for an i486 defect. Keep guest x86 IN/OUT inside the i486 module's own callbacks.
+
+## Current baseline (2026-11-14)
+
+| Area | Observed result | Status |
+|---|---|---|
+| BIOS PIT2 calibration | Latest supplied log reaches `AH=00`, `ZF=1`, then continues at `F000:FA27`. | PASS for this observed calibration path |
+| BIOS later control flow | Log reaches `F000:E1B6` (`HLT`). Why BIOS reaches this instruction is not yet established. | FAIL / unresolved |
+| VGA memory aperture | Latest log reports `A000_WRITES=0`, `B000_WRITES=0`, `B800_WRITES=0`. | NOT TESTED by BIOS; no guest video-memory write observed |
+| BIOS video mode | Latest log reports `BDA_MODE=00`. | NOT PASS; expected mode transition not observed |
+| Display output | No BIOS-generated text or graphics has been demonstrated in the supplied run. | NOT TESTED |
+| PCem parity | Source-level reference is available, but the complete failing BIOS path has not yet been shown equivalent. | IN PROGRESS |
+
+Important interpretation: reaching HLT is an observation, not a diagnosis. Do not call it a successful boot or an infinite loop without proving the control-flow reason and expected PCem behavior.
+
+## Phase 1 — Reset and BIOS mapping
+
+Reference Project131 files: `i486/i486.cpp`, `i486/pcem/adapter/pcem_cpu_state.cpp`, `i486/pcem/adapter/pcem_memory.cpp`.
+Reference PCem: matching reset and memory mapping implementation in Project130/PCem.
+
+Acceptance:
+- [ ] CPU reset state and hidden segment state match the selected i486 reset model.
+- [ ] First physical instruction fetch is from `FFFFFFF0h`; the reset vector bytes resolve to the expected BIOS bytes.
+- [ ] BIOS legacy mapping at `F0000h–FFFFFh` and top mapping at `FFFF0000h–FFFFFFFFh` are consistent.
+- [ ] BIOS is read-only from the guest.
+- [ ] RAM bounds and BIOS/RAM priority are tested at boundaries.
+- [ ] Log records reset CS:EIP, physical fetch address, bytes, and first decoded instruction.
+
+Required evidence: reset-vector byte trace plus a boundary read/write test. No BIOS boot claim based solely on successful module initialization.
+
+## Phase 2 — CPU execution and architectural state
+
+Reference Project131: `i486/pcem/` and adapter files.
+Reference PCem: Project130/PCem interpreter implementation.
+
+Acceptance:
+- [ ] Instruction decode, operand/address-size overrides, flags, segment loads, stack operations, near/far control transfers, and exceptions follow the imported PCem semantics.
+- [ ] Any adapter differences are isolated to explicit machine hooks.
+- [ ] Instruction-budget boundaries do not lose, duplicate, or reorder instructions.
+- [ ] HLT state and interrupt wake-up behavior match the selected interrupt model.
+- [ ] A deterministic instruction trace can be compared between Project131 and PCem for a short test sequence.
+
+Required evidence: register/flags/CS:EIP snapshots before and after representative instructions, including a far CALL/RETF and HLT case.
+
+## Phase 3 — System I/O, PIT and speaker path
+
+Reference Project131: `i486/devices.cpp`.
+Reference PCem: `PCem/pit.c`, `PCem/keyboard_xt.c`, plus the corresponding PPI/system-board implementation.
+
+Acceptance:
+- [ ] PIT control-word decoding, access mode, reload/null-count behavior, gate behavior, and modes 0–5 match PCem for the cases used by the BIOS.
+- [ ] PIT channel 2 OUT is reflected in the XT system-control/PPI read bit exactly as the reference requires.
+- [ ] Writes to port 61h and reads from port 62h are checked against the selected PCem machine model; do not conflate the two ports.
+- [ ] BIOS PIT2 calibration completes with the same observable result and a plausible timing count.
+- [ ] Timer advancement is deterministic with respect to executed CPU cycles; no host-time race is allowed to change guest-visible results.
+
+Required evidence: side-by-side PCem/Project131 traces for PIT programming, gate transitions, OUT transitions, port 61h writes, port 62h reads, and BIOS calibration result.
+
+## Phase 4 — BIOS control-flow checkpoint after calibration
+
+Known current trace: calibration completes (`AH=00`, `ZF=1`), BIOS proceeds through `F000:FA27`, later reaches `F000:E1B6` (`HLT`).
+
+Acceptance:
+- [ ] Disassemble the exact BIOS image used by the run and identify the instruction sequence surrounding the observed HLT.
+- [ ] Capture the full CPU state at the HLT: CS:EIP, EFLAGS, general registers, segment registers, CR0, stack pointer, and relevant memory.
+- [ ] Trace the immediately preceding branch/call/return chain and stack contents.
+- [ ] Determine from PCem's matching BIOS/machine configuration whether this HLT is expected, an idle wait, or an erroneous path.
+- [ ] Identify which interrupt, device event, or BIOS condition should resume execution, if any.
+- [ ] Compare the exact BIOS bytes and execution state with the PCem reference; do not infer intent from the address alone.
+
+Required evidence: disassembly with byte offsets, a trace of at least 100 instructions before HLT, stack dump, and matching PCem trace. Until these exist, this checkpoint remains unresolved and no workaround is accepted.
+
+## Phase 5 — VGA initialization and memory access
+
+Reference Project131: `i486/vga.cpp`, `i486/pcem/adapter/pcem_memory.cpp`.
+Reference PCem: VGA register/memory path in Project130/PCem, especially the matching VGA device and memory handlers. Do not assume that a simplified VGA stub is equivalent to PCem.
+
+Acceptance:
+- [ ] BIOS performs the expected VGA adapter detection and register programming.
+- [ ] Sequencer, graphics controller, CRTC, attribute controller, misc output, status-register flip-flop, and DAC behavior match the selected PCem VGA device for the BIOS path.
+- [ ] VGA aperture mapping honors the graphics-controller memory-map selection and planar/chain-4 behavior required by the BIOS; a flat byte array is not accepted as a substitute where PCem implements banking/planes.
+- [ ] Reads and writes in A0000h–BFFFFh reach VGA handlers and do not bypass them through the RAM fast path.
+- [ ] Text mode writes reach the correct plane/offset and produce visible characters/attributes.
+- [ ] Mode 13h writes and DAC palette updates produce the expected 320x200 image.
+- [ ] BDA video mode and related BIOS data-area fields agree with the active mode.
+- [ ] Display refresh reflects guest writes without modifying guest memory.
+
+Required evidence: BIOS register-I/O trace, first VGA memory writes, BDA snapshot, VRAM/plane dump, and a visible output comparison. A zero-write counter means VGA initialization has not been demonstrated.
+
+## Phase 6 — End-to-end acceptance
+
+- [ ] Clean reset starts the BIOS from its reset vector.
+- [ ] BIOS completes required POST/initialization without an unexplained HLT or exception.
+- [ ] BIOS sets a valid video mode and writes visible text or graphics.
+- [ ] Keyboard/system timer behavior required by the BIOS is functional and matches PCem.
+- [ ] The same test is repeated at least three times with stable results.
+- [ ] Final log includes build identifier, source commit, BIOS SHA-256, reset vector, final BIOS checkpoint, VGA mode, and memory-write counters.
+
+## Change and test ledger
+
+Append one entry per change; never overwrite an earlier result.
+
+| Date | Commit | Hypothesis / PCem mismatch | Files changed | Build | Runtime evidence | Scenario result |
+|---|---|---|---|---|---|---|
+| 2026-11-14 | baseline: branch `feature/i486dx-bootstrap` | Current log reaches HLT at F000:E1B6 after PIT2 calibration; cause not yet proven. | — | Not recorded here | Log: 10.17 MB / 109,112 lines; PIT2 calibration completes; no A0000h/B0000h/B8000h writes; BDA mode 00h. | Phase 4 unresolved; Phase 5 not reached |
+
+## Required format for future commits
+
+For every proposed commit, record:
+- **Observed failure:** exact log lines and CPU/device state.
+- **PCem reference:** file, function, and matching behavior.
+- **Root cause:** a specific semantic difference supported by evidence.
+- **Patch scope:** only files necessary for that difference.
+- **Build:** exact command/configuration and result.
+- **Runtime:** fresh log identifier and relevant before/after trace.
+- **Scenario:** which checkboxes changed, and why the evidence is sufficient.
+
+A commit without this evidence is a source change, not a verified fix.
