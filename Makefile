@@ -68,7 +68,7 @@ RCFLAGS=-D_USING_V110_SDK71_
 
 LIBS=$(LIBS) sndrender/snd.lib z80/z80.lib
 
-SRCS=emul.cpp std.cpp i486/i486.cpp i486/pcem/adapter/pcem_memory.cpp i486/pcem/adapter/pcem_cpu_state.cpp atm.cpp cheat.cpp config.cpp dbgbpx.cpp dbgcmd.cpp dbglabls.cpp \
+SRCS=emul.cpp std.cpp i486/i486.cpp i486/pcem/adapter/pcem_memory.cpp i486/pcem/adapter/pcem_cpu_state.cpp i486/pcem/adapter/pcem_cpu_globals.cpp atm.cpp cheat.cpp config.cpp dbgbpx.cpp dbgcmd.cpp dbglabls.cpp \
     dbgmem.cpp dbgoth.cpp dbgpaint.cpp dbgreg.cpp dbgrwdlg.cpp dbgtrace.cpp \
         debug.cpp draw.cpp drawnomc.cpp draw_384.cpp dx.cpp dxerr.cpp dxovr.cpp \
         dxrcopy.cpp dxrend.cpp dxrendch.cpp dxrframe.cpp dxr_4bpp.cpp dxr_512.cpp \
@@ -109,6 +109,9 @@ i486/pcem/adapter/pcem_memory.obj: i486/pcem/adapter/pcem_memory.cpp
 i486/pcem/adapter/pcem_cpu_state.obj: i486/pcem/adapter/pcem_cpu_state.cpp
     $(CXX) $(CXXFLAGS) -Yu"std.h" -Foi486/pcem/adapter/pcem_cpu_state.obj i486/pcem/adapter/pcem_cpu_state.cpp
 
+i486/pcem/adapter/pcem_cpu_globals.obj: i486/pcem/adapter/pcem_cpu_globals.cpp
+    $(CXX) $(CXXFLAGS) -Yu"std.h" -Foi486/pcem/adapter/pcem_cpu_globals.obj i486/pcem/adapter/pcem_cpu_globals.cpp
+
 .cpp.obj::
     $(CXX) $(CXXFLAGS) -Yu"std.h" $<
 
@@ -119,7 +122,7 @@ $(OUT_DIR)/emul.exe: $(OBJS) $(LIBS) settings.res
     $(LINK) $(LFLAGS) -out:$@ -pdb:$*.pdb -map:$*.map $** $(LIBS)
 
 clean:
-    -del *.obj *.res *.map *.pdb *.pch *.pchi i486\\i486.obj i486\\pcem\\adapter\\pcem_memory.obj i486\\pcem\\adapter\\pcem_cpu_state.obj
+    -del *.obj *.res *.map *.pdb *.pch *.pchi i486\\i486.obj i486\\pcem\\adapter\\pcem_memory.obj i486\\pcem\\adapter\\pcem_cpu_state.obj i486\\pcem\\adapter\\pcem_cpu_globals.obj
 
 !if exist(mk.dep)
 !include mk.dep
