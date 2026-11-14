@@ -437,12 +437,23 @@ unsigned int i486_pcem_execute_instructions(unsigned int instruction_budget)
                 x86_opcodes[(opcode | cpu_state.op32) & 0x3ff](fetchdat);
                 ++executed;
 
-                i486_trace_cs[i486_trace_next] = CS;
-                i486_trace_eip[i486_trace_next] = cpu_state.oldpc;
-                i486_trace_phys[i486_trace_next] = physical;
-                i486_trace_opcode[i486_trace_next] = opcode;
-                i486_trace_next = (i486_trace_next + 1U) & 63U;
-                if (i486_trace_count < 64U) ++i486_trace_count;
+                /*
+                 * Collapse consecutive repeats (notably BIOS delay LOOP
+                 * instructions) so a long polling loop cannot erase the
+                 * control-flow history that led into it.
+                 */
+                if (!i486_trace_count ||
+                    i486_trace_cs[(i486_trace_next - 1U) & 63U] != CS ||
+                    i486_trace_eip[(i486_trace_next - 1U) & 63U] != cpu_state.oldpc ||
+                    i486_trace_opcode[(i486_trace_next - 1U) & 63U] != opcode)
+                {
+                        i486_trace_cs[i486_trace_next] = CS;
+                        i486_trace_eip[i486_trace_next] = cpu_state.oldpc;
+                        i486_trace_phys[i486_trace_next] = physical;
+                        i486_trace_opcode[i486_trace_next] = opcode;
+                        i486_trace_next = (i486_trace_next + 1U) & 63U;
+                        if (i486_trace_count < 64U) ++i486_trace_count;
+                }
 
                 if (i486_halted && !i486_hlt_trace_dumped)
                 {
