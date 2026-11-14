@@ -315,6 +315,41 @@ namespace i486
         if (!message || !*message)
             return;
 
+        /*
+         * The BIOS executes a 20,000-iteration delay at F000:E5B2
+         * (LOOP -2). Logging every iteration consumes the entire diagnostic
+         * budget before POST/VGA activity becomes visible. Keep the first
+         * instruction sample and report how many subsequent iterations were
+         * suppressed when the next BIOS instruction trace arrives.
+         */
+        static bool bios_delay_loop_active = false;
+        static unsigned long bios_delay_loop_suppressed = 0;
+        const bool is_bios_si_trace = strstr(message, "[BIOS-SI-TRACE]") != 0;
+        const bool is_bios_delay_iteration =
+            strstr(message, "[BIOS-SI-TRACE] F000:0000E5B2 OP=E2") != 0;
+
+        if (bios_delay_loop_active && is_bios_si_trace && !is_bios_delay_iteration)
+        {
+            char summary[160];
+            sprintf(summary,
+                    "[I486][BIOS-TRACE] F000:E5B2 LOOP E2 FE completed; suppressed %lu repeated iteration records",
+                    bios_delay_loop_suppressed);
+            bios_delay_loop_active = false;
+            bios_delay_loop_suppressed = 0;
+            log(summary);
+        }
+
+        if (is_bios_delay_iteration)
+        {
+            if (bios_delay_loop_active)
+            {
+                ++bios_delay_loop_suppressed;
+                return;
+            }
+            bios_delay_loop_active = true;
+            bios_delay_loop_suppressed = 0;
+        }
+
         const size_t length = strlen(message);
         const size_t line_bytes = length + ((length == 0 || message[length - 1] != '\n') ? 2U : 0U);
         if (diagnostic_bytes + line_bytes > MaxDiagnosticBytes)
