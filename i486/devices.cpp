@@ -189,7 +189,12 @@ static uint8_t cmos[128];
 static uint8_t cmos_index;
 
 struct Pic8259 { uint8_t irr, imr, isr, vector_base, init_step, icw4, read_isr, auto_eoi, init_need_icw4, init_single; };
-struct Pit8253 { uint32_t reload, counter; uint8_t access, mode, write_phase, read_phase, write_latch, read_latch, running, output, null_count; };
+/* Cycle-driven adaptation of Project130/PCem/pit.c; no PCem timer globals. */
+struct Pit8253 {
+ uint32_t reload,counter,phase_remaining; uint16_t count_latch;
+ uint8_t access,mode,write_phase,read_phase,write_latch,read_latch;
+ uint8_t running,output,null_count,gate,latched,latch_bytes,strobe_low;
+};
 struct Dma8237 { uint16_t address[4], count[4]; uint8_t page[4], mode[4], mask, command, status, request, flipflop; };
 static Pic8259 pic_master, pic_slave;
 static Pit8253 pit[3];
@@ -233,15 +238,53 @@ static uint8_t pic_command_read(Pic8259 &p) { return p.read_isr?p.isr:p.irr; }
 
 static void pit_reset() {
  memset(pit,0,sizeof(pit)); pit_clock_accumulator=0;
- for(unsigned int i=0;i<3;i++){ pit[i].reload=pit[i].counter=65536U; pit[i].access=3; pit[i].mode=3; pit[i].running=1; pit[i].output=(i==2)?1:0; }
+ for(unsigned int i=0;i<3;i++){pit[i].reload=pit[i].counter=65536U;pit[i].access=3;pit[i].mode=3;pit[i].output=1;pit[i].gate=(i==2)?0:1;}
 }
-static void pit_control(uint8_t v) {
- unsigned int ch=(v>>6)&3; if(ch==3)return; Pit8253 &p=pit[ch]; uint8_t access=(v>>4)&3;
- if(!access){p.read_latch=1;p.read_phase=0;return;} p.access=access;p.mode=(v>>1)&7;if(p.mode>5)p.mode-=4;p.write_phase=p.read_phase=0;p.running=0;p.null_count=1;p.output=(p.mode<2)?0:1;
+static uint16_t pit_current_count(const Pit8253 &p){return p.counter>=65536U?0:(uint16_t)p.counter;}
+static void pit_set_output(unsigned int ch,uint8_t v){pit[ch].output=v?1:0;}
+static void pit_latch_count(Pit8253 &p){if(p.latched)return;p.count_latch=pit_current_count(p);p.latched=1;p.latch_bytes=(p.access==3)?2:1;}
+static void pit_control(uint8_t v){
+ unsigned int ch=(v>>6)&3;if(ch==3)return;Pit8253 &p=pit[ch];uint8_t a=(v>>4)&3;
+ if(!a){pit_latch_count(p);return;}p.access=a;p.mode=(v>>1)&7;if(p.mode>=6)p.mode-=4;
+ p.write_phase=p.read_phase=0;p.latched=p.status_pending=0;p.running=0;p.null_count=1;p.strobe_low=0;
+ pit_set_output(ch,(p.mode<2)?0:1);
 }
-static void pit_load(unsigned int ch,uint32_t n){Pit8253 &p=pit[ch];p.reload=n?n:65536U;p.counter=p.reload;p.running=1;p.null_count=0;p.output=(p.mode<2)?0:1;}
-static void pit_write(unsigned int ch,uint8_t v){Pit8253 &p=pit[ch];if(p.access==1)pit_load(ch,v);else if(p.access==2)pit_load(ch,(uint32_t)v<<8);else if(!p.write_phase){p.write_latch=v;p.write_phase=1;}else{pit_load(ch,(uint32_t)p.write_latch|((uint32_t)v<<8));p.write_phase=0;}}
-static uint8_t pit_read(unsigned int ch){Pit8253 &p=pit[ch];uint32_t n=p.counter;if(p.access==1)return(uint8_t)n;if(p.access==2)return(uint8_t)(n>>8);if(!p.read_phase){p.read_latch=(uint8_t)n;p.read_phase=1;return p.read_latch;}p.read_phase=0;return(uint8_t)(n>>8);}
+static void pit_load(unsigned int ch,uint32_t n){
+ Pit8253 &p=pit[ch];p.reload=n?n:65536U;p.counter=p.reload;p.phase_remaining=p.reload;p.null_count=0;p.strobe_low=0;
+ switch(p.mode){
+ case 0:p.running=p.gate;pit_set_output(ch,0);break;
+ case 1:p.running=0;pit_set_output(ch,1);break;
+ case 2:case 3:p.running=p.gate;pit_set_output(ch,1);if(p.mode==3)p.phase_remaining=(p.reload+1U)/2U;break;
+ case 4:p.running=p.gate;pit_set_output(ch,1);break;
+ case 5:p.running=0;pit_set_output(ch,1);break;
+ }
+}
+static void pit_set_gate(unsigned int ch,uint8_t gate){
+ Pit8253 &p=pit[ch];gate=gate?1:0;if(p.gate==gate)return;uint8_t rising=(uint8_t)(gate&&!p.gate);p.gate=gate;
+ switch(p.mode){
+ case 0:case 4:p.running=gate&&!p.null_count;break;
+ case 1:case 5:if(rising&&!p.null_count){p.counter=p.reload;p.phase_remaining=p.reload;p.running=1;p.strobe_low=0;pit_set_output(ch,p.mode==1?0:1);}break;
+ case 2:case 3:if(!gate){p.running=0;p.counter=p.reload;p.phase_remaining=p.reload;pit_set_output(ch,1);}else if(rising&&!p.null_count){p.counter=p.reload;p.phase_remaining=p.mode==3?(p.reload+1U)/2U:p.reload;p.running=1;pit_set_output(ch,1);}break;
+ }
+}
+static void pit_write(unsigned int ch,uint8_t v){
+ Pit8253 &p=pit[ch];if(p.access==1)pit_load(ch,v);else if(p.access==2)pit_load(ch,(uint32_t)v<<8);
+ else if(!p.write_phase){p.write_latch=v;p.write_phase=1;}else{pit_load(ch,(uint32_t)p.write_latch|((uint32_t)v<<8));p.write_phase=0;}
+}
+static uint8_t pit_read(unsigned int ch){
+ Pit8253 &p=pit[ch];uint16_t n=p.latched?p.count_latch:pit_current_count(p);uint8_t v;
+ if(p.access==1)v=(uint8_t)n;else if(p.access==2)v=(uint8_t)(n>>8);
+ else if(!p.read_phase){v=(uint8_t)n;p.read_phase=1;}else{v=(uint8_t)(n>>8);p.read_phase=0;}
+ if(p.latched&&p.latch_bytes&&!--p.latch_bytes)p.latched=0;return v;
+}
+static void pit_tick(unsigned int ch){
+ Pit8253 &p=pit[ch];if(!p.running||p.null_count||!p.gate)return;
+ if(p.mode==0||p.mode==1){if(p.counter)--p.counter;if(!p.counter){pit_set_output(ch,1);if(p.mode==0)p.running=0;}}
+ else if(p.mode==2){if(p.counter>1){--p.counter;if(p.counter==1)pit_set_output(ch,0);}else{p.counter=p.reload;pit_set_output(ch,1);}}
+ else if(p.mode==3){if(p.phase_remaining)--p.phase_remaining;if(!p.phase_remaining){uint8_t next=(uint8_t)!p.output;pit_set_output(ch,next);p.phase_remaining=next?(p.reload+1U)/2U:p.reload/2U;if(!p.phase_remaining)p.phase_remaining=1;}if(p.counter>2)p.counter-=2;else p.counter=p.reload;}
+ else if(p.mode==4||p.mode==5){if(p.strobe_low){pit_set_output(ch,1);p.strobe_low=0;if(p.mode==4)p.running=0;}else if(p.counter){--p.counter;if(!p.counter){pit_set_output(ch,0);p.strobe_low=1;}}}
+ if(ch==0&&p.output)pic_master.irr|=1;
+}
 static void dma_reset() { memset(&dma,0,sizeof(dma)); dma.mask=0x0F; }
 static uint8_t dma_read(uint16_t p) {
     if(p<=7) { unsigned int c=p>>1; uint16_t n=(p&1)?dma.count[c]:dma.address[c]; uint8_t v=dma.flipflop?(uint8_t)(n>>8):(uint8_t)n; dma.flipflop^=1; return v; }
@@ -567,7 +610,17 @@ static void device_out8(uint16_t port, uint8_t value)
     if(port>=0x80 && port<=0x83) { dma.page[port-0x80]=value; return; }
     if(port==0x63) { ppi_control=value; if(value&0x80) { if(value&2) ppi_port_c&=0xF0; if(value&8) ppi_port_c&=0x0F; } else { uint8_t m=(uint8_t)(1U<<((value>>1)&7)); if(value&1) ppi_port_c|=m; else ppi_port_c&=(uint8_t)~m; } return; }
 
-    if (port==0x61) { system_control_b=(uint8_t)(value&0x0F); return; }
+    if (port==0x61) {
+        uint8_t old=system_control_b;
+        system_control_b=(uint8_t)(value&0x0F);
+        pit_set_gate(2,(uint8_t)(system_control_b&1));
+        static unsigned int gate_log_count;
+        if(gate_log_count<16&&((old^system_control_b)&1)){
+            char msg[112];sprintf(msg,"[I486][PPI] OUT 0061=%02X PIT2_GATE=%u PIT2_OUT=%u",system_control_b,system_control_b&1,pit[2].output);
+            trace(msg);++gate_log_count;
+        }
+        return;
+    }
     if (port==0x62) { ppi_port_b=value; return; }
     if (port==0x60) { kbc_data(value); return; }
     if (port==0x64) { kbc_command(value); return; }
@@ -629,32 +682,9 @@ void advance_cycles(unsigned int cpu_cycles)
     pit_clock_accumulator += (uint64_t)cpu_cycles * 1193182ULL;
     while(pit_clock_accumulator >= 33000000ULL) {
         pit_clock_accumulator -= 33000000ULL;
-        for(unsigned int ch=0; ch<3; ++ch) {
-            Pit8253 &p = pit[ch];
-            if(!p.running || p.null_count) continue;
-
-            if(p.mode==3) {
-                /* Mode 3 square wave: the 16-bit counter decrements by two.
-                 * OUT changes at the half-period, not once per full reload.
-                 */
-                if(p.counter > 2) p.counter -= 2;
-                else {
-                    p.output ^= 1;
-                    p.counter = p.reload;
-                    if(ch==0 && p.output) pic_master.irr |= 0x01;
-                }
-                continue;
-            }
-
-            if(p.counter) --p.counter;
-            if(!p.counter) {
-                if(p.mode<=1) { p.output=1; p.running=0; }
-                else if(p.mode==2) { p.output=0; p.counter=p.reload; }
-                else { p.output=1; p.counter=p.reload; }
-                if(ch==0 && p.mode<=2) pic_master.irr |= 0x01;
-            } else if(ch==2 && p.mode==2 && p.counter==1) p.output=1;
-        }
-    }}
+        for(unsigned int ch=0;ch<3;++ch) pit_tick(ch);
+    }
+}
 bool interrupt_pending() { return pic_has_pending(); }
 int acknowledge_interrupt() { return pic_acknowledge(); }
 
