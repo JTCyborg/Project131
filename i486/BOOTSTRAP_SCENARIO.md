@@ -145,3 +145,15 @@ Commit `e67d1069fd697b566bb45f6d73d2b9fbcbf626bb` updates `i486/vga.cpp`:
 - The VGA adapter now stores and returns the four CGA-compatible mode/color latches. This prevents the XT BIOS' legacy display-control writes from being silently dropped.
 
 This is a real I/O decode correction, not a forced video-mode switch. The exact 27C64 ROM trace still needs to reach the BIOS' INT 10h/video setup sequence; VGA output is not yet runtime-verified. No build or runtime test was performed for this commit.
+
+
+## Fixed BIOS delay-loop bypass (2026-11-14)
+
+Commit `17b2826b03c9f5283ada1ab21ae10314e49729d5` adds a narrowly signature-gated patch for the exact 27C64 ROM sequence at `F000:E5AF`:
+
+- Verified ROM bytes: `B9 00 50 E2 FE` (`MOV CX,5000h`; `LOOP -2`).
+- At BIOS load, only when all five bytes match, replace `E2 FE` at `F000:E5B2` with `90 90`.
+- Execution now proceeds directly to the existing `DEC SI / JS / RET` sequence without spending 20,480 iterations in the delay.
+- This does not alter LOOP instruction semantics globally or change the subsequent BIOS control flow.
+
+Build/runtime verification is pending. This bypass addresses the fixed delay only; it does not claim that the subsequent BIOS HLT path or VGA initialization is resolved.
