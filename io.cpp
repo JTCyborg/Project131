@@ -19,6 +19,7 @@
 void out(unsigned port, unsigned char val)
 {
    port &= 0xFFFF;
+   if (isa_vga_adapter_port_write(port, val)) return;
    u8 p1 = (port & 0xFF);
    brk_port_out = port; brk_port_val = val;
 
@@ -692,6 +693,9 @@ __inline unsigned char in1(unsigned port)
 {
    port &= 0xFFFF;
    brk_port_in = port;
+
+   unsigned char vga_value;
+   if (isa_vga_adapter_port_read(port, vga_value)) return vga_value;
 
    u8 p1 = (port & 0xFF);
 

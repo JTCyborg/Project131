@@ -210,6 +210,7 @@ void __declspec(noreturn) exit()
    if(!normal_exit)
        done_fdd(false);
    done_tape();
+   isa_vga_adapter_done();
    done_dx();
    done_gs();
    done_leds();

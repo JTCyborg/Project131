@@ -7,6 +7,9 @@ u8 xm(unsigned addr)
 {
    addr &= 0xFFFF;
 
+   unsigned char vga_value;
+   if (isa_vga_adapter_mem_read(addr, vga_value)) return vga_value;
+
 #ifdef MOD_GSZ80
    if (temp.gsdmaon && ((addr & 0xc000)==0) && (bankr[0] >= ROM_BASE_M))
     {
@@ -55,6 +58,8 @@ void wm(unsigned addr, unsigned char val)
    dbgbreak |= (*membit & MEMBITS_BPW);
    cpu.dbgbreak |= (*membit & MEMBITS_BPW);
 #endif
+
+   if (isa_vga_adapter_mem_write(addr, val)) return;
 
 #ifdef MOD_GSZ80
    if (temp.gsdmaon && ((addr & 0xc000)==0) && (bankr[0] >= ROM_BASE_M))
