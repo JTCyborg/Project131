@@ -83,8 +83,9 @@ extern "C" bool i486_pcem_prepare_first_instruction(void)
         i486::log(message);
     }
 
+    /* Once BIOS execution has advanced, allow every later frame slice to run. */
     if (cpu_state.pc != 0x0000E05BU)
-        return false;
+        return true;
 
     if (cpu_state.seg_cs.seg == 0xF000 &&
         cpu_state.seg_cs.base == 0x000F0000U)
