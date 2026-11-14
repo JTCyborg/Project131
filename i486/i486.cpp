@@ -145,17 +145,17 @@ namespace i486
 
     unsigned int execute_instructions(unsigned int instruction_budget)
     {
-        static bool first_instruction_prepared = false;
-
         if (!ram || !bios_loaded || instruction_budget == 0)
             return 0;
 
-        if (!first_instruction_prepared)
-        {
-            if (!i486_pcem_prepare_first_instruction())
-                return 0;
-            first_instruction_prepared = true;
-        }
+        /*
+         * Do not cache this preparation result: the host frame/reset path may
+         * alter the expansion CPU's hidden CS cache between frames. The
+         * helper is deliberately conditional on EIP still being the BIOS
+         * bootstrap target, so it cannot rewind an already-running BIOS.
+         */
+        if (!i486_pcem_prepare_first_instruction())
+            return 0;
 
         return i486_pcem_execute_instructions(instruction_budget);
     }
