@@ -141,9 +141,9 @@ void init_all(int argc, char **argv)
    {
        color(CONSCLR_WARNING);
        printf("warning: libpng12.dll not found or wrong version -> png support disabled\n");
-       if(conf.scrshot == 2) // Был выбран тип скриншотов .png
+       if(conf.scrshot == 2) // ГЃГ»Г« ГўГ»ГЎГ°Г Г­ ГІГЁГЇ Г±ГЄГ°ГЁГ­ГёГ®ГІГ®Гў .png
        {
-           conf.scrshot = 1; // Замена на .bmp (т.к. отсутствует libpng)
+           conf.scrshot = 1; // Г‡Г Г¬ГҐГ­Г  Г­Г  .bmp (ГІ.ГЄ. Г®ГІГ±ГіГІГ±ГІГўГіГҐГІ libpng)
        }
    }
    temp.ZlibSupport = ZlibInit();
