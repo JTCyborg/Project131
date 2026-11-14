@@ -340,6 +340,10 @@ static unsigned int i486_trace_next = 0, i486_trace_count = 0;
 static int i486_hlt_trace_dumped = 0;
 static unsigned int i486_bios_poll_trace_count = 0;
 static int i486_bios_calibration_last_ah = -1;
+static unsigned int i486_bios_loopne_trace_count = 0;
+static unsigned int i486_bios_loope_trace_count = 0;
+static unsigned int i486_bios_loopne_last_cx = 0xFFFFFFFFU;
+static unsigned int i486_bios_loope_last_cx = 0xFFFFFFFFU;
 
 unsigned int i486_pcem_execute_instructions(unsigned int instruction_budget)
 {
@@ -467,6 +471,41 @@ unsigned int i486_pcem_execute_instructions(unsigned int instruction_budget)
                               CS, cpu_state.oldpc, opcode, AL, CX,
                               cpu_state.flags, ZF_SET() ? 1U : 0U, cpu_state.pc);
                         ++i486_bios_poll_trace_count;
+                }
+
+                /* Trace the two BIOS PIT-status polling branches at the
+                 * actual LOOPNZ/LOOPE instructions. Log initial iterations,
+                 * each 256-count boundary, and the branch exit so the next
+                 * run shows whether CX/ZF or the port-62h status prevents
+                 * POST from advancing.
+                 */
+                if (CS == 0xF000 && cpu_state.oldpc == 0x0000FA11U)
+                {
+                        if (i486_bios_loopne_trace_count < 8U ||
+                            (CX & 0x00FFU) == 0U || !CX ||
+                            cpu_state.pc != 0x0000FA0DU ||
+                            i486_bios_loopne_last_cx == 0xFFFFFFFFU)
+                        {
+                                pclog("[I486][BIOS-LOOPNZ] CX=%04X AL=%02X FLAGS=%08X ZF=%u NEXT=%08X",
+                                      CX, AL, cpu_state.flags, ZF_SET() ? 1U : 0U,
+                                      cpu_state.pc);
+                        }
+                        ++i486_bios_loopne_trace_count;
+                        i486_bios_loopne_last_cx = CX;
+                }
+                else if (CS == 0xF000 && cpu_state.oldpc == 0x0000FA1CU)
+                {
+                        if (i486_bios_loope_trace_count < 8U ||
+                            (CX & 0x00FFU) == 0U || !CX ||
+                            cpu_state.pc != 0x0000FA18U ||
+                            i486_bios_loope_last_cx == 0xFFFFFFFFU)
+                        {
+                                pclog("[I486][BIOS-LOOPE] CX=%04X AL=%02X FLAGS=%08X ZF=%u NEXT=%08X",
+                                      CX, AL, cpu_state.flags, ZF_SET() ? 1U : 0U,
+                                      cpu_state.pc);
+                        }
+                        ++i486_bios_loope_trace_count;
+                        i486_bios_loope_last_cx = CX;
                 }
 
                 /* Log only meaningful speaker-calibration milestones:
