@@ -183,9 +183,37 @@ static uint64_t tsc = 0;                /* No RDTSC feature; placeholder state i
 #define FPU_8087 0
 static const int fpu_type = 1;          /* Integrated 387-compatible i486DX FPU. */
 
-/* Machine hooks intentionally have no external device side effects here. */
+/* Fixed platform-independent i486DX model state. */
+static const int cpu_iscyrix = 0;
+static const int cpu_16bitbus = 0; /* Intel 486DX has a 32-bit external data bus. */
+static const int nmi = 0;          /* No external NMI source in the initial module. */
+static const int nmi_mask = 0;
+static int pic_intpending = 0;     /* No PC PIC is attached to this CPU module. */
+static int mmu_perm = 4;            /* PCem's non-paged default permission mode. */
+
+/* I/O instructions use the isolated i486 port space, never host PC devices. */
+extern uint8_t i486_pcem_in8(uint16_t port);
+extern uint16_t i486_pcem_in16(uint16_t port);
+extern uint32_t i486_pcem_in32(uint16_t port);
+extern void i486_pcem_out8(uint16_t port, uint8_t value);
+extern void i486_pcem_out16(uint16_t port, uint16_t value);
+extern void i486_pcem_out32(uint16_t port, uint32_t value);
+static inline uint8_t inb(uint16_t port) { return i486_pcem_in8(port); }
+static inline uint16_t inw(uint16_t port) { return i486_pcem_in16(port); }
+static inline uint32_t inl(uint16_t port) { return i486_pcem_in32(port); }
+static inline void outb(uint16_t port, uint8_t value) { i486_pcem_out8(port, value); }
+static inline void outw(uint16_t port, uint16_t value) { i486_pcem_out16(port, value); }
+static inline void outl(uint16_t port, uint32_t value) { i486_pcem_out32(port, value); }
+
+/* Paging translation is not ported yet; the active adapter is identity-mapped.
+ * Rebuild its direct mappings on PCem cache-flush requests.
+ */
+static inline void flushmmucache(void) { pcem_memory_rebuild(); }
+static inline void flushmmucache_cr3(void) { pcem_memory_rebuild(); }
 static inline void mmu_invalidate(uint32_t address) { (void)address; }
-static inline void picint(int mask) { (void)mask; }
+static inline void cpu_update_waitstates(void) { /* Fixed i486DX/33 timing model. */ }
+static inline void picint(int mask) { (void)mask; } /* Integrated FPU; no legacy PIC. */
+static inline void cpu_CPUID(void) { /* Original i486DX has no CPUID instruction. */ }
 static int codegen_flags_changed;    /* Dynarec-only notification; intentionally inert. */
 
 void pclog(const char *format, ...);
