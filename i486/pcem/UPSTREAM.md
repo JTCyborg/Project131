@@ -61,6 +61,14 @@ These files are unmodified reference imports from `JTCyborg/Project130`, path `P
 - `x87_ops_loadstore.h`
 - `x87_ops_misc.h`
 
+## Project131 adapter files (modified, not upstream imports)
+
+- `adapter/386_opcode_tables.c` — extracted opcode-table translation unit; based on PCem `386_dynarec.c` and `386.c`, with dynarec removed and i486 prefetch callbacks disabled.
+- `adapter/pcem_memory.h` — narrow memory/MMU interface required by the interpreter.
+- `adapter/interpreter_tables.h` — declaration for fixed interpreter-table selection.
+
+These adapter files are not upstream files. The table translation unit is not included in the build yet and has not been compiled.
+
 The upstream PCem project publishes its source under GPL-2.0; the full license text is in `COPYING`. Preserve all copyright and license notices. Any future modifications to imported files must be marked with a prominent change notice and date.
 
 ## Integration status

@@ -20,6 +20,12 @@ The PCem interpreter entry point is `exec386(int cycs)` in `386.c`. It dispatche
 | `mem.c`, `ibm.h` | Physical memory, MMU, lookup tables and machine globals | Do not import wholesale: separate the MMU/lookup engine from PCem RAM/ROM and machine mappings. |
 | `timer.c`, `pic.c`, `nmi.c` | Timing and interrupts | Provide a minimal compatible platform adapter first; no physical ATM ports are accessed by the guest CPU. |
 
+## Opcode-table extraction (Project131 adapter)
+
+PCem defines the interpreter opcode tables by including `386_ops.h` from `386_dynarec.c`, not from `386.c`. Importing that whole translation unit would also pull in the dynarec backend. Project131 now has a separate table translation unit at `i486/pcem/adapter/386_opcode_tables.c`. It reuses the PCem 386 addressing helpers and opcode handlers, selects the `ops_386` / `ops_386_0f` tables and integrated x87 tables, and disables the legacy 286/386 prefetch-queue callbacks.
+
+The table adapter is **not yet in either build system** and has not been compiled. Its narrow memory contract is declared in `i486/pcem/adapter/pcem_memory.h`; the next required work is the isolated RAM/MMU/lookup implementation and the remaining CPU platform hooks. Do not link it until those interfaces are implemented and verified.
+
 ## Reset-vector correction
 
 PCem's `x86seg_reset()` currently selects the conventional AT reset state (`F0000h` base) when `AT` is enabled. A hardware-reset i486DX must instead begin with hidden CS base `FFFF0000h`, EIP `FFF0h`, yielding physical fetch address `FFFFFFF0h`. The Project131 BIOS mapping already reserves that high 64-KiB window. The port must explicitly initialize and test the hidden CS state; merely mapping the BIOS high is insufficient.
