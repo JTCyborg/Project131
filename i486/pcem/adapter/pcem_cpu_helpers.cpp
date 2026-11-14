@@ -11,7 +11,7 @@
 #include <limits.h>
 #include "../x86.h"
 #include "../x86_flags.h"
-#include "../x87.h"
+
 #include "pcem_memory.h"
 
 #ifdef __cplusplus
@@ -119,8 +119,8 @@ void loadcscall(uint16_t selector, uint32_t old_pc)
         i486_raise_gp(selector & 0xFFFC);
         return;
     }
-    i486_push16((uint16_t)old_pc);
     i486_push16(CS);
+    i486_push16((uint16_t)old_pc);
     i486_load_real_cs(selector);
 }
 
@@ -280,6 +280,8 @@ void cyrix_write_seg_descriptor(uint32_t address, x86seg *segment)
     x86illegal();
 }
 
+enum { I486_TAG_EMPTY = 0, I486_TAG_VALID = 1, I486_TAG_UINT64 = 0x80 };
+
 uint16_t x87_gettag(void)
 {
     uint16_t result = 0;
@@ -288,9 +290,9 @@ uint16_t x87_gettag(void)
     {
         unsigned int index = (unsigned int)((cpu_state.TOP + (int)i) & 7);
         uint16_t tag;
-        if (cpu_state.tag[index] == TAG_EMPTY)
+        if (cpu_state.tag[index] == I486_TAG_EMPTY)
             tag = 3;
-        else if (cpu_state.tag[index] & TAG_UINT64)
+        else if (cpu_state.tag[index] & I486_TAG_UINT64)
             tag = 2;
         else if (cpu_state.ST[index] == 0.0 && !cpu_state.ismmx)
             tag = 1;
@@ -309,11 +311,11 @@ void x87_settag(uint16_t new_tag)
         unsigned int index = (unsigned int)((cpu_state.TOP + (int)i) & 7);
         unsigned int tag = (new_tag >> (i * 2)) & 3;
         if (tag == 3)
-            cpu_state.tag[index] = TAG_EMPTY;
+            cpu_state.tag[index] = I486_TAG_EMPTY;
         else if (tag == 2)
-            cpu_state.tag[index] = TAG_VALID | TAG_UINT64;
+            cpu_state.tag[index] = I486_TAG_VALID | I486_TAG_UINT64;
         else
-            cpu_state.tag[index] = TAG_VALID;
+            cpu_state.tag[index] = I486_TAG_VALID;
     }
 }
 
