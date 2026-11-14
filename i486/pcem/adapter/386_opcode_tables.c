@@ -159,6 +159,21 @@ static inline void fetch_ea_16_long(uint32_t rmdat)
 
 #include "x86_flags.h"
 
+/*
+ * Minimal PCem machine/codegen compatibility for the interpreter tables.
+ * Project131 is a fixed Intel i486DX/33 without dynarec or PCem machine devices.
+ */
+#define MANU_INTEL 0
+#define CPU_BLOCK_END() ((void)0)
+#define UNUSED(value) ((void)(value))
+static int cpu_manufacturer = MANU_INTEL;
+static int CPUID = 0;                 /* Original i486DX/33 has no CPUID instruction. */
+static const uint64_t cpu_CR4_mask = 0; /* CR4 is not implemented by this CPU model. */
+static int codegen_flags_changed;    /* Dynarec-only notification; intentionally inert. */
+
+void pclog(const char *format, ...);
+void fatal(const char *format, ...);
+
 #define getbytef()  ((uint8_t)(fetchdat)); cpu_state.pc++
 #define getwordf()  ((uint16_t)(fetchdat)); cpu_state.pc+=2
 #define getbyte2f() ((uint8_t)(fetchdat>>8)); cpu_state.pc++
