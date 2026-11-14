@@ -19,12 +19,16 @@
 #include "x86_ops.h"
 #include "x87.h"
 #include "adapter/pcem_memory.h"
-#include "386_common.h"
 
-/* ModRM decode fields are stored in the PCem CPU state union. */
+/* ModRM decode fields are stored in the PCem CPU state union.
+ * Define them before 386_common.h: its inline effective-address helpers
+ * reference cpu_rm/cpu_mod/cpu_reg during their definitions.
+ */
 #define cpu_rm  (cpu_state.rm_data.rm_mod_reg.rm)
 #define cpu_mod (cpu_state.rm_data.rm_mod_reg.mod)
 #define cpu_reg (cpu_state.rm_data.rm_mod_reg.reg)
+
+#include "386_common.h"
 
 static inline void fetch_ea_32_long(uint32_t rmdat)
 {
