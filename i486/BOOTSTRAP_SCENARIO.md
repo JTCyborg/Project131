@@ -37,3 +37,21 @@ Record the BIOS image identity, build identifier, complete first-HLT snapshot, p
 ## Current result
 
 Runtime build and test have not been run by this commit. The scenario remains **pending runtime verification**.
+
+## Latest runtime observation (2026-11-14)
+
+Observed in `spectrum_out.txt` on `feature/i486dx-bootstrap`:
+
+- The BIOS does not reach HLT: no `HLT` or `[I486][PRE-HLT]` marker is present.
+- Execution repeatedly returns to `F000:FA18`: `IN AL,14h`, `TEST AL,imm8`, `LOOPZ`. The reported CX value decreases while the loop continues.
+- The log contains 2,865 `[I486][BIOS-POLL]` records. These records continue after the 256 KiB `i486::log()` suppression marker, so this diagnostic stream is not governed by that logger budget.
+- Source inspection confirms `i486::in8()` routes non-VGA reads to `devices::in8()`. In `devices.cpp`, port `14h` is not in the handled-port dispatch list; the default read result is `FFh`. This does not match the AL values shown in the BIOS-POLL excerpt (typically `14h`/`04h`). Therefore the BIOS-POLL AL field cannot yet be treated as proof of the actual value returned by the CPU I/O read.
+
+## Next required diagnostic
+
+- Locate the exact producer of `[I486][BIOS-POLL]` and establish whether its AL field is sampled before or after the IN instruction.
+- Add a bounded counter at that producer (maximum 64 BIOS-POLL records per run), without changing guest-visible I/O behavior.
+- Capture the actual value returned by `devices::in8(0x14)` at the CPU I/O boundary and compare the same instruction path against Project130/PCem.
+- Do not add a port-14h device response or alter BIOS/CPU semantics until the AL discrepancy is resolved.
+
+Runtime build/test for this observation has not been run in this environment.
