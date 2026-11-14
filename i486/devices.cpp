@@ -651,7 +651,11 @@ static void device_out8(uint16_t port, uint8_t value)
 
     if (port==0x61) {
         uint8_t old=system_control_b;
-        system_control_b=(uint8_t)(value&0x0F);
+        /* PCem keyboard_xt_write() stores the complete PB byte. Bits 1, 2,
+         * 3, 6 and 7 are not disposable: BIOS reads the latch back at 61h
+         * and the same bits select speaker, board/video options and reset.
+         */
+        system_control_b=value;
         pit_set_gate(2,(uint8_t)(system_control_b&1));
         static unsigned int gate_log_count;
         if(gate_log_count<16&&((old^system_control_b)&1)){
