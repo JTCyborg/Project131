@@ -339,7 +339,7 @@ static uint8_t i486_trace_opcode[I486_TRACE_CAPACITY];
 static unsigned int i486_trace_next = 0, i486_trace_count = 0;
 static int i486_hlt_trace_dumped = 0;
 static unsigned int i486_bios_poll_trace_count = 0;
-static unsigned int i486_bios_calibration_trace_count = 0;
+static int i486_bios_calibration_last_ah = -1;
 
 unsigned int i486_pcem_execute_instructions(unsigned int instruction_budget)
 {
@@ -469,18 +469,22 @@ unsigned int i486_pcem_execute_instructions(unsigned int instruction_budget)
                         ++i486_bios_poll_trace_count;
                 }
 
-                /* Capture the BIOS speaker-calibration loop exit decision.
-                 * FA20/FA22 update DX:AX and FA25 decides whether another
-                 * calibration pass is required. Keep this bounded so the
-                 * trace remains useful on a long-running POST.
+                /* Log only meaningful speaker-calibration milestones:
+                 * the first pass, each decrement of AH in SBB AH,0, and
+                 * the final pass that leaves the loop. This avoids both a
+                 * fixed 128-pass blind spot and a flood of identical lines.
                  */
-                if (CS == 0xF000 && cpu_state.oldpc == 0x0000FA25U &&
-                    i486_bios_calibration_trace_count < 128U)
+                if (CS == 0xF000 && cpu_state.oldpc == 0x0000FA25U)
                 {
-                        pclog("[I486][BIOS-CAL] PASS=%u AX=%04X BX=%04X CX=%04X DX=%04X FLAGS=%08X CF=%u ZF=%u NEXT=%08X",
-                              ++i486_bios_calibration_trace_count, AX, BX, CX, DX,
-                              cpu_state.flags, CF_SET() ? 1U : 0U,
-                              ZF_SET() ? 1U : 0U, cpu_state.pc);
+                        if (i486_bios_calibration_last_ah != (int)AH ||
+                            cpu_state.pc != 0x0000FA0AU)
+                        {
+                                pclog("[I486][BIOS-CAL] AH=%02X AX=%04X BX=%04X CX=%04X DX=%04X FLAGS=%08X CF=%u ZF=%u NEXT=%08X",
+                                      AH, AX, BX, CX, DX, cpu_state.flags,
+                                      CF_SET() ? 1U : 0U, ZF_SET() ? 1U : 0U,
+                                      cpu_state.pc);
+                        }
+                        i486_bios_calibration_last_ah = (int)AH;
                 }
 
                 /*
