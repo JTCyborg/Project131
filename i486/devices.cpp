@@ -605,13 +605,12 @@ static uint8_t device_in8(uint16_t port)
          */
         const uint8_t video_status = (system_control_b & 0x08) ? 0x04 : 0x0F;
         /*
-         * Bootstrap compatibility: this BIOS executes TEST AL,20h followed
-         * by LOOPNZ at F000:FA0D-FA11. It must observe bit 5 clear to leave
-         * this polling loop. Speaker/PIT2 fidelity is outside the video
-         * bootstrap milestone; preserve the video-status nibble and force
-         * only the speaker-input bit low.
+         * Match Project130/PCem keyboard_xt_read(): bit 5 is the
+         * ppispeakon state. The BIOS polls this bit at F000:FA18-FA1C
+         * with TEST AL,20h / LOOPE and cannot leave while it is forced low.
+         * Preserve the VGA status nibble and expose the real speaker state.
          */
-        const uint8_t value = (uint8_t)(video_status & (uint8_t)~0x20);
+        const uint8_t value = (uint8_t)(video_status | (ppispeakon ? 0x20 : 0));
         if (port62_trace_count < 64U) {
             char msg[160];
             sprintf(msg, "[I486][PPI] IN 0062=%02X PB=%02X SPEAKER=%u PIT2_OUT=%u GATE=%u PHASE=%u",
