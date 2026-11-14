@@ -142,7 +142,7 @@ void init_all(int argc, char **argv)
    }
    else
    {
-      printf("warning: i486DX module initialization failed\\n");
+      printf("warning: i486DX module initialization failed\n");
       i486::log("[I486] ERROR: module initialization failed");
    }
    main_reset();
