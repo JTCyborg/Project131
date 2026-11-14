@@ -16,6 +16,13 @@ namespace i486
     static unsigned char bios[BiosSize];
     static bool bios_loaded = false;
 
+    // Keep this module's append-only diagnostic output bounded per emulator run.
+    // The marker is written once; later messages are dropped instead of growing
+    // spectrum_out.txt indefinitely when a guest/device enters a repetitive loop.
+    static const size_t MaxDiagnosticBytes = 256U * 1024U;
+    static size_t diagnostic_bytes = 0;
+    static bool diagnostic_limit_reported = false;
+
     namespace detail
     {
         unsigned char *ram_data() { return ram; }
@@ -41,6 +48,8 @@ namespace i486
 
     bool init(unsigned long requested_ram_size)
     {
+        diagnostic_bytes = 0;
+        diagnostic_limit_reported = false;
         close();
         if (requested_ram_size == 0 || requested_ram_size > 0xFFF00000UL)
             return false;
@@ -306,14 +315,31 @@ namespace i486
         if (!message || !*message)
             return;
 
+        const size_t length = strlen(message);
+        const size_t line_bytes = length + ((length == 0 || message[length - 1] != '\n') ? 2U : 0U);
+        if (diagnostic_bytes + line_bytes > MaxDiagnosticBytes)
+        {
+            if (!diagnostic_limit_reported)
+            {
+                diagnostic_limit_reported = true;
+                FILE *limit_file = fopen("C:\\Temp\\spectrum_out.txt", "a");
+                if (limit_file)
+                {
+                    fputs("[I486] diagnostic output limit reached (256 KiB); further i486 log messages suppressed\r\n", limit_file);
+                    fclose(limit_file);
+                }
+            }
+            return;
+        }
+
         FILE *file = fopen("C:\\Temp\\spectrum_out.txt", "a");
         if (!file)
             return;
 
         fputs(message, file);
-        const size_t length = strlen(message);
         if (length == 0 || message[length - 1] != '\n')
             fputs("\r\n", file);
         fclose(file);
+        diagnostic_bytes += line_bytes;
     }
 }
