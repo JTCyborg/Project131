@@ -320,8 +320,8 @@ void i486_pcem_set_interpreter_tables(void)
 
 /*
  * Project131 bounded PCem interpreter dispatch.
- * The emulator frame loop schedules this CPU-only slice. No PC machine
- * devices, timers, PIC, NMI, dynarec or external host ports are attached.
+ * The emulator frame loop schedules this CPU slice. Legacy PC I/O stays
+ * isolated; the XT PIC/PIT/DMA/PPI models are provided by devices.cpp.
  */
 extern void pclog(const char *format, ...);
 extern int i486_pcem_irq_pending(void);
