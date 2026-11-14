@@ -576,6 +576,11 @@ static void cmos_reset()
 }
 static uint8_t device_in8(uint16_t port)
 {
+    /* BIOS calibration workaround: port 34h is not implemented by this
+     * machine profile. Return a stable clear bit 3 so the legacy BIOS
+     * polling loop terminates instead of consuming the whole boot slice.
+     */
+    if (port==0x34) return 0x00;
     if(port==0x20) return pic_command_read(pic_master);
     if(port==0x21) return pic_master.imr;
     if(port==0xA0) return pic_command_read(pic_slave);
