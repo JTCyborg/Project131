@@ -246,7 +246,7 @@ static void pit_latch_count(Pit8253 &p){if(p.latched)return;p.count_latch=pit_cu
 static void pit_control(uint8_t v){
  unsigned int ch=(v>>6)&3;if(ch==3)return;Pit8253 &p=pit[ch];uint8_t a=(v>>4)&3;
  if(!a){pit_latch_count(p);return;}p.access=a;p.mode=(v>>1)&7;if(p.mode>=6)p.mode-=4;
- p.write_phase=p.read_phase=0;p.latched=p.status_pending=0;p.running=0;p.null_count=1;p.strobe_low=0;
+ p.write_phase=p.read_phase=0;p.latched=0;p.running=0;p.null_count=1;p.strobe_low=0;
  pit_set_output(ch,(p.mode<2)?0:1);
 }
 static void pit_load(unsigned int ch,uint32_t n){
