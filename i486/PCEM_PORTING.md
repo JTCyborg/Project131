@@ -2,6 +2,12 @@
 
 Reference: `JTCyborg/Project130/PCem`, branch `main`. The reference tree is described by Project130 as a read-only CPU/VGA reference. Keep the Project131 port isolated under `i486/`; do not link Project130 runtime code or modify the ATM/Z80/Spectrum subsystems.
 
+## Project131 module boundary
+
+Project131 does **not** emulate a second IBM PC. The i486DX is an ATM expansion compute module, not a standalone PC platform. Keep the module limited to the CPU, its private RAM, BIOS ROM, and the ATM-facing module transport/debug path. Do not add VGA, IDE, floppy, serial, PC keyboard controller, RTC, PCI/ISA, or a general PC chipset merely because the upstream PCem source supports them. Any guest I/O port access must stay inside the i486 module's isolated I/O callbacks; unsupported ports are logged/treated as unimplemented until an actual ATM-side requirement is demonstrated. Never forward guest IN/OUT directly to the Spectrum/ATM port handlers.
+
+PIC/PIT/timer references in the upstream interpreter are implementation dependencies, not a requirement to instantiate those hardware devices. Prefer an instruction-budget/cycle adapter with external interrupts disabled for the initial BIOS bring-up. Add interrupt-controller or timer behavior only if the selected BIOS path demonstrably requires it.
+
 ## Confirmed interpreter path
 
 The PCem interpreter entry point is `exec386(int cycs)` in `386.c`. It dispatches through `x86_opcodes`, which are populated from the `ops_386` and `ops_386_0f` tables. The interpreter also uses the 16/32-bit x87 opcode tables and REP tables. `386_common.c` contains shared interrupt, privilege-check and arithmetic helpers. `x86seg.c` contains the protected-mode segment, exception, task-switch and SMI implementation; it is not safe to replace with a small segment-register shim.
@@ -18,7 +24,7 @@ The PCem interpreter entry point is `exec386(int cycs)` in `386.c`. It dispatche
 | `x87.c`, `x87.h`, `x87_ops.h`, `x87_timings.*` | Integrated FPU | Keep the built-in FPU tables; replace the dynarec-only rounding-mode hook with an interpreter-safe implementation. |
 | `cpu.c` | PCem model setup and opcode wiring | Do not import wholesale: it depends on motherboard, PCI, model and dynarec state. Extract only fixed i486DX/33 initialization. |
 | `mem.c`, `ibm.h` | Physical memory, MMU, lookup tables and machine globals | Do not import wholesale: separate the MMU/lookup engine from PCem RAM/ROM and machine mappings. |
-| `timer.c`, `pic.c`, `nmi.c` | Timing and interrupts | Provide a minimal compatible platform adapter first; no physical ATM ports are accessed by the guest CPU. |
+| `timer.c`, `pic.c`, `nmi.c` | Timing and interrupt services expected by the full PCem loop | Do not import these PC devices. Replace the loop dependencies with local cycle accounting and disabled external IRQ/NMI handling for the initial bring-up. Add an interrupt source only when required by a demonstrated guest workload. |
 
 ## Opcode-table extraction (Project131 adapter)
 
@@ -40,8 +46,9 @@ PCem's `x86seg_reset()` currently selects the conventional AT reset state (`F000
 - Execution: PCem interpreter only; dynarec excluded.
 - Memory: isolated physical RAM and BIOS mapping owned by `i486/`.
 - BIOS loader accepts a raw 8-KiB 27C64 image (mapped at offset `E000h` in the 64-KiB BIOS aperture) or a full 64-KiB image. Pass the image path as `-i486bios <path>`; the loader logs the mapped size and the five reset-vector bytes. The 8-KiB mapping places file offset `1FF0h` at physical `FFFFFFF0h`.
-- I/O: isolated guest port callbacks; never call the Z80/ATM output handler.
-- First acceptance test: reset fetch at `FFFFFFF0h`, then a tiny ROM test for 16/32-bit integer instructions, OUT and HLT.
+- I/O: isolated guest port callbacks; never call the Z80/ATM output handler. Unsupported accesses are diagnostic events, not a reason to add a PC peripheral.
+- First acceptance test: execute the actual BIOS reset-vector far jump (`EA 5B E0 00 F0`) from `FFFFFFF0h`, then continue through real BIOS instructions with instruction/CS:EIP tracing.
+- The initial target deliberately has no VGA, IDE, floppy, serial, keyboard controller, RTC, PIC, or PIT device models. The ATM/emulator owns host-facing resources; the i486 module does not create a second PC.
 
 ## Import/licensing status
 
