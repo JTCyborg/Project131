@@ -55,3 +55,9 @@ Observed in `spectrum_out.txt` on `feature/i486dx-bootstrap`:
 - Do not add a port-14h device response or alter BIOS/CPU semantics until the AL discrepancy is resolved.
 
 Runtime build/test for this observation has not been run in this environment.
+
+## Temporary port-14h POST stub (2026-11-14)
+
+Commit `39931afb45b205592cc51328a4c474387bc78c04` adds a deterministic readback for port `14h`: `IN AL,14h` returns `20h`. The read is explicitly added to the device dispatch list. This sets bit 5 for the observed `TEST AL,20h` polling sequence so `LOOPZ` can leave the wait loop. It is a temporary bootstrap stub only; it does not model a real device and must be replaced after the corresponding Project130/PCem port behavior is verified.
+
+Runtime build/test remains pending; confirm that execution advances beyond `F000:FA18` and reaches the next BIOS stage.
