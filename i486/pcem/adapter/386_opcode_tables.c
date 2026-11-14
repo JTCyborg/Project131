@@ -189,6 +189,7 @@ static const int cpu_16bitbus = 0; /* Intel 486DX has a 32-bit external data bus
 static const int nmi = 0;          /* No external NMI source in the initial module. */
 static const int nmi_mask = 0;
 extern int pic_intpending; /* Isolated PC PIC output. */
+extern int i486_halted;
 static int mmu_perm = 4;            /* PCem's non-paged default permission mode. */
 
 /* I/O instructions use the isolated i486 port space, never host PC devices. */
@@ -390,13 +391,14 @@ unsigned int i486_pcem_execute_instructions(unsigned int instruction_budget)
                         int vector = i486_pcem_irq_acknowledge();
                         if (vector >= 0)
                         {
-                                uint8_t pending_opcode = (uint8_t)fastreadl(cs + cpu_state.pc);
-                                cpu_state.oldpc = cpu_state.pc + (pending_opcode == 0xF4 ? 1U : 0U);
+                                cpu_state.oldpc = cpu_state.pc;
+                                i486_halted = 0;
                                 x86_int(vector);
                                 pclog("[I486][PIC] IRQ VECTOR=%02X RETURN=%04X:%08X", vector, CS, cpu_state.oldpc);
                                 pccache = 0xFFFFFFFFU;
                         }
                 }
+                if (i486_halted) break;
                 uint32_t physical;
                 uint8_t opcode;
 
