@@ -21,6 +21,11 @@
 #include "adapter/pcem_memory.h"
 #include "386_common.h"
 
+/* ModRM decode fields are stored in the PCem CPU state union. */
+#define cpu_rm  (cpu_state.rm_data.rm_mod_reg.rm)
+#define cpu_mod (cpu_state.rm_data.rm_mod_reg.mod)
+#define cpu_reg (cpu_state.rm_data.rm_mod_reg.reg)
+
 static inline void fetch_ea_32_long(uint32_t rmdat)
 {
         eal_r = eal_w = NULL;
