@@ -123,6 +123,8 @@ Append one entry per change; never overwrite an earlier result.
 | 2026-11-14 | baseline: branch `feature/i486dx-bootstrap` | Current log reaches HLT at F000:E1B6 after PIT2 calibration; latest trace proves DEC SI -> JS -> RET into HLT, but not caller's reason for SI=0. | — | Not recorded here | Log blob `50d361e9ccc1e7e9ddb7c4b9faad0d9dfe0cfadb`, 10.17 MB / 109,112 lines; PIT2 calibration completes; HLT snapshot and 228-entry backward trace present; no A0000h/B0000h/B8000h writes; BDA mode 00h. Project130 has identical BIOS blob SHA. | Phase 4 unresolved (narrowed); Phase 5 not reached |
 | 2026-11-14 | `f098364` follow-up evidence update | No code change. Recorded exact BIOS byte/branch path and remaining missing evidence. | `i486/IMPLEMENTATION_SCENARIO.md` | Not run (documentation only) | Re-read current log and BIOS blob; matched Project130 BIOS SHA. | Phase 4 still unresolved; no fix claimed |
 
+| 2026-11-14 | `b1d792f` | User-requested BIOS polling stub: port `0034h` returns stable `00h` so `TEST AL,08h` sees bit 3 clear and `LOOPNZ` exits. This is an explicit compatibility workaround, not a PCem-equivalent hardware model. | `i486/devices.cpp` | Not run here | Source change only; runtime/build evidence pending. | UNVERIFIED; inspect next `spectrum_out.txt` for progress beyond `F000:FA0F` and confirm no repeated calibration loop. |
+
 ## Required format for future commits
 
 For every proposed commit, record:
