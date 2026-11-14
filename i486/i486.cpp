@@ -19,7 +19,7 @@ namespace i486
     // Keep this module's append-only diagnostic output bounded per emulator run.
     // The marker is written once; later messages are dropped instead of growing
     // spectrum_out.txt indefinitely when a guest/device enters a repetitive loop.
-    static const size_t MaxDiagnosticBytes = 256U * 1024U;
+    static const size_t MaxDiagnosticBytes = 2U * 1024U * 1024U;
     static size_t diagnostic_bytes = 0;
     static bool diagnostic_limit_reported = false;
 
@@ -325,7 +325,7 @@ namespace i486
                 FILE *limit_file = fopen("C:\\Temp\\spectrum_out.txt", "a");
                 if (limit_file)
                 {
-                    fputs("[I486] diagnostic output limit reached (256 KiB); further i486 log messages suppressed\r\n", limit_file);
+                    fputs("[I486] diagnostic output limit reached (2 MiB); further i486 log messages suppressed\r\n", limit_file);
                     fclose(limit_file);
                 }
             }
