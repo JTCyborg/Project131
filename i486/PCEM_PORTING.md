@@ -39,6 +39,7 @@ PCem's `x86seg_reset()` currently selects the conventional AT reset state (`F000
 - CPU: Intel i486DX/33, integrated FPU.
 - Execution: PCem interpreter only; dynarec excluded.
 - Memory: isolated physical RAM and BIOS mapping owned by `i486/`.
+- BIOS loader accepts a raw 8-KiB 27C64 image (mapped at offset `E000h` in the 64-KiB BIOS aperture) or a full 64-KiB image. Pass the image path as `-i486bios <path>`; the loader logs the mapped size and the five reset-vector bytes. The 8-KiB mapping places file offset `1FF0h` at physical `FFFFFFF0h`.
 - I/O: isolated guest port callbacks; never call the Z80/ATM output handler.
 - First acceptance test: reset fetch at `FFFFFFF0h`, then a tiny ROM test for 16/32-bit integer instructions, OUT and HLT.
 
