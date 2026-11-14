@@ -617,6 +617,8 @@ static int opF7_l_a32(uint32_t fetchdat)
 }
 
 
+extern int i486_halted;
+
 static int opHLT(uint32_t fetchdat)
 {
         if ((CPL || (cpu_state.eflags&VM_FLAG)) && (cr0&1))
@@ -626,8 +628,8 @@ static int opHLT(uint32_t fetchdat)
         }
         if (!((cpu_state.flags & I_FLAG) && pic_intpending))
         {
+                i486_halted = 1;
                 CLOCK_CYCLES_ALWAYS(100);
-                cpu_state.pc--;
         }
         else
                 CLOCK_CYCLES(5);
