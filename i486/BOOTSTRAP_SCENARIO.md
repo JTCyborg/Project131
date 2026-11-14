@@ -59,3 +59,15 @@ Commit `9ec71a4bb68f161b4c4590bee93483cfb0842fb7`:
 - Adds a one-shot-bounded trace (maximum 64 reads per device reset) containing the actual port-`62h` return value, port-`61h` latch, speaker input, PIT2 OUT, gate and phase remaining.
 
 Build and runtime verification are pending. On the next run, inspect the first `[I486][PPI] IN 0062=` records and correlate them with PIT2 OUT transitions. Do not add another guessed port stub.
+
+
+## Boot-progress compatibility override (2026-11-14)
+
+Commit `8a67bfd6237d20574dd10b4a40ccb731dd6f5457` changes the XT PPI port-`62h` read path for the current BIOS bootstrap:
+
+- Preserve the VGA video-status bits derived from PPI port-B bit 3.
+- Force input bit 5 high so the BIOS speaker-input polling loop at `F000:FA18` exits and POST can continue.
+- This deliberately does not emulate speaker/PIT2 timing. Audio fidelity is outside the current milestone.
+- Next milestone: observe the first instruction after the polling loop, continue POST to VGA mode setup, then capture the first framebuffer/text output. Do not spend time perfecting PIT2 unless a later boot/video stage demonstrably depends on it.
+
+Build and runtime verification are pending; this is a targeted POST bypass, not a claim that VGA output is already working.
