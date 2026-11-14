@@ -240,7 +240,17 @@ static void pit_reset() {
  memset(pit,0,sizeof(pit)); pit_clock_accumulator=0;
  for(unsigned int i=0;i<3;i++){pit[i].reload=pit[i].counter=65536U;pit[i].access=3;pit[i].mode=3;pit[i].output=1;pit[i].gate=(i==2)?0:1;}
 }
-static uint16_t pit_current_count(const Pit8253 &p){return p.counter>=65536U?0:(uint16_t)p.counter;}
+static uint16_t pit_current_count(const Pit8253 &p){
+ /* PCem pit_read_timer(): in mode 3 the live down-counter is twice the
+    remaining half-period. Returning the reload register's independent
+    decrementing shadow gives BIOS speaker/refresh polling the wrong count. */
+ if(p.mode==3&&p.running){
+  uint32_t count=p.phase_remaining*2U;
+  if(count>65536U)count=65536U;
+  return count>=65536U?0:(uint16_t)count;
+ }
+ return p.counter>=65536U?0:(uint16_t)p.counter;
+}
 static void pit_set_output(unsigned int ch,uint8_t v){pit[ch].output=v?1:0;}
 static void pit_latch_count(Pit8253 &p){if(p.latched)return;p.count_latch=pit_current_count(p);p.latched=1;p.latch_bytes=(p.access==3)?2:1;}
 static void pit_control(uint8_t v){
