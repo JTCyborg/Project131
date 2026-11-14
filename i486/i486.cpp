@@ -3,6 +3,7 @@
 #include "pcem/adapter/pcem_memory.h"
 
 void i486_pcem_cpu_reset(void);
+extern "C" unsigned int i486_pcem_execute_instructions(unsigned int instruction_budget);
 
 namespace i486
 {
@@ -139,6 +140,14 @@ namespace i486
     bool bios_is_loaded()
     {
         return bios_loaded;
+    }
+
+    unsigned int execute_instructions(unsigned int instruction_budget)
+    {
+        if (!ram || !bios_loaded || instruction_budget == 0)
+            return 0;
+
+        return i486_pcem_execute_instructions(instruction_budget);
     }
 
     unsigned char read8(unsigned int address)
