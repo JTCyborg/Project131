@@ -162,3 +162,6 @@ A commit without this evidence is a source change, not a verified fix.
 
 
 | 2026-11-14 | `e67d106` | Reference BIOS startup uses CGA-compatible mode/color ports `3D8h/3B8h` and `3D9h/3B9h`; Project131's broad VGA range dispatch previously consumed these writes but the VGA handler returned unhandled without preserving them. | `i486/vga.cpp`: add CGA mode-control and color-select latches, initialize them on adapter reset, and decode reads/writes at both color and mono aliases. | Not built here. | Source commit created; runtime behavior and visible VGA output remain UNVERIFIED. | Corrects legacy XT video register decode; does not bypass BIOS calibration or force a mode. |
+
+
+| 2026-11-14 | `17b2826` | User requested bypass of the repeated fixed BIOS delay. Exact 27C64 bytes at ROM offset `05AFh` are `B9 00 50 E2 FE`; bypass only the `LOOP -2` instruction by replacing it with two NOPs when the complete signature matches. | `i486/i486.cpp` | Not run here | Source/binary inspection confirms the exact signature; runtime confirmation pending. | UNVERIFIED; delay loop skipped, following `DEC SI / JS / RET` path remains unchanged. |
