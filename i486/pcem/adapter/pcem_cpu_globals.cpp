@@ -9,6 +9,9 @@
  * SPDX-License-Identifier: GPL-2.0
  */
 #include <stdint.h>
+#include <stdarg.h>
+#include <stdio.h>
+#include "../../i486.h"
 #include <string.h>
 #include "../x86.h"
 #include "../x86_flags.h"
@@ -135,4 +138,27 @@ int timing_call_rm = 18, timing_call_pm = 20, timing_call_pm_gate = 35, timing_c
 int timing_retf_rm = 13, timing_retf_pm = 17, timing_retf_pm_outer = 35;
 int timing_jmp_rm = 17, timing_jmp_pm = 19, timing_jmp_pm_gate = 32;
 int timing_misaligned = 3;
+}
+
+
+/* Minimal logging bridge for PCem interpreter handlers. */
+extern "C" void pclog(const char *format, ...)
+{
+    char message[512];
+    va_list args;
+    va_start(args, format);
+    vsnprintf(message, sizeof(message), format, args);
+    va_end(args);
+    i486::log(message);
+}
+
+extern "C" void fatal(const char *format, ...)
+{
+    char message[512];
+    va_list args;
+    va_start(args, format);
+    vsnprintf(message, sizeof(message), format, args);
+    va_end(args);
+    i486::log("[I486] PCem fatal: ");
+    i486::log(message);
 }
