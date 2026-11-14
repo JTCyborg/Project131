@@ -85,7 +85,7 @@ SRCS=emul.cpp std.cpp i486/i486.cpp i486/pcem/adapter/pcem_memory.cpp i486/pcem/
         wldr_fdi.cpp wldr_isd.cpp wldr_pro.cpp wldr_td0.cpp wldr_trd.cpp wldr_udi.cpp \
         wldr_dsk.cpp wldr_ipf.cpp z80.cpp z80asm.cpp zc.cpp savevid.cpp
 
-OBJS=$(SRCS:.cpp=.obj)
+OBJS=$(SRCS:.cpp=.obj) i486/pcem/adapter/386_opcode_tables.obj
 
 all: $(OUT_DIR)/emul.exe
 
@@ -112,6 +112,9 @@ i486/pcem/adapter/pcem_cpu_state.obj: i486/pcem/adapter/pcem_cpu_state.cpp
 i486/pcem/adapter/pcem_cpu_globals.obj: i486/pcem/adapter/pcem_cpu_globals.cpp
     $(CXX) $(CXXFLAGS) -Yu"std.h" -Foi486/pcem/adapter/pcem_cpu_globals.obj i486/pcem/adapter/pcem_cpu_globals.cpp
 
+i486/pcem/adapter/386_opcode_tables.obj: i486/pcem/adapter/386_opcode_tables.c
+    $(CXX) $(CFLAGS) -Oi -Foi486/pcem/adapter/386_opcode_tables.obj i486/pcem/adapter/386_opcode_tables.c
+
 .cpp.obj::
     $(CXX) $(CXXFLAGS) -Yu"std.h" $<
 
@@ -122,7 +125,7 @@ $(OUT_DIR)/emul.exe: $(OBJS) $(LIBS) settings.res
     $(LINK) $(LFLAGS) -out:$@ -pdb:$*.pdb -map:$*.map $** $(LIBS)
 
 clean:
-    -del *.obj *.res *.map *.pdb *.pch *.pchi i486\\i486.obj i486\\pcem\\adapter\\pcem_memory.obj i486\\pcem\\adapter\\pcem_cpu_state.obj i486\\pcem\\adapter\\pcem_cpu_globals.obj
+    -del *.obj *.res *.map *.pdb *.pch *.pchi i486\\i486.obj i486\\pcem\\adapter\\pcem_memory.obj i486\\pcem\\adapter\\pcem_cpu_state.obj i486\\pcem\\adapter\\pcem_cpu_globals.obj i486\\pcem\\adapter\\386_opcode_tables.obj
 
 !if exist(mk.dep)
 !include mk.dep
