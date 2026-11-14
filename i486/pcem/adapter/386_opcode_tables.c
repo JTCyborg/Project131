@@ -326,7 +326,6 @@ void i486_pcem_set_interpreter_tables(void)
 extern void pclog(const char *format, ...);
 extern int i486_pcem_irq_pending(void);
 extern int i486_pcem_irq_acknowledge(void);
-extern void i486_pcem_pit_advance(unsigned int cpu_cycles);
 extern void x86_int(int vector);
 
 unsigned int i486_pcem_execute_instructions(unsigned int instruction_budget)
@@ -428,7 +427,6 @@ unsigned int i486_pcem_execute_instructions(unsigned int instruction_budget)
                 cpu_state.pc++;
                 x86_opcodes[(opcode | cpu_state.op32) & 0x3ff](fetchdat);
                 ++executed;
-                i486_pcem_pit_advance(4);
 
                 if (executed <= 16)
                         pclog("[I486] EXEC #%u CS:EIP=%04X:%08X PHYS=%08X OP=%02X NEXT=%08X",
