@@ -618,6 +618,7 @@ static int opF7_l_a32(uint32_t fetchdat)
 
 
 extern int i486_halted;
+extern void pclog(const char *format, ...);
 
 static int opHLT(uint32_t fetchdat)
 {
@@ -628,6 +629,19 @@ static int opHLT(uint32_t fetchdat)
         }
         if (!((cpu_state.flags & I_FLAG) && pic_intpending))
         {
+                if (!i486_halted)
+                {
+                        pclog("[I486][HLT] CS:IP=%04X:%08X NEXT=%04X:%08X FLAGS=%04X EFLAGS=%08X CR0=%08X",
+                              CS, cpu_state.oldpc, CS, cpu_state.pc,
+                              cpu_state.flags, cpu_state.eflags, cr0);
+                        pclog("[I486][HLT] EAX=%08X ECX=%08X EDX=%08X EBX=%08X",
+                              EAX, ECX, EDX, EBX);
+                        pclog("[I486][HLT] ESP=%08X EBP=%08X ESI=%08X EDI=%08X SS:SP=%04X:%04X",
+                              ESP, EBP, ESI, EDI, SS, SP);
+                        pclog("[I486][HLT] DS=%04X ES=%04X FS=%04X GS=%04X IF=%u PIC_PENDING=%u",
+                              DS, ES, FS, GS, (cpu_state.flags & I_FLAG) ? 1U : 0U,
+                              pic_intpending ? 1U : 0U);
+                }
                 i486_halted = 1;
                 CLOCK_CYCLES_ALWAYS(100);
         }
