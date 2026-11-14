@@ -230,28 +230,17 @@ static void pic_data(Pic8259 &p,uint8_t v) {
 }
 static uint8_t pic_command_read(Pic8259 &p) { return p.read_isr?p.isr:p.irr; }
 
-static void pit_reset() { memset(&pit0,0,sizeof(pit0)); pit0.reload=pit0.counter=65536; pit0.access=3; pit0.mode=3; pit0.running=1; }
+static void pit_reset() {
+ memset(pit,0,sizeof(pit)); pit_clock_accumulator=0;
+ for(unsigned int i=0;i<3;i++){ pit[i].reload=pit[i].counter=65536U; pit[i].access=3; pit[i].mode=3; pit[i].running=1; pit[i].output=(i==2)?1:0; }
+}
 static void pit_control(uint8_t v) {
-    if(((v>>6)&3)!=0) return;
-    uint8_t access=(v>>4)&3;
-    if(!access) { pit0.read_latch=1; pit0.read_phase=0; return; }
-    pit0.access=access; pit0.mode=(v>>1)&7; if(pit0.mode>5) pit0.mode-=4;
-    pit0.write_phase=pit0.read_phase=0; pit0.running=0;
+ unsigned int ch=(v>>6)&3; if(ch==3)return; Pit8253 &p=pit[ch]; uint8_t access=(v>>4)&3;
+ if(!access){p.read_latch=1;p.read_phase=0;return;} p.access=access;p.mode=(v>>1)&7;if(p.mode>5)p.mode-=4;p.write_phase=p.read_phase=0;p.running=0;p.null_count=1;p.output=(p.mode<2)?0:1;
 }
-static void pit_load(uint32_t n) { pit0.reload=n?n:65536U; pit0.counter=pit0.reload; pit0.running=1; pit0.clock_accumulator=0; }
-static void pit_write(uint8_t v) {
-    if(pit0.access==1) pit_load(v);
-    else if(pit0.access==2) pit_load((uint32_t)v<<8);
-    else if(!pit0.write_phase) { pit0.write_latch=v; pit0.write_phase=1; }
-    else { pit_load((uint32_t)pit0.write_latch|((uint32_t)v<<8)); pit0.write_phase=0; }
-}
-static uint8_t pit_read() {
-    uint32_t n=pit0.counter;
-    if(pit0.access==1) return (uint8_t)n;
-    if(pit0.access==2) return (uint8_t)(n>>8);
-    if(!pit0.read_phase) { pit0.read_latch=(uint8_t)n; pit0.read_phase=1; return pit0.read_latch; }
-    pit0.read_phase=0; return (uint8_t)(n>>8);
-}
+static void pit_load(unsigned int ch,uint32_t n){Pit8253 &p=pit[ch];p.reload=n?n:65536U;p.counter=p.reload;p.running=1;p.null_count=0;p.output=(p.mode<2)?0:1;}
+static void pit_write(unsigned int ch,uint8_t v){Pit8253 &p=pit[ch];if(p.access==1)pit_load(ch,v);else if(p.access==2)pit_load(ch,(uint32_t)v<<8);else if(!p.write_phase){p.write_latch=v;p.write_phase=1;}else{pit_load(ch,(uint32_t)p.write_latch|((uint32_t)v<<8));p.write_phase=0;}}
+static uint8_t pit_read(unsigned int ch){Pit8253 &p=pit[ch];uint32_t n=p.counter;if(p.access==1)return(uint8_t)n;if(p.access==2)return(uint8_t)(n>>8);if(!p.read_phase){p.read_latch=(uint8_t)n;p.read_phase=1;return p.read_latch;}p.read_phase=0;return(uint8_t)(n>>8);}
 static void dma_reset() { memset(&dma,0,sizeof(dma)); dma.mask=0x0F; }
 static uint8_t dma_read(uint16_t p) {
     if(p<=7) { unsigned int c=p>>1; uint16_t n=(p&1)?dma.count[c]:dma.address[c]; uint8_t v=dma.flipflop?(uint8_t)(n>>8):(uint8_t)n; dma.flipflop^=1; return v; }
