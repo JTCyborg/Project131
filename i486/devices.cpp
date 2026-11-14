@@ -298,12 +298,10 @@ static void pit_tick(unsigned int ch){
  /* The XT PIC receives IRQ0 on the channel-0 OUT low-to-high edge. */
  if(ch==0&&!old_output&&p.output)pic_master.irr|=1;
  /* PCem pit_refresh_timer_at(): XT refresh toggles PPI port-B bit 4
-    on the channel-1 OUT rising edge, not when software reads port 61h. */
+    on the channel-1 OUT rising edge. Port 62h is the separate PPI
+    status input; PIT refresh must not alter its channel-check bit. */
  if(ch==1&&!old_output&&p.output){
   system_refresh_phase^=0x10;
-  /* This BIOS polls port 62h bit 5 for both edges during XT board POST. */
-  system_control_a^=0x20;
-  { char msg[96]; sprintf(msg,"[I486][PPI] PIT1 EDGE SYS_STATUS_62=%02X",system_control_a); trace(msg); }
  }
  if(ch==2&&old_output!=p.output){
   char msg[128];
