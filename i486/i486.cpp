@@ -78,22 +78,58 @@ namespace i486
         if (!file)
             return false;
 
-        unsigned char *image = new (std::nothrow) unsigned char[BiosSize];
+        if (fseek(file, 0, SEEK_END) != 0)
+        {
+            fclose(file);
+            return false;
+        }
+
+        const long file_size = ftell(file);
+        if (file_size != 8192 && file_size != (long)BiosSize)
+        {
+            fclose(file);
+            return false;
+        }
+
+        if (fseek(file, 0, SEEK_SET) != 0)
+        {
+            fclose(file);
+            return false;
+        }
+
+        unsigned char *image = new (std::nothrow) unsigned char[(size_t)file_size];
         if (!image)
         {
             fclose(file);
             return false;
         }
 
-        const size_t count = fread(image, 1, BiosSize, file);
-        const int extra = fgetc(file);
-        const bool ok = count == BiosSize && extra == EOF && !ferror(file);
+        const size_t count = fread(image, 1, (size_t)file_size, file);
+        const bool ok = count == (size_t)file_size && !ferror(file);
         fclose(file);
 
         if (ok)
         {
-            memcpy(bios, image, BiosSize);
+            memset(bios, 0xFF, sizeof(bios));
+
+            // An 8-KiB 27C64 EPROM occupies the top 8 KiB of the 64-KiB
+            // BIOS aperture, placing its reset vector at image offset 1FF0h.
+            const size_t bios_offset = file_size == 8192 ? BiosSize - 8192 : 0;
+            memcpy(bios + bios_offset, image, (size_t)file_size);
             bios_loaded = true;
+
+            char message[128];
+            if (file_size == 8192)
+                sprintf(message, "[I486] BIOS loaded: 8192 bytes at FFFFE000h");
+            else
+                sprintf(message, "[I486] BIOS loaded: 65536 bytes at FFFF0000h");
+            log(message);
+
+            sprintf(message, "[I486] RESET_BYTES=%02X %02X %02X %02X %02X",
+                read8(0xFFFFFFF0U), read8(0xFFFFFFF1U),
+                read8(0xFFFFFFF2U), read8(0xFFFFFFF3U),
+                read8(0xFFFFFFF4U));
+            log(message);
         }
 
         delete[] image;
