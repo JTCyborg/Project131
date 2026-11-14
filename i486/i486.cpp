@@ -4,6 +4,7 @@
 
 void i486_pcem_cpu_reset(void);
 extern "C" unsigned int i486_pcem_execute_instructions(unsigned int instruction_budget);
+extern "C" bool i486_pcem_prepare_first_instruction(void);
 
 namespace i486
 {
@@ -144,8 +145,17 @@ namespace i486
 
     unsigned int execute_instructions(unsigned int instruction_budget)
     {
+        static bool first_instruction_prepared = false;
+
         if (!ram || !bios_loaded || instruction_budget == 0)
             return 0;
+
+        if (!first_instruction_prepared)
+        {
+            if (!i486_pcem_prepare_first_instruction())
+                return 0;
+            first_instruction_prepared = true;
+        }
 
         return i486_pcem_execute_instructions(instruction_budget);
     }
