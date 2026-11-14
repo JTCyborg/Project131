@@ -717,8 +717,6 @@
     </Manifest>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <Content Include="..\i486\bios\27c64d.bin">
-      <TargetPath>i486\bios\27c64d.bin</TargetPath>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   
@@ -766,17 +764,8 @@
     <ClCompile Include="..\dxr_text.cpp" />
     <ClCompile Include="..\dxr_vd.cpp" />
     <ClCompile Include="..\emul.cpp" />
-    <ClCompile Include="..\i486\i486.cpp" />
-    <ClCompile Include="..\i486\devices.cpp" />
-    <ClCompile Include="..\i486\vga.cpp" />
-    <ClCompile Include="..\i486\pcem\adapter\pcem_memory.cpp" />
-    <ClCompile Include="..\i486\pcem\adapter\pcem_cpu_state.cpp" />
-    <ClCompile Include="..\i486\pcem\adapter\pcem_cpu_globals.cpp" />
-    <ClCompile Include="..\i486\pcem\adapter\pcem_cpu_helpers.cpp" />
-    <ClCompile Include="..\i486\pcem\adapter\386_opcode_tables.c">
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <ForcedIncludeFiles></ForcedIncludeFiles>
-      <AdditionalIncludeDirectories>..\i486\pcem;..\i486\pcem\adapter;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <CompileAs>CompileAsC</CompileAs>
     </ClCompile>
     
@@ -851,10 +840,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\atm.h" />
-    <ClInclude Include="..\i486\i486.h" />
-    <ClInclude Include="..\i486\devices.h" />
-    <ClInclude Include="..\i486\vga.h" />
-    <ClInclude Include="..\i486\pcem\adapter\pcem_memory.h" />
     <ClInclude Include="..\bass.h" />
     <ClInclude Include="..\cheat.h" />
     <ClInclude Include="..\config.h" />

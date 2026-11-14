@@ -1,8 +1,6 @@
 #include "std.h"
 
 #include "emul.h"
-#include "i486/i486.h"
-#include "i486/vga.h"
 #include "vars.h"
 #include "config.h"
 #include "dx.h"
@@ -107,19 +105,13 @@ void init_all(int argc, char **argv)
 //   printf("%s\n", __FUNCTION__);
    cpu_info();
 
-   char *config = nullptr, *i486_bios_path = nullptr;
-   char i486_bios_ini_path[FILENAME_MAX] = { 0 };
+   char *config = nullptr;
    char legacy = 0;
    for (int i = 0; i < argc; i++) {
       if (argv[i][0] != '/' && argv[i][0] != '-') continue;
       if(!stricmp(argv[i] + 1, "i") && i + 1 < argc)
       {
           config = argv[i + 1];
-          i++;
-      }
-      else if(!stricmp(argv[i] + 1, "i486bios") && i + 1 < argc)
-      {
-          i486_bios_path = argv[i + 1];
           i++;
       }
       #ifdef MOD_9X
@@ -135,27 +127,6 @@ void init_all(int argc, char **argv)
    video_permanent_tables();
    init_ie_help();
    load_config(config);
-   if (!i486_bios_path)
-   {
-      char configured_bios[FILENAME_MAX] = { 0 };
-      GetPrivateProfileString("I486", "BIOS", "i486\\bios\\27c64d.bin",
-         configured_bios, sizeof configured_bios, ininame);
-      if (configured_bios[0])
-      {
-         if ((configured_bios[1] == ':') || (configured_bios[0] == '\\' && configured_bios[1] == '\\') || configured_bios[0] == '/')
-            strcpy(i486_bios_ini_path, configured_bios);
-         else
-         {
-            strcpy(i486_bios_ini_path, ininame);
-            char *slash = strrchr(i486_bios_ini_path, '\\');
-            if (slash) slash[1] = 0;
-            else i486_bios_ini_path[0] = 0;
-            strncat(i486_bios_ini_path, configured_bios,
-               sizeof(i486_bios_ini_path) - strlen(i486_bios_ini_path) - 1);
-         }
-         i486_bios_path = i486_bios_ini_path;
-      }
-   }
    //make_samples();
    init_leds();
    init_tape();
@@ -163,42 +134,7 @@ void init_all(int argc, char **argv)
    start_dx();
    set_priority();
    applyconfig();
-   if (i486::init())
-   {
-      printf("i486DX/33 module initialized: reset vector FFFFFFF0h\n");
-      i486::log("[I486] module initialized");
-      i486::log("[I486] RESET CS=F000 EIP=FFF0 PHYS=FFFFFFF0");
-      if (i486_bios_path)
-      {
-         if (i486::load_bios(i486_bios_path))
-         {
-            printf("i486 BIOS loaded: %s\n", i486_bios_path);
-            // Reset-vector transfer is deferred until after main_reset().
-            // The host reset path must not overwrite the expansion CPU state.
-         }
-         else
-         {
-            printf("warning: unable to load i486 BIOS: %s\n", i486_bios_path);
-            i486::log("[I486] ERROR: BIOS load failed");
-         }
-      }
-   }
-   else
-   {
-      printf("warning: i486DX module initialization failed\n");
-      i486::log("[I486] ERROR: module initialization failed");
-   }
    main_reset();
-
-   // main_reset() may reinitialize shared emulator state. Establish the
-   // expansion CPU reset state only after the host reset has completed.
-   if (i486::bios_is_loaded())
-   {
-      i486::reset();
-      i486::log("[I486] CPU RESET AFTER HOST main_reset");
-      if (!i486::execute_reset_vector_bootstrap())
-         i486::log("[I486] RESET BOOTSTRAP FAILED");
-   }
 
    autoload();
    init_bpx();
@@ -276,7 +212,6 @@ void __declspec(noreturn) exit()
    done_tape();
    done_dx();
    done_gs();
-   i486::close();
    done_leds();
    save_nv();
    modem.close();
