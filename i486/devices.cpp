@@ -420,6 +420,7 @@ static uint8_t device_in8(uint16_t port)
     }
     if (port==0x64) return kbc_status();
     if (port==0x71) return cmos[cmos_index&0x7F];
+    if (port==0x3F2) return fdc.dor;
     if (port==0x1F0) return ata_data_read();
     if (port==0x1F1) return ata.error;
     if (port==0x1F2) return ata.sector_count;
@@ -483,7 +484,7 @@ void close() {}
 uint8_t in8(uint16_t port)
 {
     if (port==0x60 || port==0x64 || port==0x71 ||
-        (port>=0x1F0 && port<=0x1F7) || port==0x3F4 || port==0x3F5 || port==0x3F6 || port==0x3F7)
+        (port>=0x1F0 && port<=0x1F7) || port==0x3F2 || port==0x3F4 || port==0x3F5 || port==0x3F6 || port==0x3F7)
         return device_in8(port);
     if (port >= 0x3F8 && port <= 0x3FF) {
         const uint8_t reg = (uint8_t)(port - 0x3F8);
@@ -560,4 +561,7 @@ void out8(uint16_t port, uint8_t value)
         char msg[96]; sprintf(msg, "[I486] IO UNMAPPED OUT8 PORT=%04X VALUE=%02X", port, value); trace(msg);
     }
 }
+uint16_t in16(uint16_t port) { return device_in16(port); }
+void out16(uint16_t port, uint16_t value) { device_out16(port,value); }
+
 } }
