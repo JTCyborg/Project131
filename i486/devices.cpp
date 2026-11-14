@@ -187,7 +187,7 @@ struct FloppyController {
 static uint8_t cmos[128];
 static uint8_t cmos_index;
 
-struct Pic8259 { uint8_t irr, imr, isr, vector_base, init_step, icw4, read_isr, auto_eoi; };
+struct Pic8259 { uint8_t irr, imr, isr, vector_base, init_step, icw4, read_isr, auto_eoi, init_need_icw4, init_single; };
 struct Pit8253 { uint32_t reload, counter; uint8_t access, mode, write_phase, read_phase, write_latch, read_latch, running; uint64_t clock_accumulator; };
 struct Dma8237 { uint16_t address[4], count[4]; uint8_t page[4], mode[4], mask, command, status, request, flipflop; };
 static Pic8259 pic_master, pic_slave;
@@ -200,7 +200,7 @@ static void pic_reset() { pic_reset_one(pic_master,0x08); pic_reset_one(pic_slav
 static uint8_t pic_pending_bits(const Pic8259 &p) { return (uint8_t)(p.irr & (uint8_t)~p.imr); }
 static bool pic_has_pending() {
     uint8_t pending=pic_pending_bits(pic_master);
-    if(pic_pending_bits(pic_slave)) pending|=0x04;
+    if(pic_pending_bits(pic_slave) && !(pic_master.imr&0x04)) pending|=0x04;
     return pending!=0;
 }
 static int pic_first(uint8_t bits) { for(int i=0;i<8;i++) if(bits&(1U<<i)) return i; return -1; }
@@ -217,13 +217,13 @@ static int pic_acknowledge() {
     return pic_master.vector_base+irq;
 }
 static void pic_command(Pic8259 &p,uint8_t v) {
-    if(v&0x10) { p.irr=p.isr=0; p.imr=0; p.init_step=1; p.auto_eoi=0; return; }
+    if(v&0x10) { p.irr=p.isr=0; p.imr=0; p.init_need_icw4=v&1; p.init_single=(v>>1)&1; p.init_step=1; p.auto_eoi=0; return; }
     if((v&0x18)==0x08) { p.read_isr=v&1; return; }
     if(v&0x20) { if(v&0x40) p.isr&=(uint8_t)~(1U<<(v&7)); else { int n=pic_first(p.isr); if(n>=0) p.isr&=(uint8_t)~(1U<<n); } }
 }
 static void pic_data(Pic8259 &p,uint8_t v) {
     if(p.init_step==1) { p.vector_base=v&0xF8; p.init_step=2; }
-    else if(p.init_step==2) p.init_step=(v&1)?3:0;
+    else if(p.init_step==2) p.init_step=p.init_single?(p.init_need_icw4?3:0):(p.init_need_icw4?3:0);
     else if(p.init_step==3) { p.icw4=v; p.auto_eoi=(v>>1)&1; p.init_step=0; }
     else p.imr=v;
 }
