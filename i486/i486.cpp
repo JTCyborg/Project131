@@ -1,4 +1,3 @@
-#include "std.h"
 #include <new>
 #include "i486.h"
 #include "pcem/adapter/pcem_memory.h"
