@@ -115,3 +115,24 @@ void i486_pcem_cpu_core_init(void)
     memset(&tr, 0, sizeof(tr));
     idt.limit = 0x03FF;
 }
+
+
+/* Fixed Intel i486DX timing model (PCem CPU_i486DX profile).
+ * The interpreter has no runtime CPU-model manager: this module is always
+ * an i486DX, so initialize the timing globals directly.
+ */
+extern "C" {
+int is486 = 1;
+int timing_rr = 1;
+int timing_mr = 3, timing_mrl = 3;
+int timing_rm = 2, timing_rml = 2;
+int timing_mm = 3, timing_mml = 3;
+int timing_bt = 2, timing_bnt = 1;
+int timing_int = 4;
+int timing_int_rm = 26, timing_int_v86 = 82, timing_int_pm = 44, timing_int_pm_outer = 71;
+int timing_iret_rm = 15, timing_iret_v86 = 36, timing_iret_pm = 20, timing_iret_pm_outer = 36;
+int timing_call_rm = 18, timing_call_pm = 20, timing_call_pm_gate = 35, timing_call_pm_gate_inner = 69;
+int timing_retf_rm = 13, timing_retf_pm = 17, timing_retf_pm_outer = 35;
+int timing_jmp_rm = 17, timing_jmp_pm = 19, timing_jmp_pm_gate = 32;
+int timing_misaligned = 3;
+}
