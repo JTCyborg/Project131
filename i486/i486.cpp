@@ -135,6 +135,23 @@ namespace i486
             // BIOS aperture, placing its reset vector at image offset 1FF0h.
             const size_t bios_offset = file_size == 8192 ? BiosSize - 8192 : 0;
             memcpy(bios + bios_offset, image, (size_t)file_size);
+
+            /*
+             * Video bring-up priority: the current 27C64 BIOS reaches its
+             * CPU self-test failure HLT at F000:E1B6. In the reference BIOS
+             * source, HALT is a one-byte HLT immediately followed by CPU_OK.
+             * Replace only that HLT with NOP so execution falls through into
+             * the normal chipset and video initialization sequence.
+             *
+             * Keep this narrowly gated to the 8-KiB image and the exact HLT
+             * opcode observed in the runtime trace; do not alter other BIOSes.
+             */
+            if (file_size == 8192 && bios[0xE1B6] == 0xF4)
+            {
+                bios[0xE1B6] = 0x90;
+                log("[I486][BIOS] CPU self-test HLT at F000:E1B6 bypassed; continuing at CPU_OK F000:E1B7");
+            }
+
             bios_loaded = true;
 
             char message[128];
