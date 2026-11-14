@@ -188,6 +188,91 @@ struct FloppyController {
 static uint8_t cmos[128];
 static uint8_t cmos_index;
 
+struct Pic8259 { uint8_t irr, imr, isr, vector_base, init_step, icw4, read_isr, auto_eoi; };
+struct Pit8253 { uint32_t reload, counter; uint8_t access, mode, write_phase, read_phase, write_latch, read_latch, running; uint64_t clock_accumulator; };
+struct Dma8237 { uint16_t address[4], count[4]; uint8_t page[4], mode[4], mask, command, status, request, flipflop; };
+static Pic8259 pic_master, pic_slave;
+static Pit8253 pit0;
+static Dma8237 dma;
+static uint8_t ppi_control=0x9B, ppi_port_b, ppi_port_c=0x20;
+
+static void pic_reset_one(Pic8259 &p,uint8_t base) { memset(&p,0,sizeof(p)); p.vector_base=base; p.imr=0xFF; }
+static void pic_reset() { pic_reset_one(pic_master,0x08); pic_reset_one(pic_slave,0x70); }
+static uint8_t pic_pending_bits(const Pic8259 &p) { return (uint8_t)(p.irr & (uint8_t)~p.imr); }
+static bool pic_has_pending() {
+    uint8_t pending=pic_pending_bits(pic_master);
+    if(pic_pending_bits(pic_slave)) pending|=0x04;
+    return pending!=0;
+}
+static int pic_first(uint8_t bits) { for(int i=0;i<8;i++) if(bits&(1U<<i)) return i; return -1; }
+static int pic_acknowledge() {
+    uint8_t pending=pic_pending_bits(pic_master);
+    if(pic_pending_bits(pic_slave)) pending|=0x04;
+    int irq=pic_first(pending); if(irq<0) return -1;
+    pic_master.irr&=(uint8_t)~(1U<<irq);
+    if(!pic_master.auto_eoi) pic_master.isr|=(uint8_t)(1U<<irq);
+    if(irq==2) {
+        int sub=pic_first(pic_pending_bits(pic_slave));
+        if(sub>=0) { pic_slave.irr&=(uint8_t)~(1U<<sub); if(!pic_slave.auto_eoi) pic_slave.isr|=(uint8_t)(1U<<sub); return pic_slave.vector_base+sub; }
+    }
+    return pic_master.vector_base+irq;
+}
+static void pic_command(Pic8259 &p,uint8_t v) {
+    if(v&0x10) { p.irr=p.isr=0; p.imr=0; p.init_step=1; p.auto_eoi=0; return; }
+    if((v&0x18)==0x08) { p.read_isr=v&1; return; }
+    if(v&0x20) { if(v&0x40) p.isr&=(uint8_t)~(1U<<(v&7)); else { int n=pic_first(p.isr); if(n>=0) p.isr&=(uint8_t)~(1U<<n); } }
+}
+static void pic_data(Pic8259 &p,uint8_t v) {
+    if(p.init_step==1) { p.vector_base=v&0xF8; p.init_step=2; }
+    else if(p.init_step==2) p.init_step=(v&1)?3:0;
+    else if(p.init_step==3) { p.icw4=v; p.auto_eoi=(v>>1)&1; p.init_step=0; }
+    else p.imr=v;
+}
+static uint8_t pic_command_read(Pic8259 &p) { return p.read_isr?p.isr:p.irr; }
+
+static void pit_reset() { memset(&pit0,0,sizeof(pit0)); pit0.reload=pit0.counter=65536; pit0.access=3; pit0.mode=3; pit0.running=1; }
+static void pit_control(uint8_t v) {
+    if(((v>>6)&3)!=0) return;
+    uint8_t access=(v>>4)&3;
+    if(!access) { pit0.read_latch=1; pit0.read_phase=0; return; }
+    pit0.access=access; pit0.mode=(v>>1)&7; if(pit0.mode>5) pit0.mode-=4;
+    pit0.write_phase=pit0.read_phase=0; pit0.running=0;
+}
+static void pit_load(uint32_t n) { pit0.reload=n?n:65536U; pit0.counter=pit0.reload; pit0.running=1; pit0.clock_accumulator=0; }
+static void pit_write(uint8_t v) {
+    if(pit0.access==1) pit_load(v);
+    else if(pit0.access==2) pit_load((uint32_t)v<<8);
+    else if(!pit0.write_phase) { pit0.write_latch=v; pit0.write_phase=1; }
+    else { pit_load((uint32_t)pit0.write_latch|((uint32_t)v<<8)); pit0.write_phase=0; }
+}
+static uint8_t pit_read() {
+    uint32_t n=pit0.counter;
+    if(pit0.access==1) return (uint8_t)n;
+    if(pit0.access==2) return (uint8_t)(n>>8);
+    if(!pit0.read_phase) { pit0.read_latch=(uint8_t)n; pit0.read_phase=1; return pit0.read_latch; }
+    pit0.read_phase=0; return (uint8_t)(n>>8);
+}
+static void dma_reset() { memset(&dma,0,sizeof(dma)); dma.mask=0x0F; }
+static uint8_t dma_read(uint16_t p) {
+    if(p<=7) { unsigned int c=p>>1; uint16_t n=(p&1)?dma.count[c]:dma.address[c]; uint8_t v=dma.flipflop?(uint8_t)(n>>8):(uint8_t)n; dma.flipflop^=1; return v; }
+    if(p==8) { uint8_t v=dma.status; dma.status=0; return v; }
+    return 0xFF;
+}
+static void dma_write(uint16_t p,uint8_t v) {
+    if(p<=7) { unsigned int c=p>>1; uint16_t *n=(p&1)?&dma.count[c]:&dma.address[c]; if(dma.flipflop) *n=(uint16_t)((*n&0x00FF)|((uint16_t)v<<8)); else *n=(uint16_t)((*n&0xFF00)|v); dma.flipflop^=1; return; }
+    switch(p) {
+    case 8: dma.command=v; break;
+    case 9: dma.request=v; break;
+    case 0x0A: if(v&4) dma.mask|=(uint8_t)(1U<<(v&3)); else dma.mask&=(uint8_t)~(1U<<(v&3)); break;
+    case 0x0B: dma.mode[v&3]=v; break;
+    case 0x0C: dma.flipflop=0; break;
+    case 0x0D: dma_reset(); break;
+    case 0x0E: dma.mask=0; break;
+    case 0x0F: dma.mask=v&0x0F; break;
+    }
+}
+
+
 static void kbc_put(uint8_t value)
 {
     if (!kbc.output_count) kbc.output_data=value;
@@ -426,19 +511,18 @@ static void cmos_reset()
 }
 static uint8_t device_in8(uint16_t port)
 {
-    if (port==0x61) {
-        /* 8255/AT-compatible readback: error latches clear, timer-2 output
-         * low in this no-PIT stage, refresh request bit toggles on reads. */
-        system_refresh_phase ^= 0x10;
-        return (uint8_t)((system_control_b & 0x0F) | system_refresh_phase);
-    }
-    if (port==0x62) {
-        /* The BIOS POST polls bit 5 at F000:FA0D, waiting for both edges.
-         * Model the system-board status/refresh toggle so both bounded
-         * polling loops can complete deterministically. */
-        system_control_a ^= 0x20;
-        return system_control_a;
-    }
+    if(port==0x20) return pic_command_read(pic_master);
+    if(port==0x21) return pic_master.imr;
+    if(port==0xA0) return pic_command_read(pic_slave);
+    if(port==0xA1) return pic_slave.imr;
+    if(port==0x40) return pit_read();
+    if(port<=0x0F) return dma_read(port);
+    if(port>=0x80 && port<=0x83) return dma.page[port-0x80];
+    if(port==0x63) return ppi_control;
+
+    if (port==0x61) { system_refresh_phase^=0x10; return (uint8_t)((system_control_b&0x0F)|system_refresh_phase); }
+    if (port==0x62) { system_control_a^=0x20; return (uint8_t)(system_control_a|0x08); }
+    if (port==0x63) return ppi_control;
     if (port==0x60) {
         if (!kbc.output_count) return 0;
         {
@@ -467,16 +551,18 @@ static uint8_t device_in8(uint16_t port)
 }
 static void device_out8(uint16_t port, uint8_t value)
 {
-    if (port==0x61) {
-        /* Bits 0..3 are the writable system-control latch. Writing bit 7
-         * acknowledges the timer-0 output latch; no IRQ/PIT is attached. */
-        system_control_b = (uint8_t)(value & 0x0F);
-        return;
-    }
-    if (port==0x62) {
-        /* Port C is an input/status port on the XT-compatible board. */
-        return;
-    }
+    if(port==0x20) { pic_command(pic_master,value); return; }
+    if(port==0x21) { pic_data(pic_master,value); return; }
+    if(port==0xA0) { pic_command(pic_slave,value); return; }
+    if(port==0xA1) { pic_data(pic_slave,value); return; }
+    if(port==0x40) { pit_write(value); return; }
+    if(port==0x43) { pit_control(value); return; }
+    if(port<=0x0F) { dma_write(port,value); return; }
+    if(port>=0x80 && port<=0x83) { dma.page[port-0x80]=value; return; }
+    if(port==0x63) { ppi_control=value; if(value&0x80) { if(value&2) ppi_port_c&=0xF0; if(value&8) ppi_port_c&=0x0F; } else { uint8_t m=(uint8_t)(1U<<((value>>1)&7)); if(value&1) ppi_port_c|=m; else ppi_port_c&=(uint8_t)~m; } return; }
+
+    if (port==0x61) { system_control_b=(uint8_t)(value&0x0F); return; }
+    if (port==0x62) { ppi_port_b=value; return; }
     if (port==0x60) { kbc_data(value); return; }
     if (port==0x64) { kbc_command(value); return; }
     if (port==0x70) { cmos_index=(uint8_t)(value&0x7F); return; }
@@ -516,6 +602,7 @@ void reset()
     system_control_b = 0;
     system_refresh_phase = 0;
     system_control_a = 0x0E;
+    pic_reset(); pit_reset(); dma_reset(); ppi_control=0x9B; ppi_port_b=0; ppi_port_c=0x20;
     uart_reset();
     memset(&lpt1, 0, sizeof(lpt1));
     lpt1.control = 0x0C;
@@ -530,10 +617,27 @@ void reset()
 
 void close() {}
 
+void advance_cycles(unsigned int cpu_cycles)
+{
+    pit0.clock_accumulator += (uint64_t)cpu_cycles * 1193182ULL;
+    while(pit0.clock_accumulator>=33000000ULL) {
+        pit0.clock_accumulator-=33000000ULL;
+        if(!pit0.running) continue;
+        if(pit0.counter) --pit0.counter;
+        if(!pit0.counter) {
+            if(pit0.mode==0) pit0.running=0;
+            else pit0.counter=pit0.reload;
+            if(pit0.mode==0 || pit0.mode==2 || pit0.mode==3) pic_master.irr|=0x01;
+        }
+    }
+}
+bool interrupt_pending() { return pic_has_pending(); }
+int acknowledge_interrupt() { return pic_acknowledge(); }
+
 uint8_t in8(uint16_t port)
 {
     if ((port>=0x3B0 && port<=0x3DF)) { bool handled=false; uint8_t value=i486::vga::in8(port,&handled); if(handled) return value; return 0xFF; }
-    if (port==0x60 || port==0x61 || port==0x62 || port==0x64 || port==0x71 ||
+    if (port==0x20 || port==0x21 || port==0x40 || port==0x60 || port==0x61 || port==0x62 || port==0x63 || port==0x64 || port==0x71 || port==0xA0 || port==0xA1 || port<=0x0F || (port>=0x80 && port<=0x83) ||
         (port>=0x1F0 && port<=0x1F7) || port==0x3F2 || port==0x3F4 || port==0x3F5 || port==0x3F6 || port==0x3F7)
         return device_in8(port);
     if (port >= 0x3F8 && port <= 0x3FF) {
@@ -567,7 +671,7 @@ uint8_t in8(uint16_t port)
 void out8(uint16_t port, uint8_t value)
 {
     if ((port>=0x3B0 && port<=0x3DF)) { bool handled=false; i486::vga::out8(port,value,&handled); return; }
-    if (port==0x60 || port==0x61 || port==0x62 || port==0x64 || port==0x70 ||
+    if (port==0x20 || port==0x21 || port==0x40 || port==0x43 || port==0x60 || port==0x61 || port==0x62 || port==0x63 || port==0x64 || port==0x70 || port==0xA0 || port==0xA1 || port<=0x0F || (port>=0x80 && port<=0x83) ||
         (port>=0x1F0 && port<=0x1F7) || port==0x3F2 || port==0x3F5 || port==0x3F6 || port==0x3F7) {
         device_out8(port,value); return;
     }
