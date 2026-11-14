@@ -15,6 +15,7 @@
 #include "z80.h"
 #include "mainloop.h"
 #include "funcs.h"
+#include "i486/i486.h"
 
 #include "util.h"
 
@@ -38,6 +39,10 @@ void spectrum_frame()
    }
    if (modem.open_port)
        modem.io();
+
+   // Run a bounded slice of the isolated i486DX CPU each Spectrum frame.
+   // The CPU uses only its private RAM, BIOS and isolated port adapter.
+   i486::execute_instructions(10000);
 
    flush_snd_frame();
    flush_frame();
