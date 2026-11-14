@@ -156,3 +156,6 @@ A commit without this evidence is a source change, not a verified fix.
 
 
 | 2026-11-14 | `b6a35fb` | Current 27C64 BIOS reaches `F4` at `F000:E1B6`, the `HALT` branch immediately before `CPU_OK` in the Project130 BIOS source. User priority is to start video, not continue CPU self-tests. | `i486/i486.cpp`: for 8-KiB BIOS only, patch exact byte `bios[0xE1B6] == 0xF4` to `0x90` during load, allowing execution to fall through to `F000:E1B7` and normal POST/video initialization. Other BIOS images/opcodes remain untouched. | Not built here. | Source change committed; no fresh runtime output yet. Next log should show BIOS continuation and VGA register/framebuffer writes. | Intentional CPU self-test bypass for video bring-up; VGA result UNVERIFIED pending user run. |
+
+
+| 2026-11-14 | PPI port 62h | Compare Project130/PCem keyboard_xt_read(); return bit 5 from ppispeakon instead of forcing it low, allowing BIOS FA18-FA1C polling loop to exit | 81e3d359ebd2064cb4b1a72618063c78ed44e824 | UNVERIFIED runtime; next check is VGA register writes and framebuffer activity |
