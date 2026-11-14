@@ -127,6 +127,8 @@ Append one entry per change; never overwrite an earlier result.
 
 | 2026-11-14 | `9745007` | Latest `spectrum_out.txt` (4,420,671 bytes; 56,997 lines) passes the first polling loop at `F000:FA0D` but remains in the second `LOOPE` loop at `F000:FA18–FA1C`. Read values alternate `04h/14h`; XT PPI port-B readback lacks bit 3. Added explicit BIOS-ready stub: port `61h` returns `system_control_b | 08h`. | `i486/devices.cpp` | Not run here | Source change only; runtime/build evidence pending. | UNVERIFIED; next log must leave `FA18–FA1C` and proceed through POST. |
 
+| 2026-11-14 | `6557a04` | User-requested HLT register snapshot. Existing opHLT snapshot already captured CS:IP, GPRs, visible segment selectors, FLAGS/EFLAGS, CR0, IF and PIC pending; extended it with hidden segment bases/limits and interpreter OLDPC/NEXTPC/OP32/ABRT at the HLT instruction boundary. | `i486/pcem/x86_ops_misc.h` | Not run here; compile/runtime verification pending. | On the next run, the first HLT transition should emit the added `[I486][HLT][SEG]` and `[I486][HLT][STATE]` records alongside the existing register lines. | UNVERIFIED; no CPU behavior changed. |
+
 ## Required format for future commits
 
 For every proposed commit, record:
