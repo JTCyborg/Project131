@@ -207,12 +207,22 @@ namespace i486
 
     void write8(unsigned int address, unsigned char value)
     {
+        static unsigned int ignored_bios_writes = 0;
         bool handled = false;
         vga::memory_write(address, value, &handled);
         if (handled) return;
         if (address >= 0xFFFF0000U ||
             (address >= 0x000F0000U && address <= 0x000FFFFFU))
+        {
+            if (ignored_bios_writes < 32U)
+            {
+                char message[128];
+                sprintf(message, "[I486][MEM] WRITE_TO_BIOS #%u ADDR=%08X VALUE=%02X IGNORED",
+                        ++ignored_bios_writes, address, value);
+                log(message);
+            }
             return;
+        }
 
         if (ram && (unsigned long)address < ram_size)
             ram[address] = value;
