@@ -41,8 +41,6 @@ static uint8_t system_control_b;
 static uint8_t system_refresh_phase;
 /* PCem pit_speaker_timer(): PPI speaker input follows PIT channel-2 OUT. */
 static uint8_t ppispeakon;
-/* Port 62h is synthesized from XT PPI port-B outputs, as in PCem keyboard_xt_read(). */
-static unsigned int port62_read_count;
 static void trace(const char *s) { i486::log(s); }
 
 static void uart_reset()
@@ -593,20 +591,16 @@ static uint8_t device_in8(uint16_t port)
         return system_control_b;
     }
     if (port==0x62) {
-        /* Match Project130/PCem keyboard_xt_read() for the generic XT
-         * board path: PB3 selects the video/FPU status nibble, and the
-         * PIT channel-2 speaker input is returned in bit 5.
+        /*
+         * BIOS POST cassette/refresh probe stub.
+         * Bit 4 must change while the BIOS polls port 62h; provide a
+         * deterministic edge on every read instead of timing/cycle counters.
+         * Keep the XT video-status nibble and speaker input bits intact.
          */
+        system_refresh_phase ^= 0x10;
         const uint8_t video_status = (system_control_b & 0x08) ? 0x04 : 0x0F;
-        const uint8_t value = (uint8_t)(video_status | (ppispeakon ? 0x20 : 0));
-        if (port62_read_count < 32 || (port62_read_count && (port62_read_count & 0x3FFFU) == 0)) {
-            char msg[128];
-            sprintf(msg, "[I486][PPI] IN 0062=%02X SYS_STATUS READ=%u",
-                value, port62_read_count);
-            trace(msg);
-        }
-        ++port62_read_count;
-        return value;
+        return (uint8_t)(video_status | system_refresh_phase |
+                         (ppispeakon ? 0x20 : 0));
     }
     if (port==0x63) return ppi_control;
     if (port==0x60) {
@@ -732,7 +726,6 @@ void reset()
     fdc_reset();
     cmos_reset();
     io_trace_count = 0;
-    port62_read_count = 0;
     trace("[I486] DEVICES RESET PIC=8259A PIT=8253 DMA=8237 PPI=XT COM1=3F8 LPT1=378 NE2000=300 KBC=60/64 IDE=1F0 FDD=3F0 DRIVE=A:NO_MEDIA HDD=16MB_BLANK");
 }
 
