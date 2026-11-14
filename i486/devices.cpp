@@ -28,6 +28,7 @@ struct Ne2000 {
     uint8_t curr, par[6], mar[8], rsr, tally[3];
     uint8_t ram[32768];
     uint8_t mac[6];
+    uint8_t tx_no_backend_logged;
 } nic;
 
 static unsigned int io_trace_count;
@@ -122,7 +123,17 @@ static void nic_write(uint8_t reg, uint8_t v)
     if (reg == 0) {
         nic.command = v;
         if (v & 1) nic.isr |= 0x80;
-        /* TXP is retained in CR; frame transport is performed by backend. */
+        if (v & 4) {
+            /* No host transport is attached in this stage: fail explicitly
+             * instead of pretending that an Ethernet frame reached a wire. */
+            nic.tsr = 0x08; /* CRS: no carrier */
+            nic.isr |= 0x08; /* TXE */
+            if (!nic.tx_no_backend_logged) {
+                trace("[I486][NE2000] TX requested but SLiRP backend is not attached");
+                nic.tx_no_backend_logged = 1;
+            }
+            nic.command &= (uint8_t)~4;
+        }
         return;
     }
     if (reg == 0x10) { nic_dma_write(v); return; }
@@ -175,8 +186,12 @@ uint8_t in8(uint16_t port)
         if (port == 0x379) return 0xD8; /* no paper error, selected, not busy */
         return lpt1.control;
     }
-    if (port >= 0x300 && port <= 0x31F)
-        return nic_read((uint8_t)(port - 0x300));
+    if (port >= 0x300 && port <= 0x31F) {
+        const uint8_t offset = (uint8_t)(port - 0x300);
+        if (offset == 0x1F) { nic_reset(); return 0; }
+        if (offset >= 0x10 && offset <= 0x17) return nic_dma_read();
+        return nic_read(offset);
+    }
     if (io_trace_count++ < 128) {
         char msg[96]; sprintf(msg, "[I486] IO UNMAPPED IN8 PORT=%04X VALUE=FF", port); trace(msg);
     }
@@ -216,7 +231,10 @@ void out8(uint16_t port, uint8_t value)
         return;
     }
     if (port >= 0x300 && port <= 0x31F) {
-        nic_write((uint8_t)(port - 0x300), value);
+        const uint8_t offset = (uint8_t)(port - 0x300);
+        if (offset == 0x1F) nic_reset();
+        else if (offset >= 0x10 && offset <= 0x17) nic_dma_write(value);
+        else nic_write(offset, value);
         return;
     }
     if (io_trace_count++ < 128) {
