@@ -4,6 +4,7 @@
  */
 #include <windows.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <string.h>
 #include "i486.h"
 #include "vga.h"
@@ -75,6 +76,22 @@ void init() {
         CW_USEDEFAULT,CW_USEDEFAULT,656,519,0,0,GetModuleHandleA(0),0);
     if(window_handle) ShowWindow(window_handle,SW_SHOWNORMAL);
     i486::log("[I486][VGA] initialized: 256 KiB VRAM, separate PC display window");
+}
+void dump_text() {
+    unsigned int y, x;
+    i486::log("[I486][VGA] TEXT BUFFER BEGIN (80x25, B8000)");
+    for (y = 0; y < 25; ++y) {
+        char line[128];
+        char *out = line;
+        out += sprintf(out, "[I486][VGA][%02u] ", y);
+        for (x = 0; x < 80; ++x) {
+            uint8_t ch = vram[0x18000 + (y * 80 + x) * 2];
+            *out++ = (ch >= 32 && ch < 127) ? (char)ch : ' ';
+        }
+        *out = 0;
+        i486::log(line);
+    }
+    i486::log("[I486][VGA] TEXT BUFFER END");
 }
 void close() { if(window_handle && IsWindow(window_handle)) DestroyWindow(window_handle); window_handle=0; }
 uint8_t memory_read(uint32_t a,bool *handled) {
