@@ -454,13 +454,13 @@ static void device_out8(uint16_t port, uint8_t value)
 static uint16_t device_in16(uint16_t port)
 {
     if (port==0x1F0) return (uint16_t)(ata_data_read() | ((uint16_t)ata_data_read()<<8));
-    return (uint16_t)(device_in8(port) | ((uint16_t)device_in8((uint16_t)(port+1))<<8));
+    return (uint16_t)(in8(port) | ((uint16_t)in8((uint16_t)(port+1))<<8));
 }
 static void device_out16(uint16_t port, uint16_t value)
 {
     if (port==0x1F0) { ata_data_write((uint8_t)value); ata_data_write((uint8_t)(value>>8)); return; }
-    device_out8(port,(uint8_t)value);
-    device_out8((uint16_t)(port+1),(uint8_t)(value>>8));
+    out8(port,(uint8_t)value);
+    out8((uint16_t)(port+1),(uint8_t)(value>>8));
 }
 
 }
