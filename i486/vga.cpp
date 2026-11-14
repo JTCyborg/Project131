@@ -16,7 +16,7 @@ static uint8_t seq[5], gc[9], crtc[0x19], attr[32], dac[256][3];
 static uint8_t seq_index, gc_index, crtc_index, attr_index, dac_write_index, dac_component;
 static uint8_t attr_data_phase, status_toggle, dac_mask = 0xFF;
 static HWND window_handle;
-static unsigned long a000_write_count, b800_write_count, logged_video_writes;
+static unsigned long a000_write_count, b000_write_count, b800_write_count, logged_video_writes;
 static const char *ClassName = "PROJECT131_I486_VGA";
 static uint8_t bda_mode() {
     uint8_t m=3; uint8_t *ram=i486::detail::ram_data();
@@ -72,7 +72,7 @@ void init() {
     wc.lpszClassName=ClassName; RegisterClassExA(&wc);
     memset(vram,0,sizeof(vram)); memset(seq,0,sizeof(seq)); memset(gc,0,sizeof(gc));
     memset(crtc,0,sizeof(crtc)); memset(attr,0,sizeof(attr)); status_toggle=0;
-    a000_write_count=0; b800_write_count=0; logged_video_writes=0;
+    a000_write_count=0; b000_write_count=0; b800_write_count=0; logged_video_writes=0;
     for(unsigned int i=0;i<256;i++) for(unsigned int c=0;c<3;c++) dac[i][c]=(uint8_t)(i&63);
     window_handle=CreateWindowExA(0,ClassName,"PC Screen - i486 VGA",WS_OVERLAPPEDWINDOW,
         CW_USEDEFAULT,CW_USEDEFAULT,656,519,0,0,GetModuleHandleA(0),0);
@@ -82,9 +82,22 @@ void init() {
 void dump_text() {
     unsigned int y, x;
     char summary[160];
-    sprintf(summary, "[I486][VGA] STATE BDA_MODE=%02X A000_WRITES=%lu B800_WRITES=%lu WINDOW=%p",
-        bda_mode(), a000_write_count, b800_write_count, (void *)window_handle);
+    sprintf(summary, "[I486][VGA] STATE BDA_MODE=%02X A000_WRITES=%lu B000_WRITES=%lu B800_WRITES=%lu WINDOW=%p",
+        bda_mode(), a000_write_count, b000_write_count, b800_write_count, (void *)window_handle);
     i486::log(summary);
+    i486::log("[I486][VGA] MONO BUFFER BEGIN (80x25, B0000)");
+    for (y = 0; y < 25; ++y) {
+        char line[128];
+        char *out = line;
+        out += sprintf(out, "[I486][VGA][M%02u] ", y);
+        for (x = 0; x < 80; ++x) {
+            uint8_t ch = vram[0x10000 + (y * 80 + x) * 2];
+            *out++ = (ch >= 32 && ch < 127) ? (char)ch : ' ';
+        }
+        *out = 0;
+        i486::log(line);
+    }
+    i486::log("[I486][VGA] MONO BUFFER END");
     i486::log("[I486][VGA] TEXT BUFFER BEGIN (80x25, B8000)");
     for (y = 0; y < 25; ++y) {
         char line[128];
@@ -103,6 +116,7 @@ void close() { if(window_handle && IsWindow(window_handle)) DestroyWindow(window
 uint8_t memory_read(uint32_t a,bool *handled) {
     *handled=false;
     if(a>=0xA0000 && a<=0xAFFFF) { *handled=true; return vram[a-0xA0000]; }
+    if(a>=0xB0000 && a<=0xB7FFF) { *handled=true; return vram[0x10000+(a-0xB0000)]; }
     if(a>=0xB8000 && a<=0xBFFFF) { *handled=true; return vram[0x18000+(a-0xB8000)]; }
     return 0xFF;
 }
@@ -110,6 +124,9 @@ void memory_write(uint32_t a,uint8_t v,bool *handled) {
     *handled=false;
     if(a>=0xA0000 && a<=0xAFFFF) {
         vram[a-0xA0000]=v; *handled=true; ++a000_write_count;
+    }
+    else if(a>=0xB0000 && a<=0xB7FFF) {
+        vram[0x10000+(a-0xB0000)]=v; *handled=true; ++b000_write_count;
     }
     else if(a>=0xB8000 && a<=0xBFFFF) {
         vram[0x18000+(a-0xB8000)]=v; *handled=true; ++b800_write_count;
