@@ -39,6 +39,8 @@ static unsigned int io_trace_count;
  */
 static uint8_t system_control_b;
 static uint8_t system_refresh_phase;
+/* PCem pit_speaker_timer(): PPI speaker input follows PIT channel-2 OUT. */
+static uint8_t ppispeakon;
 /* Port 62h is synthesized from XT PPI port-B outputs, as in PCem keyboard_xt_read(). */
 static unsigned int port62_read_count;
 static void trace(const char *s) { i486::log(s); }
@@ -251,7 +253,11 @@ static uint16_t pit_current_count(const Pit8253 &p){
  }
  return p.counter>=65536U?0:(uint16_t)p.counter;
 }
-static void pit_set_output(unsigned int ch,uint8_t v){pit[ch].output=v?1:0;}
+static void pit_set_output(unsigned int ch,uint8_t v){
+ uint8_t next=v?1:0;
+ if(ch==2&&pit[ch].output!=next) ppispeakon=next;
+ pit[ch].output=next;
+}
 static void pit_latch_count(Pit8253 &p){if(p.latched)return;p.count_latch=pit_current_count(p);p.latched=1;p.latch_bytes=(p.access==3)?2:1;}
 static void pit_control(uint8_t v){
  unsigned int ch=(v>>6)&3;if(ch==3)return;Pit8253 &p=pit[ch];uint8_t a=(v>>4)&3;
@@ -594,7 +600,7 @@ static uint8_t device_in8(uint16_t port)
          */
         const uint8_t video_status = (system_control_b & 0x08) ? 0x04 : 0x0F;
         const uint8_t value = (uint8_t)(video_status |
-            ((system_control_b & 0x02) ? 0x20 : 0));
+            (ppispeakon ? 0x20 : 0));
         if (port62_read_count < 32 || (port62_read_count && (port62_read_count & 0x3FFFU) == 0)) {
             char msg[128];
             sprintf(msg, "[I486][PPI] IN 0062=%02X SYS_STATUS READ=%u",
@@ -693,6 +699,7 @@ void reset()
 {
     system_control_b = 0;
     system_refresh_phase = 0;
+    ppispeakon = 0;
 
     pic_reset(); pit_reset(); dma_reset(); ppi_control=0x9B; ppi_port_b=0; ppi_port_c=0x20;
     uart_reset();
