@@ -550,12 +550,12 @@ static uint8_t device_in8(uint16_t port)
 }
 static void device_out8(uint16_t port, uint8_t value)
 {
-    if(port==0x20) { pic_command(pic_master,value); return; }
-    if(port==0x21) { pic_data(pic_master,value); return; }
+    if(port==0x20) { pic_command(pic_master,value); { char m[80]; sprintf(m,"[I486][PIC] OUT 20=%02X",value); trace(m); } return; }
+    if(port==0x21) { pic_data(pic_master,value); { char m[80]; sprintf(m,"[I486][PIC] OUT 21=%02X IMR=%02X",value,pic_master.imr); trace(m); } return; }
     if(port==0xA0) { pic_command(pic_slave,value); return; }
     if(port==0xA1) { pic_data(pic_slave,value); return; }
     if(port>=0x40 && port<=0x42) { pit_write(value); return; }
-    if(port==0x43) { pit_control(value); return; }
+    if(port==0x43) { pit_control(value); { char m[80]; sprintf(m,"[I486][PIT] CTRL=%02X",value); trace(m); } return; }
     if(port<=0x0F) { dma_write(port,value); return; }
     if(port>=0x80 && port<=0x83) { dma.page[port-0x80]=value; return; }
     if(port==0x63) { ppi_control=value; if(value&0x80) { if(value&2) ppi_port_c&=0xF0; if(value&8) ppi_port_c&=0x0F; } else { uint8_t m=(uint8_t)(1U<<((value>>1)&7)); if(value&1) ppi_port_c|=m; else ppi_port_c&=(uint8_t)~m; } return; }
