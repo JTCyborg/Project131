@@ -38,7 +38,7 @@ static void i486_load_real_cs(uint16_t selector)
     cpu_state.seg_cs.access = (cpu_state.eflags & VM_FLAG) ? 0x62 : 0x02;
     cpu_state.seg_cs.access2 = 0;
     if (CPL == 3 && oldcpl != 3)
-        flushmmucache_cr3();
+        pcem_memory_rebuild();
     oldcpl = CPL;
 }
 
