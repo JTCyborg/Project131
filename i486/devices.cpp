@@ -39,7 +39,7 @@ static unsigned int io_trace_count;
  */
 static uint8_t system_control_b;
 static uint8_t system_refresh_phase;
-static uint8_t system_control_a = 0x2E; /* XT PPI port-C status: bit 5 high when I/O channel check is inactive */
+static uint8_t system_control_a = 0x0F; /* PCem keyboard_xt_read(): non-IBM XT status, 486DX FPU present, speaker off */
 static unsigned int port62_read_count;
 static void trace(const char *s) { i486::log(s); }
 
@@ -651,7 +651,7 @@ static void device_out8(uint16_t port, uint8_t value)
         }
         return;
     }
-    if (port==0x62) { ppi_port_c=value; return; }
+    /* PCem keyboard_xt_write() only handles port 61h; 62h is input-only. */
     if (port==0x60) { kbc_data(value); return; }
     if (port==0x64) { kbc_command(value); return; }
     if (port==0x70) { cmos_index=(uint8_t)(value&0x7F); return; }
@@ -690,7 +690,7 @@ void reset()
 {
     system_control_b = 0;
     system_refresh_phase = 0;
-    system_control_a = 0x2E;
+    system_control_a = 0x0F; /* XT status: 486DX FPU present, ppispeakon clear */
     pic_reset(); pit_reset(); dma_reset(); ppi_control=0x9B; ppi_port_b=0; ppi_port_c=0x20;
     uart_reset();
     memset(&lpt1, 0, sizeof(lpt1));
