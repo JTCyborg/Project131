@@ -764,7 +764,6 @@
     <ClCompile Include="..\emul.cpp">
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <ForcedIncludeFiles></ForcedIncludeFiles>
-      <CompileAs>CompileAsC</CompileAs>
     </ClCompile>
     
     <ClCompile Include="..\emulkeys.cpp" />
