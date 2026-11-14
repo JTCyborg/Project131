@@ -755,6 +755,8 @@
     <ClCompile Include="..\dxr_text.cpp" />
     <ClCompile Include="..\dxr_vd.cpp" />
     <ClCompile Include="..\emul.cpp" />
+    <ClCompile Include="..\i486\i486.cpp" />
+    <ClCompile Include="..\i486\pcem\adapter\pcem_memory.cpp" />
     <ClCompile Include="..\emulkeys.cpp" />
     <ClCompile Include="..\fdd.cpp" />
     <ClCompile Include="..\fntsrch.cpp" />
@@ -826,6 +828,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\atm.h" />
+    <ClInclude Include="..\i486\i486.h" />
+    <ClInclude Include="..\i486\pcem\adapter\pcem_memory.h" />
     <ClInclude Include="..\bass.h" />
     <ClInclude Include="..\cheat.h" />
     <ClInclude Include="..\config.h" />

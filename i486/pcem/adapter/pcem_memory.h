@@ -1,12 +1,12 @@
 #ifndef I486_PCEM_ADAPTER_MEMORY_H
 #define I486_PCEM_ADAPTER_MEMORY_H
 
-/*
- * Narrow memory contract for the imported PCem CPU interpreter.
- * The implementation belongs to i486/ and must not use Spectrum/ATM memory.
- */
 #include <stdint.h>
 #include <stddef.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 extern uintptr_t *readlookup2;
 extern uintptr_t *writelookup2;
@@ -22,5 +22,10 @@ void writememll(uint32_t address, uint32_t value);
 void writememql(uint32_t address, uint64_t value);
 
 uint8_t *getpccache(uint32_t address);
+void pcem_memory_rebuild(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

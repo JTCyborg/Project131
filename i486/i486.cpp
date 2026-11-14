@@ -1,6 +1,7 @@
 #include "std.h"
 #include <new>
 #include "i486.h"
+#include "pcem/adapter/pcem_memory.h"
 
 namespace i486
 {
@@ -8,6 +9,13 @@ namespace i486
     static unsigned long ram_size = 0;
     static unsigned char bios[BiosSize];
     static bool bios_loaded = false;
+
+    namespace detail
+    {
+        unsigned char *ram_data() { return ram; }
+        unsigned char *bios_data() { return bios; }
+        unsigned long ram_size_bytes() { return ::i486::ram_size; }
+    }
 
     static unsigned char read8_internal(unsigned int address)
     {
@@ -39,6 +47,7 @@ namespace i486
         memset(ram, 0, ram_size);
         memset(bios, 0xFF, sizeof(bios));
         bios_loaded = false;
+        pcem_memory_rebuild();
         return true;
     }
 
@@ -49,6 +58,7 @@ namespace i486
         ram_size = 0;
         bios_loaded = false;
         memset(bios, 0xFF, sizeof(bios));
+        pcem_memory_rebuild();
     }
 
     void reset()
