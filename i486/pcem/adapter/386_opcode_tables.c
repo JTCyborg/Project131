@@ -339,6 +339,7 @@ static uint8_t i486_trace_opcode[I486_TRACE_CAPACITY];
 static unsigned int i486_trace_next = 0, i486_trace_count = 0;
 static int i486_hlt_trace_dumped = 0;
 static unsigned int i486_bios_poll_trace_count = 0;
+static unsigned int i486_bios_calibration_trace_count = 0;
 
 unsigned int i486_pcem_execute_instructions(unsigned int instruction_budget)
 {
@@ -466,6 +467,20 @@ unsigned int i486_pcem_execute_instructions(unsigned int instruction_budget)
                               CS, cpu_state.oldpc, opcode, AL, CX,
                               cpu_state.flags, ZF_SET() ? 1U : 0U, cpu_state.pc);
                         ++i486_bios_poll_trace_count;
+                }
+
+                /* Capture the BIOS speaker-calibration loop exit decision.
+                 * FA20/FA22 update DX:AX and FA25 decides whether another
+                 * calibration pass is required. Keep this bounded so the
+                 * trace remains useful on a long-running POST.
+                 */
+                if (CS == 0xF000 && cpu_state.oldpc == 0x0000FA25U &&
+                    i486_bios_calibration_trace_count < 128U)
+                {
+                        pclog("[I486][BIOS-CAL] PASS=%u AX=%04X BX=%04X CX=%04X DX=%04X FLAGS=%08X CF=%u ZF=%u NEXT=%08X",
+                              ++i486_bios_calibration_trace_count, AX, BX, CX, DX,
+                              cpu_state.flags, CF_SET() ? 1U : 0U,
+                              ZF_SET() ? 1U : 0U, cpu_state.pc);
                 }
 
                 /*
