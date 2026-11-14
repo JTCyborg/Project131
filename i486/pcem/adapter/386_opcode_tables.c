@@ -338,6 +338,7 @@ static uint32_t i486_trace_eip[I486_TRACE_CAPACITY], i486_trace_phys[I486_TRACE_
 static uint8_t i486_trace_opcode[I486_TRACE_CAPACITY];
 static unsigned int i486_trace_next = 0, i486_trace_count = 0;
 static int i486_hlt_trace_dumped = 0;
+static unsigned int i486_bios_poll_trace_count = 0;
 
 unsigned int i486_pcem_execute_instructions(unsigned int instruction_budget)
 {
@@ -452,6 +453,20 @@ unsigned int i486_pcem_execute_instructions(unsigned int instruction_budget)
                         }
                 }
                 ++executed;
+
+                /* Capture the BIOS PIT/system-status polling decision without
+                 * flooding the log: this diagnostic is limited to the known
+                 * POST routine at F000:FA0A-FA25.
+                 */
+                if (CS == 0xF000 && cpu_state.oldpc >= 0x0000FA0AU &&
+                    cpu_state.oldpc <= 0x0000FA25U &&
+                    i486_bios_poll_trace_count < 256U)
+                {
+                        pclog("[I486][BIOS-POLL] %04X:%08X OP=%02X AL=%02X CX=%04X FLAGS=%08X ZF=%u NEXT=%08X",
+                              CS, cpu_state.oldpc, opcode, AL, CX,
+                              cpu_state.flags, ZF_SET() ? 1U : 0U, cpu_state.pc);
+                        ++i486_bios_poll_trace_count;
+                }
 
                 /*
                  * Keep the first visit to each CS:EIP in a larger history.
