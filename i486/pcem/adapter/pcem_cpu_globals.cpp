@@ -11,11 +11,14 @@
 #include <stdint.h>
 #include <stdarg.h>
 #include <stdio.h>
+#include <fenv.h>
 #include "../../i486.h"
 #include <string.h>
 #include "../x86.h"
 #include "../x86_flags.h"
+#include "../x87.h"
 
+extern "C" {
 x86seg gdt, ldt, idt, tr;
 
 uint32_t cr2, cr3, cr4;
@@ -55,6 +58,8 @@ float mips, flops;
 int cpu_end_block_after_ins;
 int tempc;
 int cycles_main;
+
+}
 
 void i486_pcem_cpu_core_init(void)
 {
@@ -172,3 +177,20 @@ extern "C" uint32_t i486_pcem_in32(uint16_t port) { return i486::in32(port); }
 extern "C" void i486_pcem_out8(uint16_t port, uint8_t value) { i486::out8(port, value); }
 extern "C" void i486_pcem_out16(uint16_t port, uint16_t value) { i486::out16(port, value); }
 extern "C" void i486_pcem_out32(uint16_t port, uint32_t value) { i486::out32(port, value); }
+
+
+/* The interpreter has no dynarec code generator. Preserve x87 rounding semantics
+ * by applying the requested mode to the host floating-point environment.
+ */
+extern "C" void codegen_set_rounding_mode(int mode)
+{
+    int host_mode = FE_TONEAREST;
+    switch (mode)
+    {
+        case X87_ROUNDING_DOWN: host_mode = FE_DOWNWARD; break;
+        case X87_ROUNDING_UP: host_mode = FE_UPWARD; break;
+        case X87_ROUNDING_CHOP: host_mode = FE_TOWARDZERO; break;
+        default: host_mode = FE_TONEAREST; break;
+    }
+    (void)fesetround(host_mode);
+}
