@@ -255,7 +255,10 @@ static uint16_t pit_current_count(const Pit8253 &p){
 }
 static void pit_set_output(unsigned int ch,uint8_t v){
  uint8_t next=v?1:0;
- if(ch==2&&pit[ch].output!=next) ppispeakon=next;
+ /* PCem pit_set_out() always invokes the channel callback, including
+    same-level writes. pit_speaker_timer() therefore synchronizes the
+    PPI speaker input even when channel 2 OUT did not change. */
+ if(ch==2) ppispeakon=next;
  pit[ch].output=next;
 }
 static void pit_latch_count(Pit8253 &p){if(p.latched)return;p.count_latch=pit_current_count(p);p.latched=1;p.latch_bytes=(p.access==3)?2:1;}
