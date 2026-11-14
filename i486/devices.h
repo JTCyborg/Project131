@@ -8,4 +8,7 @@ namespace i486 { namespace devices {
     void out8(uint16_t port, uint8_t value);
     void out16(uint16_t port, uint16_t value);
     void close();
+    void advance_cycles(unsigned int cpu_cycles);
+    bool interrupt_pending();
+    int acknowledge_interrupt();
 } }
