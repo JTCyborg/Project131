@@ -169,6 +169,23 @@ static inline void fetch_ea_16_long(uint32_t rmdat)
 static int cpu_manufacturer = MANU_INTEL;
 static int CPUID = 0;                 /* Original i486DX/33 has no CPUID instruction. */
 static const uint64_t cpu_CR4_mask = 0; /* CR4 is not implemented by this CPU model. */
+
+/* Fixed-model state normally supplied by PCem's machine-dependent cpu.h.
+ * These values describe the i486DX interpreter only; no PC devices are attached.
+ */
+#define CR4_TSD (1U << 2)
+#define CR4_PCE (1U << 8)
+static const int is386 = 1;             /* i486 includes the 386 instruction set. */
+static const int cpu_use_dynarec = 0;   /* This build uses the interpreter only. */
+static int ins = 0;                     /* REP instruction accounting. */
+static int cpu_cache_int_enabled = 0;   /* Cache is not externally write-through gated. */
+static uint64_t tsc = 0;                /* No RDTSC feature; placeholder state is never read. */
+#define FPU_8087 0
+static const int fpu_type = 1;          /* Integrated 387-compatible i486DX FPU. */
+
+/* Machine hooks intentionally have no external device side effects here. */
+static inline void mmu_invalidate(uint32_t address) { (void)address; }
+static inline void picint(int mask) { (void)mask; }
 static int codegen_flags_changed;    /* Dynarec-only notification; intentionally inert. */
 
 void pclog(const char *format, ...);
