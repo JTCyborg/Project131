@@ -329,6 +329,13 @@ extern int i486_pcem_irq_pending(void);
 extern int i486_pcem_irq_acknowledge(void);
 extern void x86_int(int vector);
 
+/* Last instructions before a terminal BIOS HLT, for POST failure diagnosis. */
+static uint16_t i486_trace_cs[64];
+static uint32_t i486_trace_eip[64], i486_trace_phys[64];
+static uint8_t i486_trace_opcode[64];
+static unsigned int i486_trace_next = 0, i486_trace_count = 0;
+static int i486_hlt_trace_dumped = 0;
+
 unsigned int i486_pcem_execute_instructions(unsigned int instruction_budget)
 {
         unsigned int executed = 0;
@@ -429,6 +436,32 @@ unsigned int i486_pcem_execute_instructions(unsigned int instruction_budget)
                 cpu_state.pc++;
                 x86_opcodes[(opcode | cpu_state.op32) & 0x3ff](fetchdat);
                 ++executed;
+
+                i486_trace_cs[i486_trace_next] = CS;
+                i486_trace_eip[i486_trace_next] = cpu_state.oldpc;
+                i486_trace_phys[i486_trace_next] = physical;
+                i486_trace_opcode[i486_trace_next] = opcode;
+                i486_trace_next = (i486_trace_next + 1U) & 63U;
+                if (i486_trace_count < 64U) ++i486_trace_count;
+
+                if (i486_halted && !i486_hlt_trace_dumped)
+                {
+                        unsigned int n;
+                        unsigned int first = (i486_trace_next - i486_trace_count) & 63U;
+                        pclog("[I486][HLTTRACE] BEGIN count=%u SS=%04X SS_BASE=%08X SP=%04X ESP=%08X",
+                              i486_trace_count, SS, cpu_state.seg_ss.base, SP, ESP);
+                        for (n = 0; n < i486_trace_count; ++n)
+                        {
+                                unsigned int slot = (first + n) & 63U;
+                                pclog("[I486][HLTTRACE][%02u] %04X:%08X PHYS=%08X OP=%02X",
+                                      n, i486_trace_cs[slot], i486_trace_eip[slot],
+                                      i486_trace_phys[slot], i486_trace_opcode[slot]);
+                        }
+                        pclog("[I486][HLTTRACE] END");
+                        i486_hlt_trace_dumped = 1;
+                }
+                else if (!i486_halted)
+                        i486_hlt_trace_dumped = 0;
 
                 if (executed <= 16)
                         pclog("[I486] EXEC #%u CS:EIP=%04X:%08X PHYS=%08X OP=%02X NEXT=%08X",
