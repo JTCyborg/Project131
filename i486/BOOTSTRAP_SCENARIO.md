@@ -161,4 +161,6 @@ Build/runtime verification is pending. This bypass addresses the fixed delay onl
 
 ## Direct BIOS PIT-calibration bypass (2026-11-14)
 
-Commit `94ec834223f0db32f0633671e9ee8999a5a49599` adds a signature-gated redirect for the exact 27C64 ROM calibration routine. The ROM is mapped at `FE000h`, so BIOS buffer index `FA0Ah` is `F000:FA0A`. When its byte signature matches, the loader replaces the entry bytes with `E9 3D 00`, a near jump directly to `F000:FA4A`. This intentionally skips the repeating PIT channel-2 polling/calibration block instead of waiting for it to converge. Runtime verification is pending; inspect the new BIOS redirect log and confirm execution proceeds beyond `FA4A`.
+Commit `ffbf4e082429a12deee764fd74b86517f0488f91` corrects the first bypass after runtime inspection. The previous `E9 3D 00` jump to `F000:FA4A` entered a separate routine without preserving the calibration routine's indirect continuation through DI; the new log showed execution subsequently escaping BIOS into zero-filled memory.
+
+The corrected signature-gated patch leaves the routine entry and epilogue intact. At `F000:FA11`, it replaces `E0 FA` (the first `LOOPNZ` polling branch) with `EB 14`, which jumps from `FA13` directly to `FA27`. This skips both PIT polling loops and calibration arithmetic while retaining the port-61h cleanup and final `JMP DI` at `FA2F`. The ROM is mapped at `FE000h`, so the 64-KiB BIOS address-image indices are `FA11h` and `FA12h`, not raw 8-KiB file offsets. Runtime verification of this corrected path is pending.
