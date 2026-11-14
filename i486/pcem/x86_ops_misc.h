@@ -641,6 +641,15 @@ static int opHLT(uint32_t fetchdat)
                         pclog("[I486][HLT] DS=%04X ES=%04X FS=%04X GS=%04X IF=%u PIC_PENDING=%u",
                               DS, ES, FS, GS, (cpu_state.flags & I_FLAG) ? 1U : 0U,
                               pic_intpending ? 1U : 0U);
+                        pclog("[I486][HLT][SEG] CS_BASE=%08X DS_BASE=%08X ES_BASE=%08X SS_BASE=%08X",
+                              cpu_state.seg_cs.base, cpu_state.seg_ds.base,
+                              cpu_state.seg_es.base, cpu_state.seg_ss.base);
+                        pclog("[I486][HLT][SEG] FS_BASE=%08X GS_BASE=%08X CS_LIMIT=%08X SS_LIMIT=%08X",
+                              cpu_state.seg_fs.base, cpu_state.seg_gs.base,
+                              cpu_state.seg_cs.limit, cpu_state.seg_ss.limit);
+                        pclog("[I486][HLT][STATE] OLDPC=%08X NEXTPC=%08X OP32=%u ABRT=%u",
+                              cpu_state.oldpc, cpu_state.pc, cpu_state.op32,
+                              (unsigned int)cpu_state.abrt);
                 }
                 i486_halted = 1;
                 CLOCK_CYCLES_ALWAYS(100);
