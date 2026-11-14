@@ -159,3 +159,6 @@ A commit without this evidence is a source change, not a verified fix.
 
 
 | 2026-11-14 | PPI port 62h | Compare Project130/PCem keyboard_xt_read(); return bit 5 from ppispeakon instead of forcing it low, allowing BIOS FA18-FA1C polling loop to exit | 81e3d359ebd2064cb4b1a72618063c78ed44e824 | UNVERIFIED runtime; next check is VGA register writes and framebuffer activity |
+
+
+| 2026-11-14 | `e67d106` | Reference BIOS startup uses CGA-compatible mode/color ports `3D8h/3B8h` and `3D9h/3B9h`; Project131's broad VGA range dispatch previously consumed these writes but the VGA handler returned unhandled without preserving them. | `i486/vga.cpp`: add CGA mode-control and color-select latches, initialize them on adapter reset, and decode reads/writes at both color and mono aliases. | Not built here. | Source commit created; runtime behavior and visible VGA output remain UNVERIFIED. | Corrects legacy XT video register decode; does not bypass BIOS calibration or force a mode. |
