@@ -450,20 +450,7 @@ unsigned int i486_pcem_execute_instructions(unsigned int instruction_budget)
                          * channel-2 OUT transitions between IN instructions.
                          */
                         int cycles_before = cycles;
-                        unsigned int dispatch_index = (opcode | cpu_state.op32) & 0x3ffU;
-                        if (CS == 0xF000 && cpu_state.oldpc == 0x0000E5A5U)
-                        {
-                                pclog("[I486][XCHG-DISPATCH] BEFORE OP=%02X OP32=%08X INDEX=%03X AX=%04X SI=%04X DI=%04X EAX=%08X ESI=%08X EDI=%08X",
-                                      opcode, cpu_state.op32, dispatch_index, AX, SI, DI,
-                                      EAX, ESI, EDI);
-                        }
-                        x86_opcodes[dispatch_index](fetchdat);
-                        if (CS == 0xF000 && cpu_state.oldpc == 0x0000E5A5U)
-                        {
-                                pclog("[I486][XCHG-DISPATCH] AFTER  OP=%02X OP32=%08X INDEX=%03X AX=%04X SI=%04X DI=%04X EAX=%08X ESI=%08X EDI=%08X",
-                                      opcode, cpu_state.op32, dispatch_index, AX, SI, DI,
-                                      EAX, ESI, EDI);
-                        }
+                        x86_opcodes[(opcode | cpu_state.op32) & 0x3ff](fetchdat);
                         {
                                 int consumed = cycles_before - cycles;
                                 if (consumed < 1) consumed = 1;

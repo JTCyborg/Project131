@@ -586,21 +586,16 @@ static uint8_t device_in8(uint16_t port)
 
     if (port==0x61) {
         /* Match Project130/PCem keyboard_xt_read(): port 61h reads back
-         * the complete PPI port-B latch written by the BIOS.  PIT channel-2
-         * OUT and the speaker status are exposed through the PCem-compatible
-         * port-62 path, not synthesized into this readback value.
-         */
+         * the complete PPI port-B latch written by the BIOS. */
         return system_control_b;
     }
     if (port==0x62) {
-        /* PCem keyboard_xt_read(): port 62h reports the selected video
-         * class (or FPU-present code) from PPI port-B bit 3, and the
-         * speaker-on state in bit 5. This XT configuration has VGA and
-         * an installed 486DX FPU.
+        /* Match Project130/PCem keyboard_xt_read() exactly for the
+         * non-IBMPC XT board path: PB3 selects VGA (04h) or FPU (0Fh).
+         * Port 62h does NOT contain PIT2/speaker state; that state is
+         * represented by port 61h and the speaker device.
          */
-        const uint8_t video_status = (system_control_b & 0x08) ? 0x04 : 0x0F;
-        const uint8_t value = (uint8_t)(video_status |
-            (ppispeakon ? 0x20 : 0));
+        const uint8_t value = (system_control_b & 0x08) ? 0x04 : 0x0F;
         if (port62_read_count < 32 || (port62_read_count && (port62_read_count & 0x3FFFU) == 0)) {
             char msg[128];
             sprintf(msg, "[I486][PPI] IN 0062=%02X SYS_STATUS READ=%u",
