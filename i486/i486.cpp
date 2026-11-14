@@ -157,6 +157,19 @@ namespace i486
             return 0;
 
         /*
+         * HLT is a real CPU stop state, not an instruction that may be
+         * re-dispatched from the following EIP on every Spectrum frame.
+         * Keep the PC peripherals running while halted; only give the PCem
+         * core another chance when the PIC has an unmasked interrupt pending.
+         * The core remains responsible for checking IF and acknowledging it.
+         */
+        if (i486_halted && !devices::interrupt_pending())
+        {
+            devices::advance_cycles(660000U);
+            return 0;
+        }
+
+        /*
          * Do not cache this preparation result: the host frame/reset path may
          * alter the expansion CPU's hidden CS cache between frames. The
          * helper is deliberately conditional on EIP still being the BIOS
