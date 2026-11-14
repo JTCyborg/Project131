@@ -34,9 +34,12 @@ static void i486_load_real_cs(uint16_t selector)
     cpu_state.seg_cs.limit_raw = 0xFFFF;
     cpu_state.seg_cs.limit_low = 0;
     cpu_state.seg_cs.limit_high = 0xFFFF;
-    cpu_state.seg_cs.access = 0x9B;
+    /* Match PCem x86seg.c: real-mode CS is access=02 (VM86 uses 62). */
+    cpu_state.seg_cs.access = (cpu_state.eflags & VM_FLAG) ? 0x62 : 0x02;
     cpu_state.seg_cs.access2 = 0;
-    cpu_state.seg_cs.checked = 1;
+    if (CPL == 3 && oldcpl != 3)
+        flushmmucache_cr3();
+    oldcpl = CPL;
 }
 
 static void i486_push16(uint16_t value)
@@ -85,15 +88,21 @@ int loadseg(uint16_t selector, x86seg *segment)
     }
 
     segment->seg = selector;
-    segment->base = ((uint32_t)selector << 4);
-    segment->limit = 0xFFFF;
-    segment->limit_raw = 0xFFFF;
-    segment->limit_low = 0;
-    segment->limit_high = 0xFFFF;
-    segment->access = 0x03;
+    /* Exact real-mode branch from PCem x86seg.c::loadseg(). */
+    segment->access = 0x62;
     segment->access2 = 0;
+    segment->base = ((uint32_t)selector << 4);
+    segment->seg = selector;
     segment->checked = 1;
-    return 0;
+
+    if (segment == &cpu_state.seg_ds)
+        codegen_flat_ds = 0;
+    if (segment == &cpu_state.seg_ss)
+        codegen_flat_ss = 0;
+    if (segment == &cpu_state.seg_ss && (cpu_state.eflags & VM_FLAG))
+        stack32 = 0;
+
+    return cpu_state.abrt;
 }
 
 void loadcs(uint16_t selector)
