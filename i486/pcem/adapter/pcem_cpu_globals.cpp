@@ -130,6 +130,7 @@ void i486_pcem_cpu_core_init(void)
  * an i486DX, so initialize the timing globals directly.
  */
 extern "C" {
+int is486 = 1;
 int timing_rr = 1;
 int timing_mr = 3, timing_mrl = 3;
 int timing_rm = 2, timing_rml = 2;
