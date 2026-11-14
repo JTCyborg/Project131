@@ -12,9 +12,9 @@
 namespace i486 { namespace vga {
 namespace {
 static uint8_t vram[256 * 1024];
-static uint8_t seq[5], gc[9], crtc[0x19], attr[0x15], dac[256][3];
+static uint8_t seq[5], gc[9], crtc[0x19], attr[32], dac[256][3];
 static uint8_t seq_index, gc_index, crtc_index, attr_index, dac_write_index, dac_component;
-static uint8_t attr_data_phase, dac_mask = 0xFF;
+static uint8_t attr_data_phase, status_toggle, dac_mask = 0xFF;
 static HWND window_handle;
 static const char *ClassName = "PROJECT131_I486_VGA";
 static uint8_t bda_mode() {
@@ -70,9 +70,9 @@ void init() {
     wc.hCursor=LoadCursorA(0,IDC_ARROW); wc.hbrBackground=(HBRUSH)GetStockObject(BLACK_BRUSH);
     wc.lpszClassName=ClassName; RegisterClassExA(&wc);
     memset(vram,0,sizeof(vram)); memset(seq,0,sizeof(seq)); memset(gc,0,sizeof(gc));
-    memset(crtc,0,sizeof(crtc)); memset(attr,0,sizeof(attr));
+    memset(crtc,0,sizeof(crtc)); memset(attr,0,sizeof(attr)); status_toggle=0;
     for(unsigned int i=0;i<256;i++) for(unsigned int c=0;c<3;c++) dac[i][c]=(uint8_t)(i&63);
-    window_handle=CreateWindowExA(0,ClassName,"Экран ПК — i486 VGA",WS_OVERLAPPEDWINDOW,
+    window_handle=CreateWindowExA(0,ClassName,"PC Screen - i486 VGA",WS_OVERLAPPEDWINDOW,
         CW_USEDEFAULT,CW_USEDEFAULT,656,519,0,0,GetModuleHandleA(0),0);
     if(window_handle) ShowWindow(window_handle,SW_SHOWNORMAL);
     i486::log("[I486][VGA] initialized: 256 KiB VRAM, separate PC display window");
@@ -105,7 +105,7 @@ uint8_t in8(uint16_t p,bool *handled) {
     case 0x3CF: return gc[gc_index%9];
     case 0x3D4: case 0x3B4: return crtc_index;
     case 0x3D5: case 0x3B5: return crtc[crtc_index%0x19];
-    case 0x3DA: case 0x3BA: attr_data_phase=0; return 0x08;
+    case 0x3DA: case 0x3BA: attr_data_phase=0; status_toggle^=0x08; return status_toggle;
     default: *handled=false; return 0xFF;
     }
 }
