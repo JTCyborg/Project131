@@ -188,7 +188,7 @@ static const int cpu_iscyrix = 0;
 static const int cpu_16bitbus = 0; /* Intel 486DX has a 32-bit external data bus. */
 static const int nmi = 0;          /* No external NMI source in the initial module. */
 static const int nmi_mask = 0;
-static int pic_intpending = 0;     /* No PC PIC is attached to this CPU module. */
+extern int pic_intpending; /* Isolated PC PIC output. */
 static int mmu_perm = 4;            /* PCem's non-paged default permission mode. */
 
 /* I/O instructions use the isolated i486 port space, never host PC devices. */
