@@ -129,7 +129,7 @@ $(OUT_DIR)/emul.exe: $(OBJS) $(LIBS) settings.res
     $(LINK) $(LFLAGS) -out:$@ -pdb:$*.pdb -map:$*.map $** $(LIBS)
 
 clean:
-    -del *.obj *.res *.map *.pdb *.pch *.pchi i486\\i486.obj i486\\pcem\\adapter\\pcem_memory.obj i486\\pcem\\adapter\\pcem_cpu_state.obj i486\\pcem\\adapter\\pcem_cpu_globals.obj i486\\pcem\\adapter\\386_opcode_tables.obj
+    -del *.obj *.res *.map *.pdb *.pch *.pchi i486\\i486.obj i486\\devices.obj i486\\pcem\\adapter\\pcem_memory.obj i486\\pcem\\adapter\\pcem_cpu_state.obj i486\\pcem\\adapter\\pcem_cpu_globals.obj i486\\pcem\\adapter\\386_opcode_tables.obj
 
 !if exist(mk.dep)
 !include mk.dep
