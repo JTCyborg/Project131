@@ -104,7 +104,7 @@ i486/i486.obj: i486/i486.cpp
     $(CXX) $(CXXFLAGS) -Yu"std.h" -Foi486/i486.obj i486/i486.cpp
 
 i486/pcem/adapter/pcem_memory.obj: i486/pcem/adapter/pcem_memory.cpp
-    $(CXX) $(CXXFLAGS) -Foi486/pcem/adapter/pcem_memory.obj i486/pcem/adapter/pcem_memory.cpp
+    $(CXX) $(CXXFLAGS) -Yu"std.h" -Foi486/pcem/adapter/pcem_memory.obj i486/pcem/adapter/pcem_memory.cpp
 
 .cpp.obj::
     $(CXX) $(CXXFLAGS) -Yu"std.h" $<
