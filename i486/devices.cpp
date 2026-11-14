@@ -504,7 +504,7 @@ static uint8_t device_in8(uint16_t port)
     if(port==0x21) return pic_master.imr;
     if(port==0xA0) return pic_command_read(pic_slave);
     if(port==0xA1) return pic_slave.imr;
-    if(port>=0x40 && port<=0x42) return pit_read();
+    if(port>=0x40 && port<=0x42) return pit_read(port-0x40);
     if(port<=0x0F) return dma_read(port);
     if(port>=0x80 && port<=0x83) return dma.page[port-0x80];
     if(port==0x63) return ppi_control;
@@ -544,7 +544,7 @@ static void device_out8(uint16_t port, uint8_t value)
     if(port==0x21) { pic_data(pic_master,value); { char m[80]; sprintf(m,"[I486][PIC] OUT 21=%02X IMR=%02X",value,pic_master.imr); trace(m); } return; }
     if(port==0xA0) { pic_command(pic_slave,value); return; }
     if(port==0xA1) { pic_data(pic_slave,value); return; }
-    if(port>=0x40 && port<=0x42) { pit_write(value); { char m[80]; sprintf(m,"[I486][PIT] OUT %04X=%02X",port,value); trace(m); } return; }
+    if(port>=0x40 && port<=0x42) { pit_write(port-0x40,value); { char m[80]; sprintf(m,"[I486][PIT] OUT %04X=%02X",port,value); trace(m); } return; }
     if(port==0x43) { pit_control(value); { char m[80]; sprintf(m,"[I486][PIT] CTRL=%02X",value); trace(m); } return; }
     if(port<=0x0F) { dma_write(port,value); return; }
     if(port>=0x80 && port<=0x83) { dma.page[port-0x80]=value; return; }
