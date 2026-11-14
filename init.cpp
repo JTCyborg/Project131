@@ -170,7 +170,11 @@ void init_all(int argc, char **argv)
       if (i486_bios_path)
       {
          if (i486::load_bios(i486_bios_path))
+         {
             printf("i486 BIOS loaded: %s\n", i486_bios_path);
+            if (!i486::execute_reset_vector_bootstrap())
+               i486::log("[I486] RESET BOOTSTRAP FAILED");
+         }
          else
          {
             printf("warning: unable to load i486 BIOS: %s\n", i486_bios_path);
