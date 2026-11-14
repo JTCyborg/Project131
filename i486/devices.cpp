@@ -222,8 +222,8 @@ static void pic_command(Pic8259 &p,uint8_t v) {
     if(v&0x20) { if(v&0x40) p.isr&=(uint8_t)~(1U<<(v&7)); else { int n=pic_first(p.isr); if(n>=0) p.isr&=(uint8_t)~(1U<<n); } }
 }
 static void pic_data(Pic8259 &p,uint8_t v) {
-    if(p.init_step==1) { p.vector_base=v&0xF8; p.init_step=2; }
-    else if(p.init_step==2) p.init_step=p.init_single?(p.init_need_icw4?3:0):(p.init_need_icw4?3:0);
+    if(p.init_step==1) { p.vector_base=v&0xF8; p.init_step=p.init_single?(p.init_need_icw4?3:0):2; }
+    else if(p.init_step==2) p.init_step=p.init_need_icw4?3:0;
     else if(p.init_step==3) { p.icw4=v; p.auto_eoi=(v>>1)&1; p.init_step=0; }
     else p.imr=v;
 }
