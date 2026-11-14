@@ -351,8 +351,10 @@ namespace
 
 bool isa_vga_adapter_port_read(unsigned port, unsigned char &value)
 {
-    ensure_window();
     port = normalize_port(port);
+    if (port < 0x3B0 || port > 0x3DF)
+        return false;
+    ensure_window();
     port = normalize_crtc(port);
     switch (port)
     {
@@ -385,8 +387,10 @@ bool isa_vga_adapter_port_read(unsigned port, unsigned char &value)
 
 bool isa_vga_adapter_port_write(unsigned port, unsigned char value)
 {
-    ensure_window();
     port = normalize_port(port);
+    if (port < 0x3B0 || port > 0x3DF)
+        return false;
+    ensure_window();
     if (port >= 0x3B0 && port <= 0x3DF && port != 0x3DE && port != 0x3DF)
         vga.software_mode = 1;
 
@@ -430,8 +434,7 @@ bool isa_vga_adapter_port_write(unsigned port, unsigned char value)
 
 bool isa_vga_adapter_mem_read(unsigned address, unsigned char &value)
 {
-    ensure_window();
-    if (!vga.software_mode || !vga.aperture || (address & 0xC000) != 0xC000)
+    if (!vga.initialized || !vga.software_mode || !vga.aperture || (address & 0xC000) != 0xC000)
         return false;
     value = vga_mem_read(address);
     return true;
@@ -439,8 +442,7 @@ bool isa_vga_adapter_mem_read(unsigned address, unsigned char &value)
 
 bool isa_vga_adapter_mem_write(unsigned address, unsigned char value)
 {
-    ensure_window();
-    if (!vga.software_mode || !vga.aperture || (address & 0xC000) != 0xC000)
+    if (!vga.initialized || !vga.software_mode || !vga.aperture || (address & 0xC000) != 0xC000)
         return false;
     vga_mem_write(address, value);
     return true;
