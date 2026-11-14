@@ -54,8 +54,9 @@ int cycles_main;
 
 void i486_pcem_cpu_core_init(void)
 {
-    static const uint8_t reg_a[8] = { 3, 3, 5, 5, 6, 7, 0, 3 };
+    static const uint8_t reg_a[8] = { 3, 3, 5, 5, 6, 7, 5, 3 };
     static const uint8_t reg_b[8] = { 6, 7, 6, 7, 0, 0, 0, 0 };
+    static uint16_t zero_offset = 0;
     unsigned int i;
 
     /* PCem's lazy parity table: P_FLAG is set for even parity. */
@@ -79,7 +80,7 @@ void i486_pcem_cpu_core_init(void)
     for (i = 0; i < 8; ++i)
     {
         mod1add[0][i] = &cpu_state.regs[reg_a[i]].w;
-        mod1add[1][i] = &cpu_state.regs[reg_b[i]].w;
+        mod1add[1][i] = (i < 4) ? &cpu_state.regs[reg_b[i]].w : &zero_offset;
         mod1seg[i] = (i == 2 || i == 3 || i == 6)
             ? &cpu_state.seg_ss.base
             : &cpu_state.seg_ds.base;
