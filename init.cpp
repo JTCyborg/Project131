@@ -1,6 +1,7 @@
 #include "std.h"
 
 #include "emul.h"
+#include "i486/i486.h"
 #include "vars.h"
 #include "config.h"
 #include "dx.h"
@@ -133,6 +134,10 @@ void init_all(int argc, char **argv)
    start_dx();
    set_priority();
    applyconfig();
+   if (i486::init())
+      printf("i486DX/33 module initialized: reset vector FFFFFFF0h (BIOS not loaded)\n");
+   else
+      printf("warning: i486DX module initialization failed\n");
    main_reset();
    autoload();
    init_bpx();
@@ -210,6 +215,7 @@ void __declspec(noreturn) exit()
    done_tape();
    done_dx();
    done_gs();
+   i486::close();
    done_leds();
    save_nv();
    modem.close();
