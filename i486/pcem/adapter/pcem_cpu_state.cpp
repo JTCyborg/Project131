@@ -68,6 +68,18 @@ void i486_pcem_cpu_reset(void)
  */
 extern "C" bool i486_pcem_prepare_first_instruction(void)
 {
+    static unsigned int probe_count = 0;
+    char message[192];
+
+    if (probe_count < 8)
+    {
+        sprintf(message,
+            "[I486] FIRST SLICE PROBE #%u STATE=%p CS=%04X BASE=%08X EIP=%08X",
+            ++probe_count, (void *)&cpu_state, cpu_state.seg_cs.seg,
+            cpu_state.seg_cs.base, cpu_state.pc);
+        i486::log(message);
+    }
+
     if (cpu_state.pc != 0x0000E05BU)
         return false;
 
@@ -75,7 +87,6 @@ extern "C" bool i486_pcem_prepare_first_instruction(void)
         cpu_state.seg_cs.base == 0x000F0000U)
         return true;
 
-    char message[160];
     sprintf(message,
         "[I486] BOOT STATE RESTORE: before CS=%04X BASE=%08X EIP=%08X",
         cpu_state.seg_cs.seg, cpu_state.seg_cs.base, cpu_state.pc);
