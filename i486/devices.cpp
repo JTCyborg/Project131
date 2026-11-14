@@ -572,19 +572,24 @@ static uint8_t device_in8(uint16_t port)
     if(port>=0x80 && port<=0x83) return dma.page[port-0x80];
     if(port==0x63) return ppi_control;
 
-    if (port==0x61) { system_refresh_phase^=0x10; return (uint8_t)((system_control_b&0x0F)|system_refresh_phase); }
-    if (port==0x62) {
-        /* XT system-status port: bit 5 is the 8253 channel-2 OUT pin.
-         * Do not synthesize a transition on every CPU read; the PIT model
-         * owns the signal and advances it from emulated CPU cycles.
+    if (port==0x61) {
+        /* IBM XT PPI port B: bits 0-3 are system control, bit 4 is the
+         * refresh toggle, and bit 5 is the 8253 channel-2 OUT input.
+         * The PIT owns OUT; it must not be exposed on PPI port C (62h).
          */
-        const uint8_t value = (uint8_t)((system_control_a & 0xCF) |
+        system_refresh_phase^=0x10;
+        return (uint8_t)((system_control_b&0x0F) | system_refresh_phase |
             (pit[2].output ? 0x20 : 0));
+    }
+    if (port==0x62) {
+        /* PPI port C is the system-status input port. Keep its input pins
+         * independent of PIT channel 2; PIT2 OUT is wired to port B bit 5.
+         */
+        const uint8_t value = system_control_a;
         if (port62_read_count < 32 || (port62_read_count && (port62_read_count & 0x3FFFU) == 0)) {
             char msg[128];
-            sprintf(msg, "[I486][PPI] IN 0062=%02X PIT2_OUT=%u PIT2_COUNT=%04X READ=%u",
-                value, pit[2].output ? 1U : 0U,
-                (unsigned int)(pit[2].counter & 0xFFFFU), port62_read_count);
+            sprintf(msg, "[I486][PPI] IN 0062=%02X SYS_STATUS READ=%u",
+                value, port62_read_count);
             trace(msg);
         }
         ++port62_read_count;
@@ -640,7 +645,7 @@ static void device_out8(uint16_t port, uint8_t value)
         }
         return;
     }
-    if (port==0x62) { ppi_port_b=value; return; }
+    if (port==0x62) { ppi_port_c=value; return; }
     if (port==0x60) { kbc_data(value); return; }
     if (port==0x64) { kbc_command(value); return; }
     if (port==0x70) { cmos_index=(uint8_t)(value&0x7F); return; }
