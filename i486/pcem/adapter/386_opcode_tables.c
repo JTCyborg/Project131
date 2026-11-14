@@ -316,3 +316,79 @@ void i486_pcem_set_interpreter_tables(void)
     x86_opcodes_REPNE = ops_REPNE;
     x86_opcodes_3DNOW = ops_3DNOW;
 }
+
+
+/*
+ * Project131 bounded PCem interpreter dispatch.
+ * The emulator frame loop schedules this CPU-only slice. No PC machine
+ * devices, timers, PIC, NMI, dynarec or external host ports are attached.
+ */
+extern void pclog(const char *format, ...);
+
+unsigned int i486_pcem_execute_instructions(unsigned int instruction_budget)
+{
+        unsigned int executed = 0;
+
+        if (!instruction_budget || !x86_opcodes)
+                return 0;
+
+        pccache = 0xFFFFFFFFU;
+        cycles = 0x7fffffff;
+
+        while (executed < instruction_budget)
+        {
+                uint32_t physical;
+                uint8_t opcode;
+
+                if (cpu_state.abrt)
+                {
+                        pclog("[I486] EXEC STOP: pending abort=%02X at %04X:%08X",
+                              cpu_state.abrt, CS, cpu_state.pc);
+                        break;
+                }
+
+                cpu_state.oldpc = cpu_state.pc;
+                cpu_state.op32 = use32;
+                cpu_state.ea_seg = &cpu_state.seg_ds;
+                cpu_state.ssegs = 0;
+                physical = cs + cpu_state.pc;
+                fetchdat = fastreadl(physical);
+
+                if (cpu_state.abrt)
+                {
+                        pclog("[I486] EXEC FETCH ABORT at %04X:%08X PHYS=%08X",
+                              CS, cpu_state.pc, physical);
+                        break;
+                }
+
+                opcode = (uint8_t)fetchdat;
+                fetchdat >>= 8;
+                trap = cpu_state.flags & T_FLAG;
+                cpu_state.pc++;
+                x86_opcodes[(opcode | cpu_state.op32) & 0x3ff](fetchdat);
+                ++executed;
+
+                if (executed <= 16)
+                        pclog("[I486] EXEC #%u CS:EIP=%04X:%08X PHYS=%08X OP=%02X NEXT=%08X",
+                              executed, CS, cpu_state.oldpc, physical, opcode,
+                              cpu_state.pc);
+
+                if (cpu_state.abrt)
+                {
+                        pclog("[I486] EXEC ABORT=%02X ERROR=%08X AT=%04X:%08X",
+                              cpu_state.abrt, abrt_error, CS, cpu_state.oldpc);
+                        break;
+                }
+
+                if (trap)
+                {
+                        pclog("[I486] EXEC STOP: single-step trap is not wired");
+                        break;
+                }
+        }
+
+        if (executed)
+                pclog("[I486] EXEC BATCH: %u instructions CS:EIP=%04X:%08X",
+                      executed, CS, cpu_state.pc);
+        return executed;
+}
