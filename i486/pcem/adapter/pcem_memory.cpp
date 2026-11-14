@@ -62,11 +62,12 @@ extern "C"
 
         /*
          * A0000h-BFFFFh is the VGA/mono/CGA adapter aperture, not ordinary
-         * expansion RAM.  Leaving these pages in the direct RAM lookup tables
+         * expansion RAM. Leaving these pages in the direct RAM lookup tables
          * lets PCem's fast memory path bypass i486::read8/write8 entirely, so
          * the VGA device never sees guest accesses and its VRAM stays blank.
-         * Invalidating both lookups forces accesses through readmem*/writemem*,
-         * which dispatch to the isolated VGA adapter before backing RAM.
+         * Invalidating both lookups forces accesses through the readmem and
+         * writemem slow paths, which dispatch to the isolated VGA adapter
+         * before backing RAM.
          */
         for (page = 0xA0000U >> PageShift; page < (0xC0000U >> PageShift); ++page)
         {
