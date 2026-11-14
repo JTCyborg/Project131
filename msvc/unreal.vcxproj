@@ -776,6 +776,30 @@
       <AdditionalIncludeDirectories>..\i486\pcem;..\i486\pcem\adapter;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <CompileAs>CompileAsC</CompileAs>
     </ClCompile>
+    <ClCompile Include="..\i486\pcem\386_common.c">
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <ForcedIncludeFiles></ForcedIncludeFiles>
+      <AdditionalIncludeDirectories>..\i486\pcem;..\i486\pcem\adapter;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <CompileAs>CompileAsC</CompileAs>
+    </ClCompile>
+    <ClCompile Include="..\i486\pcem\x86seg.c">
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <ForcedIncludeFiles></ForcedIncludeFiles>
+      <AdditionalIncludeDirectories>..\i486\pcem;..\i486\pcem\adapter;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <CompileAs>CompileAsC</CompileAs>
+    </ClCompile>
+    <ClCompile Include="..\i486\pcem\x87.c">
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <ForcedIncludeFiles></ForcedIncludeFiles>
+      <AdditionalIncludeDirectories>..\i486\pcem;..\i486\pcem\adapter;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <CompileAs>CompileAsC</CompileAs>
+    </ClCompile>
+    <ClCompile Include="..\i486\pcem\x87_timings.c">
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <ForcedIncludeFiles></ForcedIncludeFiles>
+      <AdditionalIncludeDirectories>..\i486\pcem;..\i486\pcem\adapter;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <CompileAs>CompileAsC</CompileAs>
+    </ClCompile>
     <ClCompile Include="..\emulkeys.cpp" />
     <ClCompile Include="..\fdd.cpp" />
     <ClCompile Include="..\fntsrch.cpp" />
