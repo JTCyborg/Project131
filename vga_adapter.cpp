@@ -132,9 +132,18 @@ namespace
         // packed ink/paper attribute. The VGA card receives indexed pixels.
         for (unsigned i = 0; i < 16; ++i)
         {
-            vga.dac[i][0] = (unsigned char)(pal0[i].peRed >> 2);
-            vga.dac[i][1] = (unsigned char)(pal0[i].peGreen >> 2);
-            vga.dac[i][2] = (unsigned char)(pal0[i].peBlue >> 2);
+            // The transparent bridge feeds an RGB8 emulator palette into the
+            // VGA's 6-bit DAC. Apply a mild +15% level correction here only;
+            // software-programmed VGA modes retain their exact DAC values.
+            unsigned r = (unsigned(pal0[i].peRed) * 115 + 50) / 100;
+            unsigned g = (unsigned(pal0[i].peGreen) * 115 + 50) / 100;
+            unsigned b = (unsigned(pal0[i].peBlue) * 115 + 50) / 100;
+            if (r > 255) r = 255;
+            if (g > 255) g = 255;
+            if (b > 255) b = 255;
+            vga.dac[i][0] = (unsigned char)(r >> 2);
+            vga.dac[i][1] = (unsigned char)(g >> 2);
+            vga.dac[i][2] = (unsigned char)(b >> 2);
         }
 
         const unsigned outw = 320, outh = 200;
