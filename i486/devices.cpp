@@ -291,8 +291,9 @@ static void ata_command(uint8_t command)
         memset(ata.buffer, 0, sizeof(ata.buffer));
         /* ATA word fields are stored little-endian. */
         ata.buffer[0]=0x40; /* fixed disk */
-        ata.buffer[2]=0x00; ata.buffer[3]=0x02; /* geometry: 512 cylinders */
-        ata.buffer[6]=16;   /* heads */
+        ata.buffer[2]=32; ata.buffer[3]=0x00; /* 32 cylinders */
+        ata.buffer[6]=16;   /* 16 heads */
+        ata.buffer[12]=63;  /* 63 sectors per track */
         memcpy(ata.buffer+20, "P1310000000000000001", 20);
         memcpy(ata.buffer+54, "VIRTUAL 16MB HDD  ", 18);
         memcpy(ata.buffer+94, "PROJECT131       ", 17);
