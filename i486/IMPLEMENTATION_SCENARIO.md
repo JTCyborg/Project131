@@ -165,3 +165,6 @@ A commit without this evidence is a source change, not a verified fix.
 
 
 | 2026-11-14 | `17b2826` | User requested bypass of the repeated fixed BIOS delay. Exact 27C64 bytes at ROM offset `05AFh` are `B9 00 50 E2 FE`; bypass only the `LOOP -2` instruction by replacing it with two NOPs when the complete signature matches. | `i486/i486.cpp` | Not run here | Source/binary inspection confirms the exact signature; runtime confirmation pending. | UNVERIFIED; delay loop skipped, following `DEC SI / JS / RET` path remains unchanged. |
+
+
+| 2026-11-14 | `94ec834` | User-directed hard bypass: signature-gated patch at ROM offset `1A0Ah` (`F000:FA0A`) replaces the PIT calibration entry with near JMP `E9 3D 00` to `F000:FA4A`. | `i486/i486.cpp` | Not run here | Exact bytes verified from `27c64d.bin` and runtime trace shows repeated return to `FA0A`. | PENDING runtime confirmation; intentional calibration skip. |
