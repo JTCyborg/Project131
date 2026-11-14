@@ -324,6 +324,10 @@ void i486_pcem_set_interpreter_tables(void)
  * devices, timers, PIC, NMI, dynarec or external host ports are attached.
  */
 extern void pclog(const char *format, ...);
+extern int i486_pcem_irq_pending(void);
+extern int i486_pcem_irq_acknowledge(void);
+extern void i486_pcem_pit_advance(unsigned int cpu_cycles);
+extern void x86_int(int vector);
 
 unsigned int i486_pcem_execute_instructions(unsigned int instruction_budget)
 {
@@ -381,6 +385,19 @@ unsigned int i486_pcem_execute_instructions(unsigned int instruction_budget)
 
         while (executed < instruction_budget)
         {
+                pic_intpending = i486_pcem_irq_pending();
+                if (pic_intpending && (cpu_state.flags & I_FLAG))
+                {
+                        int vector = i486_pcem_irq_acknowledge();
+                        if (vector >= 0)
+                        {
+                                uint8_t pending_opcode = (uint8_t)fastreadl(cs + cpu_state.pc);
+                                cpu_state.oldpc = cpu_state.pc + (pending_opcode == 0xF4 ? 1U : 0U);
+                                x86_int(vector);
+                                pclog("[I486][PIC] IRQ VECTOR=%02X RETURN=%04X:%08X", vector, CS, cpu_state.oldpc);
+                                pccache = 0xFFFFFFFFU;
+                        }
+                }
                 uint32_t physical;
                 uint8_t opcode;
 
@@ -411,6 +428,7 @@ unsigned int i486_pcem_execute_instructions(unsigned int instruction_budget)
                 cpu_state.pc++;
                 x86_opcodes[(opcode | cpu_state.op32) & 0x3ff](fetchdat);
                 ++executed;
+                i486_pcem_pit_advance(4);
 
                 if (executed <= 16)
                         pclog("[I486] EXEC #%u CS:EIP=%04X:%08X PHYS=%08X OP=%02X NEXT=%08X",
