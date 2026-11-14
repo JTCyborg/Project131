@@ -337,26 +337,20 @@ void cyrix_write_seg_descriptor(uint32_t addr, x86seg *seg);
 #define SMHR_VALID (1 << 0)
 #define SMHR_ADDR_MASK (0xfffffffc)
 
+typedef struct i486_cyrix_state
+{
+        struct
+        {
+                uint32_t base;
+                uint64_t size;
+        } arr[8];
+        uint32_t smhr;
+} i486_cyrix_state;
+
 #ifdef I486_X86_STATE_DEFINE
-struct
-{
-        struct
-        {
-                uint32_t base;
-                uint64_t size;
-        } arr[8];
-        uint32_t smhr;
-} cyrix;
+i486_cyrix_state cyrix;
 #else
-extern struct
-{
-        struct
-        {
-                uint32_t base;
-                uint64_t size;
-        } arr[8];
-        uint32_t smhr;
-} cyrix;
+extern i486_cyrix_state cyrix;
 #endif
 
 #endif
