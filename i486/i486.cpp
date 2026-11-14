@@ -172,23 +172,21 @@ namespace i486
 
             /*
              * Bring-up bypass for the ROM's repeating PIT calibration.
-             * ROM offset 1A0Ah is F000:FA0A (the image is mapped at FE000h).
-             * The verified routine occupies FA0A..FA31 and repeatedly polls
-             * PIT channel 2. Redirect its entry straight to FA4A, the next
-             * executable routine after the calibration table. E9 3D 00 is a
-             * near relative JMP from FA0A to FA4A.
+             * BIOS storage is a 64-KiB address image: F000:FA0A is indexed
+             * as 0xFA0A (not 0x1A0A). Redirect FA0A directly to FA4A.
+             * E9 3D 00 is a near relative JMP from FA0A to FA4A.
              */
             if (file_size == 8192 &&
-                bios[0x1A0A] == 0xB9 && bios[0x1A0B] == 0x00 &&
-                bios[0x1A0C] == 0x10 && bios[0x1A0D] == 0xE4 &&
-                bios[0x1A0E] == 0x62 && bios[0x1A0F] == 0xA8 &&
-                bios[0x1A10] == 0x20 && bios[0x1A28] == 0xE4 &&
-                bios[0x1A29] == 0x61 && bios[0x1A30] == 0xFF &&
-                bios[0x1A31] == 0xE7)
+                bios[0xFA0A] == 0xB9 && bios[0xFA0B] == 0x00 &&
+                bios[0xFA0C] == 0x10 && bios[0xFA0D] == 0xE4 &&
+                bios[0xFA0E] == 0x62 && bios[0xFA0F] == 0xA8 &&
+                bios[0xFA10] == 0x20 && bios[0xFA28] == 0xE4 &&
+                bios[0xFA29] == 0x61 && bios[0xFA30] == 0xFF &&
+                bios[0xFA31] == 0xE7)
             {
-                bios[0x1A0A] = 0xE9;
-                bios[0x1A0B] = 0x3D;
-                bios[0x1A0C] = 0x00;
+                bios[0xFA0A] = 0xE9;
+                bios[0xFA0B] = 0x3D;
+                bios[0xFA0C] = 0x00;
                 log("[I486][BIOS] PIT calibration F000:FA0A bypassed; redirected execution to F000:FA4A");
             }
 
