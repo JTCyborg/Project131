@@ -162,3 +162,13 @@ extern "C" void fatal(const char *format, ...)
     i486::log("[I486] PCem fatal: ");
     i486::log(message);
 }
+
+/* Isolated PCem port-I/O bridge. The module's current port map returns FFh
+ * for reads and ignores writes; no UnrealSpeccy/ATM devices are touched.
+ */
+extern "C" uint8_t i486_pcem_in8(uint16_t port) { return i486::in8(port); }
+extern "C" uint16_t i486_pcem_in16(uint16_t port) { return i486::in16(port); }
+extern "C" uint32_t i486_pcem_in32(uint16_t port) { return i486::in32(port); }
+extern "C" void i486_pcem_out8(uint16_t port, uint8_t value) { i486::out8(port, value); }
+extern "C" void i486_pcem_out16(uint16_t port, uint16_t value) { i486::out16(port, value); }
+extern "C" void i486_pcem_out32(uint16_t port, uint32_t value) { i486::out32(port, value); }
