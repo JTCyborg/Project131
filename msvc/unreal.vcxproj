@@ -721,7 +721,12 @@
       <TargetPath>i486\bios\27c64d.bin</TargetPath>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-  </ItemGroup>
+  
+    <Content Include="..\x32\unreal.ini">
+      <TargetPath>unreal.ini</TargetPath>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+</ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\atm.cpp" />
     <ClCompile Include="..\cheat.cpp" />
