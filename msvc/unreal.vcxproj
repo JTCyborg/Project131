@@ -768,6 +768,7 @@
     <ClCompile Include="..\emul.cpp" />
     <ClCompile Include="..\i486\i486.cpp" />
     <ClCompile Include="..\i486\devices.cpp" />
+    <ClCompile Include="..\i486\vga.cpp" />
     <ClCompile Include="..\i486\pcem\adapter\pcem_memory.cpp" />
     <ClCompile Include="..\i486\pcem\adapter\pcem_cpu_state.cpp" />
     <ClCompile Include="..\i486\pcem\adapter\pcem_cpu_globals.cpp" />
@@ -852,6 +853,7 @@
     <ClInclude Include="..\atm.h" />
     <ClInclude Include="..\i486\i486.h" />
     <ClInclude Include="..\i486\devices.h" />
+    <ClInclude Include="..\i486\vga.h" />
     <ClInclude Include="..\i486\pcem\adapter\pcem_memory.h" />
     <ClInclude Include="..\bass.h" />
     <ClInclude Include="..\cheat.h" />
