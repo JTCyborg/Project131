@@ -39,7 +39,7 @@ static unsigned int io_trace_count;
  */
 static uint8_t system_control_b;
 static uint8_t system_refresh_phase;
-static uint8_t system_control_a = 0x0F; /* PCem keyboard_xt_read(): non-IBM XT status, 486DX FPU present, speaker off */
+/* Port 62h is synthesized from XT PPI port-B outputs, as in PCem keyboard_xt_read(). */
 static unsigned int port62_read_count;
 static void trace(const char *s) { i486::log(s); }
 
@@ -587,11 +587,14 @@ static uint8_t device_in8(uint16_t port)
             (pit[2].output ? 0x20 : 0));
     }
     if (port==0x62) {
-        /* PPI port C is the system-status input port. Bit 5 is the
-         * active-high I/O-channel-check status (no fault when set).
-         * PIT2 OUT remains on port B bit 5 (61h).
+        /* PCem keyboard_xt_read(): port 62h reports the selected video
+         * class (or FPU-present code) from PPI port-B bit 3, and the
+         * speaker-on state in bit 5. This XT configuration has VGA and
+         * an installed 486DX FPU.
          */
-        const uint8_t value = system_control_a;
+        const uint8_t video_status = (system_control_b & 0x08) ? 0x04 : 0x0F;
+        const uint8_t value = (uint8_t)(video_status |
+            ((system_control_b & 0x02) ? 0x20 : 0));
         if (port62_read_count < 32 || (port62_read_count && (port62_read_count & 0x3FFFU) == 0)) {
             char msg[128];
             sprintf(msg, "[I486][PPI] IN 0062=%02X SYS_STATUS READ=%u",
@@ -690,7 +693,7 @@ void reset()
 {
     system_control_b = 0;
     system_refresh_phase = 0;
-    system_control_a = 0x0F; /* XT status: 486DX FPU present, ppispeakon clear */
+
     pic_reset(); pit_reset(); dma_reset(); ppi_control=0x9B; ppi_port_b=0; ppi_port_c=0x20;
     uart_reset();
     memset(&lpt1, 0, sizeof(lpt1));
