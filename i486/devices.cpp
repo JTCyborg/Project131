@@ -188,10 +188,11 @@ static uint8_t cmos[128];
 static uint8_t cmos_index;
 
 struct Pic8259 { uint8_t irr, imr, isr, vector_base, init_step, icw4, read_isr, auto_eoi, init_need_icw4, init_single; };
-struct Pit8253 { uint32_t reload, counter; uint8_t access, mode, write_phase, read_phase, write_latch, read_latch, running; uint64_t clock_accumulator; };
+struct Pit8253 { uint32_t reload, counter; uint8_t access, mode, write_phase, read_phase, write_latch, read_latch, running, output, null_count; };
 struct Dma8237 { uint16_t address[4], count[4]; uint8_t page[4], mode[4], mask, command, status, request, flipflop; };
 static Pic8259 pic_master, pic_slave;
-static Pit8253 pit0;
+static Pit8253 pit[3];
+static uint64_t pit_clock_accumulator;
 static Dma8237 dma;
 static uint8_t ppi_control=0x9B, ppi_port_b, ppi_port_c=0x20;
 
