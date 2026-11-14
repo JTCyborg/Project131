@@ -7,6 +7,7 @@
  * SPDX-License-Identifier: GPL-2.0
  */
 #include <stdint.h>
+#include <stddef.h>
 #include <stdio.h>
 #define I486_X86_STATE_DEFINE
 #include "../x86.h"
@@ -74,8 +75,10 @@ extern "C" bool i486_pcem_prepare_first_instruction(void)
     if (probe_count < 8)
     {
         sprintf(message,
-            "[I486] FIRST SLICE PROBE #%u STATE=%p CS=%04X BASE=%08X EIP=%08X",
-            ++probe_count, (void *)&cpu_state, cpu_state.seg_cs.seg,
+            "[I486] FIRST SLICE PROBE #%u STATE=%p SIZE=%u CS_OFF=%u CS_ADDR=%p CS=%04X BASE=%08X EIP=%08X",
+            ++probe_count, (void *)&cpu_state, (unsigned int)sizeof(cpu_state),
+            (unsigned int)offsetof(x86_cpu_state, seg_cs),
+            (void *)&cpu_state.seg_cs, cpu_state.seg_cs.seg,
             cpu_state.seg_cs.base, cpu_state.pc);
         i486::log(message);
     }
