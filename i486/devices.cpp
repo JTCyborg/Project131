@@ -32,6 +32,14 @@ struct Ne2000 {
 } nic;
 
 static unsigned int io_trace_count;
+/* XT-compatible system board ports used by the bundled legacy BIOS.
+ * Port 62h is the 8255 input/status port; 61h is the system-control latch.
+ * The emulated machine has 640 KiB conventional-memory configuration and
+ * an installed 486DX x87 unit. No parity/channel-check faults are injected.
+ */
+static uint8_t system_control_b;
+static uint8_t system_refresh_phase;
+static uint8_t system_control_a = 0x0E; /* 640 KiB + coprocessor, no POST loop */
 static void trace(const char *s) { i486::log(s); }
 
 static void uart_reset()
@@ -417,6 +425,13 @@ static void cmos_reset()
 }
 static uint8_t device_in8(uint16_t port)
 {
+    if (port==0x61) {
+        /* 8255/AT-compatible readback: error latches clear, timer-2 output
+         * low in this no-PIT stage, refresh request bit toggles on reads. */
+        system_refresh_phase ^= 0x10;
+        return (uint8_t)((system_control_b & 0x0F) | system_refresh_phase);
+    }
+    if (port==0x62) return system_control_a;
     if (port==0x60) {
         if (!kbc.output_count) return 0;
         {
@@ -445,6 +460,16 @@ static uint8_t device_in8(uint16_t port)
 }
 static void device_out8(uint16_t port, uint8_t value)
 {
+    if (port==0x61) {
+        /* Bits 0..3 are the writable system-control latch. Writing bit 7
+         * acknowledges the timer-0 output latch; no IRQ/PIT is attached. */
+        system_control_b = (uint8_t)(value & 0x0F);
+        return;
+    }
+    if (port==0x62) {
+        /* Port C is an input/status port on the XT-compatible board. */
+        return;
+    }
     if (port==0x60) { kbc_data(value); return; }
     if (port==0x64) { kbc_command(value); return; }
     if (port==0x70) { cmos_index=(uint8_t)(value&0x7F); return; }
@@ -481,6 +506,9 @@ static void device_out16(uint16_t port, uint16_t value)
 
 void reset()
 {
+    system_control_b = 0;
+    system_refresh_phase = 0;
+    system_control_a = 0x0E;
     uart_reset();
     memset(&lpt1, 0, sizeof(lpt1));
     lpt1.control = 0x0C;
@@ -497,7 +525,7 @@ void close() {}
 
 uint8_t in8(uint16_t port)
 {
-    if (port==0x60 || port==0x64 || port==0x71 ||
+    if (port==0x60 || port==0x61 || port==0x62 || port==0x64 || port==0x71 ||
         (port>=0x1F0 && port<=0x1F7) || port==0x3F2 || port==0x3F4 || port==0x3F5 || port==0x3F6 || port==0x3F7)
         return device_in8(port);
     if (port >= 0x3F8 && port <= 0x3FF) {
@@ -530,7 +558,7 @@ uint8_t in8(uint16_t port)
 
 void out8(uint16_t port, uint8_t value)
 {
-    if (port==0x60 || port==0x64 || port==0x70 ||
+    if (port==0x60 || port==0x61 || port==0x62 || port==0x64 || port==0x70 ||
         (port>=0x1F0 && port<=0x1F7) || port==0x3F2 || port==0x3F5 || port==0x3F6 || port==0x3F7) {
         device_out8(port,value); return;
     }
