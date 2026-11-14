@@ -164,7 +164,15 @@ namespace i486
         if (!i486_pcem_prepare_first_instruction())
             return 0;
 
-        return i486_pcem_execute_instructions(instruction_budget);
+        /*
+         * mainloop.cpp schedules one 486 slice per Spectrum frame. Advance
+         * the virtual 33 MHz clock by one PAL frame (20 ms) so PIT channel 0
+         * keeps its real 1.193182 MHz rate despite the bounded instruction
+         * budget used to keep the host responsive.
+         */
+        unsigned int executed = i486_pcem_execute_instructions(instruction_budget);
+        devices::advance_cycles(660000U);
+        return executed;
     }
 
     unsigned char read8(unsigned int address)
