@@ -576,6 +576,13 @@ static void cmos_reset()
 }
 static uint8_t device_in8(uint16_t port)
 {
+    /* Temporary POST stub: the supplied XT BIOS polls bit 5 at port 14h
+     * (IN AL,14h / TEST AL,20h / LOOPZ). Report the device-ready bit so
+     * the bounded BIOS wait can finish. This is a bootstrap placeholder,
+     * not a claim that a physical device is implemented at 14h.
+     */
+    if (port==0x14) return 0x20;
+
     /* BIOS calibration workaround: port 34h is not implemented by this
      * machine profile. Return a stable clear bit 3 so the legacy BIOS
      * polling loop terminates instead of consuming the whole boot slice.
@@ -750,7 +757,7 @@ int acknowledge_interrupt() { return pic_acknowledge(); }
 uint8_t in8(uint16_t port)
 {
     if ((port>=0x3B0 && port<=0x3DF)) { bool handled=false; uint8_t value=i486::vga::in8(port,&handled); if(handled) return value; return 0xFF; }
-    if (port==0x20 || port==0x21 || (port>=0x40 && port<=0x42) || port==0x60 || port==0x61 || port==0x62 || port==0x63 || port==0x64 || port==0x71 || port==0xA0 || port==0xA1 || port<=0x0F || (port>=0x80 && port<=0x83) ||
+    if (port==0x20 || port==0x21 || (port>=0x40 && port<=0x42) || port==0x14 || port==0x60 || port==0x61 || port==0x62 || port==0x63 || port==0x64 || port==0x71 || port==0xA0 || port==0xA1 || port<=0x0F || (port>=0x80 && port<=0x83) ||
         (port>=0x1F0 && port<=0x1F7) || port==0x3F2 || port==0x3F4 || port==0x3F5 || port==0x3F6 || port==0x3F7)
         return device_in8(port);
     if (port >= 0x3F8 && port <= 0x3FF) {
