@@ -30,11 +30,21 @@ The PCem interpreter entry point is `exec386(int cycs)` in `386.c`. It dispatche
 
 PCem defines the interpreter opcode tables by including `386_ops.h` from `386_dynarec.c`, not from `386.c`. Importing that whole translation unit would also pull in the dynarec backend. Project131 now has a separate table translation unit at `i486/pcem/adapter/386_opcode_tables.c`. It reuses the PCem 386 addressing helpers and opcode handlers, selects the `ops_386` / `ops_386_0f` tables and integrated x87 tables, and disables the legacy 286/386 prefetch-queue callbacks.
 
-The table adapter is **not yet in either build system** and has not been compiled. Its narrow memory contract is declared in `i486/pcem/adapter/pcem_memory.h`.
+The table adapter exists at `i486/pcem/adapter/386_opcode_tables.c`, but is **not yet in either build system** and has not been compiled. It includes `386_ops.h` and depends on the complete matching PCem helper/state contract; adding this file alone will not produce an executable CPU. Its narrow memory contract is declared in `i486/pcem/adapter/pcem_memory.h`.
 
 The first memory adapter is now implemented in `i486/pcem/adapter/pcem_memory.cpp` and included in both the Makefile and `msvc/unreal.vcxproj`. It builds 4-KiB direct lookup entries for module RAM, read-only low BIOS alias `F0000h–FFFFFh`, and high reset BIOS alias `FFFF0000h–FFFFFFFFh`. Slow reads/writes route through the isolated `i486::read/write` API. This stage supports identity-mapped real mode (and protected mode with paging disabled) only; page-table translation and page-fault reporting are still pending. The memory adapter has not yet been compiled in the user's environment.
 
-The next required work is the CPU state/reset/segment adapter and then the interpreter execution loop. Do not add the opcode-table translation unit to the build until the remaining PCem dependencies are isolated and verified.
+The CPU reset/state adapter is now present at `i486/pcem/adapter/pcem_cpu_state.cpp`. It defines `cpu_state`, initializes the 486 hidden reset CS state and provides a temporary reset-vector FAR-JMP bootstrap. That bootstrap is a diagnostic transition only; it does not execute the BIOS instruction through PCem.
+
+### Current dependency audit (2026-11-14)
+
+The opcode-table adapter's actual include chain is `386_opcode_tables.c` → `386_ops.h` → the `x86_ops_*.h` instruction families. The table translation unit also requires the `x86.h` state contract, `x86_flags.h`, `386_common.h` inline memory/ModRM helpers, and all referenced globals/functions to have exactly one definition. The `x87.h` header currently contains global definitions (`x87_pc_off`, `x87_op_off`, `x87_pc_seg`, `x87_op_seg`) rather than declarations, so it must not be included indiscriminately from multiple translation units without first correcting its ownership model.
+
+The opcode handlers use the following shared CPU state beyond the register file: `use32`, `stack32`, `rmdat`, `easeg`, `eal_r/eal_w`, `mod1add/mod1seg`, `znptable8`, `cycles`, `insc`, `pccache/pccache2`, and exception/abort helpers. Some instruction families also require protected-mode helpers and x87 state. These are not satisfied by the current memory and reset adapters alone.
+
+The upstream `exec386()` loop is not suitable for direct inclusion: it also drives PCem timer processing, PIC/NMI/SMI and machine logging. The Project131 runner must be a separate bounded interpreter loop using the real PCem opcode dispatch and instruction handlers, local cycle accounting, and an explicit stop on unimplemented exception paths. Guest `IN/OUT` must terminate at module-local callbacks; no callback may forward to the emulator's Z80/ATM port handlers. External IRQ/NMI remain disabled for this initial bring-up.
+
+**Current verified state:** BIOS loading and reset-vector byte inspection are logged; the temporary bootstrap correctly changes the visible execution location to `F000:E05B`. No PCem opcode handler has yet been executed. The opcode table adapter and this dependency audit are not compiled or runtime-verified. The next code change must establish the shared-state ownership and required real-mode helpers before adding the table adapter to either build system.
 
 ## Reset-vector correction
 
@@ -47,7 +57,7 @@ PCem's `x86seg_reset()` currently selects the conventional AT reset state (`F000
 - Memory: isolated physical RAM and BIOS mapping owned by `i486/`.
 - BIOS loader accepts a raw 8-KiB 27C64 image (mapped at offset `E000h` in the 64-KiB BIOS aperture) or a full 64-KiB image. Pass the image path as `-i486bios <path>`; the loader logs the mapped size and the five reset-vector bytes. The 8-KiB mapping places file offset `1FF0h` at physical `FFFFFFF0h`.
 - I/O: isolated guest port callbacks; never call the Z80/ATM output handler. Unsupported accesses are diagnostic events, not a reason to add a PC peripheral.
-- First acceptance test: execute the actual BIOS reset-vector far jump (`EA 5B E0 00 F0`) from `FFFFFFF0h`, then continue through real BIOS instructions with instruction/CS:EIP tracing.
+- First acceptance test: dispatch the actual BIOS reset-vector far jump (`EA 5B E0 00 F0`) from `FFFFFFF0h` through the PCem interpreter, then continue through real BIOS instructions with instruction/CS:EIP tracing. The current manual bootstrap does not satisfy this acceptance test.
 - The initial target deliberately has no VGA, IDE, floppy, serial, keyboard controller, RTC, PIC, or PIT device models. The ATM/emulator owns host-facing resources; the i486 module does not create a second PC.
 
 ## Import/licensing status
