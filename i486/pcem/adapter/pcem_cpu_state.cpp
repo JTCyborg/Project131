@@ -104,7 +104,7 @@ extern "C" bool i486_pcem_prepare_first_instruction(void)
     cpu_state.seg_cs.limit_raw = 0xFFFF;
     cpu_state.seg_cs.limit_low = 0;
     cpu_state.seg_cs.limit_high = 0xFFFF;
-    cpu_state.seg_cs.access = 0x9B;
+    cpu_state.seg_cs.access = 0x02;
     cpu_state.seg_cs.access2 = 0;
     cpu_state.seg_cs.checked = 1;
 
