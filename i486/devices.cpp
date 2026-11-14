@@ -287,6 +287,12 @@ static void pit_tick(unsigned int ch){
  else if(p.mode==4||p.mode==5){if(p.strobe_low){pit_set_output(ch,1);p.strobe_low=0;if(p.mode==4)p.running=0;}else if(p.counter){--p.counter;if(!p.counter){pit_set_output(ch,0);p.strobe_low=1;}}}
  /* The XT PIC receives IRQ0 on the channel-0 OUT low-to-high edge. */
  if(ch==0&&!old_output&&p.output)pic_master.irr|=1;
+ if(ch==2&&old_output!=p.output){
+  char msg[128];
+  sprintf(msg,"[I486][PIT] CH2 OUT %u->%u COUNT=%04X PHASE=%u GATE=%u MODE=%u",
+   old_output,p.output,pit_current_count(p),(unsigned int)p.phase_remaining,p.gate,p.mode);
+  trace(msg);
+ }
 }
 static void dma_reset() { memset(&dma,0,sizeof(dma)); dma.mask=0x0F; }
 static uint8_t dma_read(uint16_t p) {
@@ -564,14 +570,14 @@ static uint8_t device_in8(uint16_t port)
          */
         const uint8_t value = (uint8_t)((system_control_a & 0xCF) |
             (pit[2].output ? 0x20 : 0));
-        if (port62_read_count < 32) {
-            char msg[112];
-            sprintf(msg, "[I486][PPI] IN 0062=%02X PIT2_OUT=%u PIT2_COUNT=%04X",
+        if (port62_read_count < 32 || (port62_read_count && (port62_read_count & 0x3FFFU) == 0)) {
+            char msg[128];
+            sprintf(msg, "[I486][PPI] IN 0062=%02X PIT2_OUT=%u PIT2_COUNT=%04X READ=%u",
                 value, pit[2].output ? 1U : 0U,
-                (unsigned int)(pit[2].counter & 0xFFFFU));
+                (unsigned int)(pit[2].counter & 0xFFFFU), port62_read_count);
             trace(msg);
-            ++port62_read_count;
         }
+        ++port62_read_count;
         return value;
     }
     if (port==0x63) return ppi_control;
