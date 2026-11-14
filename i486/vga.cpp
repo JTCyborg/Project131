@@ -2,7 +2,6 @@
  * Initial display support: 80x25 text and VGA mode 13h.
  * Independent of the ATM/Spectrum video pipeline. SPDX-License-Identifier: GPL-2.0
  */
-#include "std.h"
 #include <windows.h>
 #include <stdint.h>
 #include <string.h>
