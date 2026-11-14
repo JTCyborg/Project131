@@ -6,6 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0
  */
+#include <stdint.h>
 #define I486_X86_STATE_DEFINE
 #include "x86.h"
 #include <string.h>
