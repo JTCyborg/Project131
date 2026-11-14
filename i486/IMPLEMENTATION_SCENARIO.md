@@ -131,6 +131,8 @@ Append one entry per change; never overwrite an earlier result.
 
 | 2026-11-14 | `9ec71a4` / `7d1165b` | Re-read BIOS ROM bytes at offset `1A18h`: `E4 62 A8 20 E1 FA`, proving the polling port is `62h` (not `14h`) and the tested bit is 5. PCem `keyboard_xt_read()` sources bit 5 from PIT2 speaker input; the Project131 port-62 handler incorrectly synthesized bit 4 on every read. Removed the unrelated port-14 stub and synthetic bit-4 toggle; added a 64-read bounded port-62/PIT2 state trace. | `i486/devices.cpp`, `i486/BOOTSTRAP_SCENARIO.md`, `i486/IMPLEMENTATION_SCENARIO.md` | Not run here; build/runtime pending. | Source evidence: Project131 BIOS SHA-1 `ebeaaaded91f9d930b1daf65e48b7ab757b9b42f`; Project130 `PCem/keyboard_xt.c::keyboard_xt_read()` and `PCem/pit.c::pit_speaker_timer()`. Current log blob `08fcbc39c6b08dce5d8d09e5474ae7cc1a1bda05` shows `04h/14h` at the poll loop and no bit-5 assertion. Next run must show `[I486][PPI] IN 0062=` values and PIT2 state. | UNVERIFIED diagnostic correction; no successful BIOS exit claimed. |
 
+| 2026-11-14 | `8a67bfd` / `19377d7` | User priority clarified: pass BIOS POST checks and get visible video output; full PIT/speaker fidelity is not required. Force PPI port-62 bit 5 high while preserving video-status bits, allowing the BIOS polling loop at F000:FA18 to proceed. | `i486/devices.cpp`, `i486/BOOTSTRAP_SCENARIO.md` | Not run here; build/runtime pending. | Deliberate compatibility bypass for POST only. Next runtime check: instruction address after FA18 loop, then VGA mode-register writes and framebuffer/text output. Revisit PIT only if a later stage requires it. | UNVERIFIED; no successful POST/VGA output claimed. |
+
 ## Required format for future commits
 
 For every proposed commit, record:
