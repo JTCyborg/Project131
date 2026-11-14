@@ -214,8 +214,7 @@ namespace i486
 
     unsigned short in16(unsigned short port)
     {
-        return (unsigned short)(in8(port) |
-            ((unsigned short)in8((unsigned short)(port + 1)) << 8));
+        return devices::in16(port);
     }
 
     unsigned int in32(unsigned short port)
@@ -231,8 +230,7 @@ namespace i486
 
     void out16(unsigned short port, unsigned short value)
     {
-        out8(port, (unsigned char)value);
-        out8((unsigned short)(port + 1), (unsigned char)(value >> 8));
+        devices::out16(port, value);
     }
 
     void out32(unsigned short port, unsigned int value)
