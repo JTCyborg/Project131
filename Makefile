@@ -100,7 +100,10 @@ mk.dep: $(SRCS)
 std.obj: std.cpp
     $(CXX) $(CXXFLAGS) -Yc"std.h" std.cpp
 
-i486/devices.obj: i486/devices.cpp\n    $(CXX) $(CXXFLAGS) -Yu"std.h" -Foi486/devices.obj i486/devices.cpp\n\ni486/i486.obj: i486/i486.cpp
+i486/devices.obj: i486/devices.cpp
+    $(CXX) $(CXXFLAGS) -Yu"std.h" -Foi486/devices.obj i486/devices.cpp
+
+i486/i486.obj: i486/i486.cpp
     $(CXX) $(CXXFLAGS) -Yu"std.h" -Foi486/i486.obj i486/i486.cpp
 
 i486/pcem/adapter/pcem_memory.obj: i486/pcem/adapter/pcem_memory.cpp
