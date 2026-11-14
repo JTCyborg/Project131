@@ -200,8 +200,8 @@ namespace i486
 
         fputs(message, file);
         const size_t length = strlen(message);
-        if (length == 0 || message[length - 1] != '\\n')
-            fputs("\\r\\n", file);
+        if (length == 0 || message[length - 1] != '\n')
+            fputs("\r\n", file);
         fclose(file);
     }
 }
