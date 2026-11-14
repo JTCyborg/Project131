@@ -459,6 +459,21 @@ unsigned int i486_pcem_execute_instructions(unsigned int instruction_budget)
                 }
                 ++executed;
 
+                /* Track SI across the BIOS helper called from E5AC. The
+                 * caller's saved status value is in SI at E5A5, but the
+                 * return path currently reaches DEC SI with SI=FFFF. Log
+                 * every instruction in the short helper window to identify
+                 * the exact instruction that overwrites the saved value.
+                 */
+                if (CS == 0xF000 &&
+                    ((cpu_state.oldpc >= 0x0000E5A5U && cpu_state.oldpc <= 0x0000E5B5U) ||
+                     (cpu_state.oldpc >= 0x0000F9AAU && cpu_state.oldpc <= 0x0000F9FFU)))
+                {
+                        pclog("[I486][BIOS-SI-TRACE] %04X:%08X OP=%02X AX=%04X SI=%04X DI=%04X BX=%04X CX=%04X DX=%04X FLAGS=%08X NEXT=%08X",
+                              CS, cpu_state.oldpc, opcode, AX, SI, DI, BX, CX,
+                              DX, cpu_state.flags, cpu_state.pc);
+                }
+
                 /* The BIOS speaker-calibration helper at F000:E5A0
                  * preserves the caller's AX in SI, then decrements SI after
                  * calibration. A negative result takes the RET path to the
