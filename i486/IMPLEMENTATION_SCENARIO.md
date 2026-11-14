@@ -129,6 +129,8 @@ Append one entry per change; never overwrite an earlier result.
 
 | 2026-11-14 | `6557a04` | User-requested HLT register snapshot. Existing opHLT snapshot already captured CS:IP, GPRs, visible segment selectors, FLAGS/EFLAGS, CR0, IF and PIC pending; extended it with hidden segment bases/limits and interpreter OLDPC/NEXTPC/OP32/ABRT at the HLT instruction boundary. | `i486/pcem/x86_ops_misc.h` | Not run here; compile/runtime verification pending. | On the next run, the first HLT transition should emit the added `[I486][HLT][SEG]` and `[I486][HLT][STATE]` records alongside the existing register lines. | UNVERIFIED; no CPU behavior changed. |
 
+| 2026-11-14 | `9ec71a4` / `7d1165b` | Re-read BIOS ROM bytes at offset `1A18h`: `E4 62 A8 20 E1 FA`, proving the polling port is `62h` (not `14h`) and the tested bit is 5. PCem `keyboard_xt_read()` sources bit 5 from PIT2 speaker input; the Project131 port-62 handler incorrectly synthesized bit 4 on every read. Removed the unrelated port-14 stub and synthetic bit-4 toggle; added a 64-read bounded port-62/PIT2 state trace. | `i486/devices.cpp`, `i486/BOOTSTRAP_SCENARIO.md`, `i486/IMPLEMENTATION_SCENARIO.md` | Not run here; build/runtime pending. | Source evidence: Project131 BIOS SHA-1 `ebeaaaded91f9d930b1daf65e48b7ab757b9b42f`; Project130 `PCem/keyboard_xt.c::keyboard_xt_read()` and `PCem/pit.c::pit_speaker_timer()`. Current log blob `08fcbc39c6b08dce5d8d09e5474ae7cc1a1bda05` shows `04h/14h` at the poll loop and no bit-5 assertion. Next run must show `[I486][PPI] IN 0062=` values and PIT2 state. | UNVERIFIED diagnostic correction; no successful BIOS exit claimed. |
+
 ## Required format for future commits
 
 For every proposed commit, record:
