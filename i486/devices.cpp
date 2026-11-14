@@ -39,7 +39,7 @@ static unsigned int io_trace_count;
  */
 static uint8_t system_control_b;
 static uint8_t system_refresh_phase;
-static uint8_t system_control_a = 0x2E; /* XT system-status inputs; bit 5 high means no I/O-channel-check fault */
+static uint8_t system_control_a = 0x0E; /* XT PPI port-C status: bit 5 low when I/O channel check is inactive */
 static unsigned int port62_read_count;
 static void trace(const char *s) { i486::log(s); }
 
@@ -685,7 +685,7 @@ void reset()
 {
     system_control_b = 0;
     system_refresh_phase = 0;
-    system_control_a = 0x2E;
+    system_control_a = 0x0E;
     pic_reset(); pit_reset(); dma_reset(); ppi_control=0x9B; ppi_port_b=0; ppi_port_c=0x20;
     uart_reset();
     memset(&lpt1, 0, sizeof(lpt1));
