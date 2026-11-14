@@ -1,4 +1,7 @@
 #include <math.h>
+#ifdef _MSC_VER
+#include <float.h>
+#endif
 #include <fenv.h>
 #include "x87_timings.h"
 
