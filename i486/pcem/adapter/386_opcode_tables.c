@@ -460,7 +460,7 @@ unsigned int i486_pcem_execute_instructions(unsigned int instruction_budget)
                  */
                 if (CS == 0xF000 && cpu_state.oldpc >= 0x0000FA0AU &&
                     cpu_state.oldpc <= 0x0000FA25U &&
-                    i486_bios_poll_trace_count < 256U)
+                    i486_bios_poll_trace_count < 20000U)
                 {
                         pclog("[I486][BIOS-POLL] %04X:%08X OP=%02X AL=%02X CX=%04X FLAGS=%08X ZF=%u NEXT=%08X",
                               CS, cpu_state.oldpc, opcode, AL, CX,
