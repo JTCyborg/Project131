@@ -33,6 +33,7 @@ struct Ne2000 {
 } nic;
 
 static unsigned int io_trace_count;
+static unsigned int port62_trace_count;
 /* XT-compatible system board ports plus isolated 8259A/8253/8237 models.
  * The emulated machine has 640 KiB conventional memory and an installed
  * 486DX x87 unit. No parity/channel-check faults are injected.
@@ -576,13 +577,6 @@ static void cmos_reset()
 }
 static uint8_t device_in8(uint16_t port)
 {
-    /* Temporary POST stub: the supplied XT BIOS polls bit 5 at port 14h
-     * (IN AL,14h / TEST AL,20h / LOOPZ). Report the device-ready bit so
-     * the bounded BIOS wait can finish. This is a bootstrap placeholder,
-     * not a claim that a physical device is implemented at 14h.
-     */
-    if (port==0x14) return 0x20;
-
     /* BIOS calibration workaround: port 34h is not implemented by this
      * machine profile. Return a stable clear bit 3 so the legacy BIOS
      * polling loop terminates instead of consuming the whole boot slice.
@@ -604,15 +598,23 @@ static uint8_t device_in8(uint16_t port)
     }
     if (port==0x62) {
         /*
-         * BIOS POST cassette/refresh probe stub.
-         * Bit 4 must change while the BIOS polls port 62h; provide a
-         * deterministic edge on every read instead of timing/cycle counters.
-         * Keep the XT video-status nibble and speaker input bits intact.
+         * PCem keyboard_xt_read(): for the VGA + integrated-FPU machine,
+         * PB3 selects the video-status nibble (04h when set, 0Fh otherwise).
+         * Bit 5 is the real PIT channel-2 speaker input. Port 62h does not
+         * synthesize a bit-4 edge; the BIOS ROM at F000:FA18 tests bit 5.
          */
-        system_refresh_phase ^= 0x10;
         const uint8_t video_status = (system_control_b & 0x08) ? 0x04 : 0x0F;
-        return (uint8_t)(video_status | system_refresh_phase |
-                         (ppispeakon ? 0x20 : 0));
+        const uint8_t value = (uint8_t)(video_status | (ppispeakon ? 0x20 : 0));
+        if (port62_trace_count < 64U) {
+            char msg[160];
+            sprintf(msg, "[I486][PPI] IN 0062=%02X PB=%02X SPEAKER=%u PIT2_OUT=%u GATE=%u PHASE=%u",
+                value, system_control_b, (unsigned int)ppispeakon,
+                (unsigned int)pit[2].output, (unsigned int)pit[2].gate,
+                (unsigned int)pit[2].phase_remaining);
+            trace(msg);
+            ++port62_trace_count;
+        }
+        return value;
     }
     if (port==0x63) return ppi_control;
     if (port==0x60) {
@@ -738,6 +740,7 @@ void reset()
     fdc_reset();
     cmos_reset();
     io_trace_count = 0;
+    port62_trace_count = 0;
     trace("[I486] DEVICES RESET PIC=8259A PIT=8253 DMA=8237 PPI=XT COM1=3F8 LPT1=378 NE2000=300 KBC=60/64 IDE=1F0 FDD=3F0 DRIVE=A:NO_MEDIA HDD=16MB_BLANK");
 }
 
@@ -757,7 +760,7 @@ int acknowledge_interrupt() { return pic_acknowledge(); }
 uint8_t in8(uint16_t port)
 {
     if ((port>=0x3B0 && port<=0x3DF)) { bool handled=false; uint8_t value=i486::vga::in8(port,&handled); if(handled) return value; return 0xFF; }
-    if (port==0x20 || port==0x21 || (port>=0x40 && port<=0x42) || port==0x14 || port==0x60 || port==0x61 || port==0x62 || port==0x63 || port==0x64 || port==0x71 || port==0xA0 || port==0xA1 || port<=0x0F || (port>=0x80 && port<=0x83) ||
+    if (port==0x20 || port==0x21 || (port>=0x40 && port<=0x42) || port==0x60 || port==0x61 || port==0x62 || port==0x63 || port==0x64 || port==0x71 || port==0xA0 || port==0xA1 || port<=0x0F || (port>=0x80 && port<=0x83) ||
         (port>=0x1F0 && port<=0x1F7) || port==0x3F2 || port==0x3F4 || port==0x3F5 || port==0x3F6 || port==0x3F7)
         return device_in8(port);
     if (port >= 0x3F8 && port <= 0x3FF) {
