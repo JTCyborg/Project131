@@ -717,8 +717,6 @@
     </Manifest>
   </ItemDefinitionGroup>
   <ItemGroup>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
   
     <Content Include="..\x32\unreal.ini">
       <TargetPath>unreal.ini</TargetPath>
@@ -763,7 +761,7 @@
     <ClCompile Include="..\dxr_rsm.cpp" />
     <ClCompile Include="..\dxr_text.cpp" />
     <ClCompile Include="..\dxr_vd.cpp" />
-    <ClCompile Include="..\emul.cpp" />
+    <ClCompile Include="..\emul.cpp">
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <ForcedIncludeFiles></ForcedIncludeFiles>
       <CompileAs>CompileAsC</CompileAs>
