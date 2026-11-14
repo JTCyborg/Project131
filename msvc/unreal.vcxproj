@@ -822,6 +822,7 @@
     <ClCompile Include="..\upd765.cpp" />
     <ClCompile Include="..\util.cpp" />
     <ClCompile Include="..\vars.cpp" />
+    <ClCompile Include="..\vga_adapter.cpp" />
     <ClCompile Include="..\vs1001.cpp" />
     <ClCompile Include="..\wd93cmd.cpp" />
     <ClCompile Include="..\wd93crc.cpp" />
@@ -919,6 +920,7 @@
     <ClInclude Include="..\upd765.h" />
     <ClInclude Include="..\util.h" />
     <ClInclude Include="..\vars.h" />
+    <ClInclude Include="..\vga_adapter.h" />
     <ClInclude Include="..\vs1001.h" />
     <ClInclude Include="..\wd93.h" />
     <ClInclude Include="..\wd93crc.h" />

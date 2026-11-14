@@ -1,6 +1,8 @@
+#include "vga_adapter.h"
 
-// Àäğåñ ìîæåò ïğåâûøàòü 0xFFFF
-// (÷òîáû â êàæäîé êîìàíäå ğàáîòû ñ ğåãèñòğàìè íå äåëàòü &= 0xFFFF)
+
+// Ã€Ã¤Ã°Ã¥Ã± Ã¬Ã®Ã¦Ã¥Ã² Ã¯Ã°Ã¥Ã¢Ã»Ã¸Ã Ã²Ã¼ 0xFFFF
+// (Ã·Ã²Ã®Ã¡Ã» Ã¢ ÃªÃ Ã¦Ã¤Ã®Ã© ÃªÃ®Ã¬Ã Ã­Ã¤Ã¥ Ã°Ã Ã¡Ã®Ã²Ã» Ã± Ã°Ã¥Ã£Ã¨Ã±Ã²Ã°Ã Ã¬Ã¨ Ã­Ã¥ Ã¤Ã¥Ã«Ã Ã²Ã¼ &= 0xFFFF)
 u8 xm(unsigned addr)
 {
    addr &= 0xFFFF;
@@ -16,7 +18,7 @@ u8 xm(unsigned addr)
     }
 #endif
 
-   if((conf.mem_model == MM_ATM3) && (comp.pBF & 4) && ((addr & 0xF800) == 0)) // Ğàçğåøåíà ğàáîòà ñ ÎÇÓ øğèôòà äëÿ ATM3
+   if((conf.mem_model == MM_ATM3) && (comp.pBF & 4) && ((addr & 0xF800) == 0)) // ÃÃ Ã§Ã°Ã¥Ã¸Ã¥Ã­Ã  Ã°Ã Ã¡Ã®Ã²Ã  Ã± ÃÃ‡Ã“ Ã¸Ã°Ã¨Ã´Ã²Ã  Ã¤Ã«Ã¿ ATM3
    {
        unsigned idx = (addr >> 3) | ((addr & 7) << 8);
        return fontatm2[idx];
@@ -25,8 +27,8 @@ u8 xm(unsigned addr)
    return *am_r(addr);
 }
 
-// Àäğåñ ìîæåò ïğåâûøàòü 0xFFFF
-// (÷òîáû â êàæäîé êîìàíäå ğàáîòû ñ ğåãèñòğàìè íå äåëàòü &= 0xFFFF)
+// Ã€Ã¤Ã°Ã¥Ã± Ã¬Ã®Ã¦Ã¥Ã² Ã¯Ã°Ã¥Ã¢Ã»Ã¸Ã Ã²Ã¼ 0xFFFF
+// (Ã·Ã²Ã®Ã¡Ã» Ã¢ ÃªÃ Ã¦Ã¤Ã®Ã© ÃªÃ®Ã¬Ã Ã­Ã¤Ã¥ Ã°Ã Ã¡Ã®Ã²Ã» Ã± Ã°Ã¥Ã£Ã¨Ã±Ã²Ã°Ã Ã¬Ã¨ Ã­Ã¥ Ã¤Ã¥Ã«Ã Ã²Ã¼ &= 0xFFFF)
 unsigned char rm(unsigned addr)
 {
    addr &= 0xFFFF;
@@ -41,8 +43,8 @@ unsigned char rm(unsigned addr)
    return xm(addr);
 }
 
-// Àäğåñ ìîæåò ïğåâûøàòü 0xFFFF
-// (÷òîáû â êàæäîé êîìàíäå ğàáîòû ñ ğåãèñòğàìè íå äåëàòü &= 0xFFFF)
+// Ã€Ã¤Ã°Ã¥Ã± Ã¬Ã®Ã¦Ã¥Ã² Ã¯Ã°Ã¥Ã¢Ã»Ã¸Ã Ã²Ã¼ 0xFFFF
+// (Ã·Ã²Ã®Ã¡Ã» Ã¢ ÃªÃ Ã¦Ã¤Ã®Ã© ÃªÃ®Ã¬Ã Ã­Ã¤Ã¥ Ã°Ã Ã¡Ã®Ã²Ã» Ã± Ã°Ã¥Ã£Ã¨Ã±Ã²Ã°Ã Ã¬Ã¨ Ã­Ã¥ Ã¤Ã¥Ã«Ã Ã²Ã¼ &= 0xFFFF)
 void wm(unsigned addr, unsigned char val)
 {
    addr &= 0xFFFF;
@@ -72,7 +74,7 @@ void wm(unsigned addr, unsigned char val)
    }
 #endif
 
-   if((conf.mem_model == MM_ATM3) && (comp.pBF & 4) && ((addr & 0xF800) == 0)) // Ğàçğåøåíà çàãğóçêà øğèôòà äëÿ ATM3
+   if((conf.mem_model == MM_ATM3) && (comp.pBF & 4) && ((addr & 0xF800) == 0)) // ÃÃ Ã§Ã°Ã¥Ã¸Ã¥Ã­Ã  Ã§Ã Ã£Ã°Ã³Ã§ÃªÃ  Ã¸Ã°Ã¨Ã´Ã²Ã  Ã¤Ã«Ã¿ ATM3
    {
        unsigned idx = (addr >> 3) | ((addr & 7) << 8);
        fontatm2[idx] = val;
@@ -195,7 +197,7 @@ void z80loop()
       if (cpu.int_pend && cpu.iff1 && cpu.t != cpu.eipos && // int enabled in CPU not issued after EI
            !((conf.mem_model == MM_ATM710 || conf.mem_model == MM_ATM3) && !(comp.pFF77 & 0x20))) // int enabled by ATM hardware
       {
-         handle_int(&cpu, cpu.IntVec()); // Íà÷àëî îáğàáîòêè int (çàïèñü â ñòåê àäğåñà âîçâğàòà è ò.ï.)
+         handle_int(&cpu, cpu.IntVec()); // ÃÃ Ã·Ã Ã«Ã® Ã®Ã¡Ã°Ã Ã¡Ã®Ã²ÃªÃ¨ int (Ã§Ã Ã¯Ã¨Ã±Ã¼ Ã¢ Ã±Ã²Ã¥Ãª Ã Ã¤Ã°Ã¥Ã±Ã  Ã¢Ã®Ã§Ã¢Ã°Ã Ã²Ã  Ã¨ Ã².Ã¯.)
       }
 #ifdef Z80_DBG
       debug_events(&cpu);

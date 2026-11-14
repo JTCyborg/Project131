@@ -14,6 +14,7 @@
 #include "zc.h"
 #include "tape.h"
 #include "upd765.h"
+#include "vga_adapter.h"
 
 void out(unsigned port, unsigned char val)
 {
@@ -21,7 +22,7 @@ void out(unsigned port, unsigned char val)
    u8 p1 = (port & 0xFF);
    brk_port_out = port; brk_port_val = val;
 
-   // В начале дешифрация портов по полным 8бит
+   // Г‚ Г­Г Г·Г Г«ГҐ Г¤ГҐГёГЁГґГ°Г Г¶ГЁГї ГЇГ®Г°ГІГ®Гў ГЇГ® ГЇГ®Г«Г­Г»Г¬ 8ГЎГЁГІ
 
    if(conf.ula_plus)
    {
@@ -90,7 +91,7 @@ void out(unsigned port, unsigned char val)
        return;
    }
 
-   // divide на nemo портах
+   // divide Г­Г  nemo ГЇГ®Г°ГІГ Гµ
    if(conf.ide_scheme == IDE_NEMO_DIVIDE)
    {
        if((port & 0x1E) == 0x10) // rrr1000x
@@ -107,18 +108,18 @@ void out(unsigned port, unsigned char val)
            {
                comp.ide_hi_byte_w ^= 1;
 
-               if(comp.ide_hi_byte_w1) // Была запись в порт 0x11 (старший байт уже запомнен)
+               if(comp.ide_hi_byte_w1) // ГЃГ»Г«Г  Г§Г ГЇГЁГ±Гј Гў ГЇГ®Г°ГІ 0x11 (Г±ГІГ Г°ГёГЁГ© ГЎГ Г©ГІ ГіГ¦ГҐ Г§Г ГЇГ®Г¬Г­ГҐГ­)
                {
                    comp.ide_hi_byte_w1 = 0;
                }
                else
                {
-                   if(comp.ide_hi_byte_w) // Запоминаем младший байт
+                   if(comp.ide_hi_byte_w) // Г‡Г ГЇГ®Г¬ГЁГ­Г ГҐГ¬ Г¬Г«Г Г¤ГёГЁГ© ГЎГ Г©ГІ
                    {
                        comp.ide_write = val;
                        return;
                    }
-                   else // Меняем старший и младший байты местами (как этого ожидает write_hdd_5)
+                   else // ГЊГҐГ­ГїГҐГ¬ Г±ГІГ Г°ГёГЁГ© ГЁ Г¬Г«Г Г¤ГёГЁГ© ГЎГ Г©ГІГ» Г¬ГҐГ±ГІГ Г¬ГЁ (ГЄГ ГЄ ГЅГІГ®ГЈГ® Г®Г¦ГЁГ¤Г ГҐГІ write_hdd_5)
                    {
                        u8 tmp = comp.ide_write;
                        comp.ide_write = val;
@@ -140,7 +141,7 @@ void out(unsigned port, unsigned char val)
 
    if(conf.mem_model == MM_ATM3)
    {
-       // Порт расширений АТМ3
+       // ГЏГ®Г°ГІ Г°Г Г±ГёГЁГ°ГҐГ­ГЁГ© ГЂГ’ГЊ3
        if((port & 0xFF) == 0xBF)
        {
            if((comp.pBF ^ val) & comp.pBF & 8) // D3: 1->0
@@ -150,10 +151,10 @@ void out(unsigned port, unsigned char val)
            return;
        }
 
-       // Порт разблокировки RAM0 АТМ3
+       // ГЏГ®Г°ГІ Г°Г Г§ГЎГ«Г®ГЄГЁГ°Г®ГўГЄГЁ RAM0 ГЂГ’ГЊ3
        if((port & 0xFF) == 0xBE)
        {
-           comp.pBE = 2; // счетчик для выхода из nmi
+           comp.pBE = 2; // Г±Г·ГҐГІГ·ГЁГЄ Г¤Г«Гї ГўГ»ГµГ®Г¤Г  ГЁГ§ nmi
            return;
        }
    }
@@ -355,7 +356,7 @@ void out(unsigned port, unsigned char val)
       }
       // don't return - out to port #FE works in trdos!
    }
-   else // не dos
+   else // Г­ГҐ dos
    {
        if((p1 == 0x3F) && (conf.sound.ay_scheme == AY_SCHEME_FULLER)) // fuller AY register select
        {
@@ -702,7 +703,7 @@ __inline unsigned char in1(unsigned port)
        __debugbreak();
 */
 
-   // В начале дешифрация портов по полным 8бит
+   // Г‚ Г­Г Г·Г Г«ГҐ Г¤ГҐГёГЁГґГ°Г Г¶ГЁГї ГЇГ®Г°ГІГ®Гў ГЇГ® ГЇГ®Г«Г­Г»Г¬ 8ГЎГЁГІ
 
    if(conf.ula_plus && port == 0xFF3B)
    {
@@ -731,14 +732,14 @@ __inline unsigned char in1(unsigned port)
 
    if(conf.mem_model == MM_ATM3)
    {
-       // Порт расширений АТМ3
+       // ГЏГ®Г°ГІ Г°Г Г±ГёГЁГ°ГҐГ­ГЁГ© ГЂГ’ГЊ3
        if((port & 0xFF) == 0xBF)
            return comp.pBF;
 
        if((port & 0xFF) == 0xBE)
        {
            u8 port_hi = (port >> 8) & 0xFF;
-           if((port_hi & ~7) == 0) // Чтение не инвертированного номера страницы
+           if((port_hi & ~7) == 0) // Г—ГІГҐГ­ГЁГҐ Г­ГҐ ГЁГ­ГўГҐГ°ГІГЁГ°Г®ГўГ Г­Г­Г®ГЈГ® Г­Г®Г¬ГҐГ°Г  Г±ГІГ°Г Г­ГЁГ¶Г»
            {
                unsigned PgIdx = port_hi & 7;
                return (comp.pFFF7[PgIdx] & 0xFF) ^ 0xFF;
@@ -772,7 +773,7 @@ __inline unsigned char in1(unsigned port)
        }
    }
 
-   // divide на nemo портах
+   // divide Г­Г  nemo ГЇГ®Г°ГІГ Гµ
    if(conf.ide_scheme == IDE_NEMO_DIVIDE)
    {
        if(((port & 0x1E) == 0x10)) // rrr1000x
@@ -915,12 +916,12 @@ __inline unsigned char in1(unsigned port)
           // 3F = 0011|1111b
           // 5F = 0101|1111b
           // 7F = 0111|1111b
-          // DF = 1101|1111b порт мыши
+          // DF = 1101|1111b ГЇГ®Г°ГІ Г¬Г»ГёГЁ
           // FF = 1111|1111b
       else if ((p1 & 0x9F) == 0x1F || p1 == 0xFF) // 1F, 3F, 5F, 7F, FF
           return comp.wd.in(p1);
    }
-   else // не dos
+   else // Г­ГҐ dos
    {
        if(((port & 0xA3) == 0xA3) && (conf.ide_scheme == IDE_DIVIDE))
        {

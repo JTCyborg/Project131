@@ -234,6 +234,9 @@
     <ClCompile Include="..\util.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\vga_adapter.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="..\vars.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -393,6 +396,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\vs1001.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vga_adapter.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\vars.h">

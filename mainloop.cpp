@@ -15,6 +15,7 @@
 #include "z80.h"
 #include "mainloop.h"
 #include "funcs.h"
+#include "vga_adapter.h"
 
 #include "util.h"
 
