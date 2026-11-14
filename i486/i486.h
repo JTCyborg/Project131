@@ -29,6 +29,7 @@ namespace i486
     void out32(unsigned short port, unsigned int value);
 
     bool is_initialized();
+    void log(const char *message);
 
     // Internal bridge for the isolated PCem memory adapter.
     namespace detail
