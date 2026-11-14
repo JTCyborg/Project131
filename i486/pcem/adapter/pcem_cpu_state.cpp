@@ -16,6 +16,7 @@
 
 void i486_pcem_cpu_core_init(void);
 extern "C" void i486_pcem_set_interpreter_tables(void);
+extern "C" int i486_halted;
 
 static void reset_segment(x86seg *segment, uint16_t selector, uint32_t base)
 {
@@ -34,6 +35,7 @@ static void reset_segment(x86seg *segment, uint16_t selector, uint32_t base)
 void i486_pcem_cpu_reset(void)
 {
     unsigned int i;
+    i486_halted = 0;
 
     memset(&cpu_state, 0, sizeof(cpu_state));
 
