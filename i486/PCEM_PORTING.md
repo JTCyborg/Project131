@@ -36,6 +36,12 @@ The first memory adapter is now implemented in `i486/pcem/adapter/pcem_memory.cp
 
 The CPU reset/state adapter is now present at `i486/pcem/adapter/pcem_cpu_state.cpp`. It defines `cpu_state`, initializes the 486 hidden reset CS state and provides a temporary reset-vector FAR-JMP bootstrap. That bootstrap is a diagnostic transition only; it does not execute the BIOS instruction through PCem.
 
+### Shared CPU state adapter (2026-11-14)
+
+`i486/pcem/adapter/pcem_cpu_globals.cpp` now owns the shared PCem interpreter globals that are independent of the PC machine layer: control/debug registers, segment descriptor caches, lazy-flag state, ModRM address tables, parity lookup, and the interpreter's fast-fetch cache. `i486_pcem_cpu_core_init()` is called as part of CPU reset, so the ModRM register-pair pointers always refer to the current `cpu_state` after reset. The 16-bit ModRM pairs follow BX+SI, BX+DI, BP+SI, BP+DI, SI, DI, BP, BX; BP-based forms select SS. The parity lookup marks even parity with `P_FLAG`.
+
+The globals adapter is included in both `Makefile` and `msvc/unreal.vcxproj`. The opcode-table adapter now explicitly maps PCem's `cpu_rm/cpu_mod/cpu_reg` decode names to the ModRM fields in `cpu_state`. This closes two concrete missing pieces, but does not yet make the opcode-table translation unit buildable: flag rebuild/extract functions, exception/segment helpers, x87 callbacks, and the isolated interpreter runner still need implementation.
+
 ### Current dependency audit (2026-11-14)
 
 The opcode-table adapter's actual include chain is `386_opcode_tables.c` → `386_ops.h` → the `x86_ops_*.h` instruction families. The table translation unit also requires the `x86.h` state contract, `x86_flags.h`, `386_common.h` inline memory/ModRM helpers, and all referenced globals/functions to have exactly one definition. The `x87.h` header currently contains global definitions (`x87_pc_off`, `x87_op_off`, `x87_pc_seg`, `x87_op_seg`) rather than declarations, so it must not be included indiscriminately from multiple translation units without first correcting its ownership model.
