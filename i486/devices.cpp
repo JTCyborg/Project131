@@ -278,12 +278,15 @@ static uint8_t pit_read(unsigned int ch){
  if(p.latched&&p.latch_bytes&&!--p.latch_bytes)p.latched=0;return v;
 }
 static void pit_tick(unsigned int ch){
- Pit8253 &p=pit[ch];if(!p.running||p.null_count||!p.gate)return;
+ Pit8253 &p=pit[ch];
+ if(!p.running||p.null_count||((p.mode!=1&&p.mode!=5)&&!p.gate))return;
+ const uint8_t old_output=p.output;
  if(p.mode==0||p.mode==1){if(p.counter)--p.counter;if(!p.counter){pit_set_output(ch,1);if(p.mode==0)p.running=0;}}
  else if(p.mode==2){if(p.counter>1){--p.counter;if(p.counter==1)pit_set_output(ch,0);}else{p.counter=p.reload;pit_set_output(ch,1);}}
  else if(p.mode==3){if(p.phase_remaining)--p.phase_remaining;if(!p.phase_remaining){uint8_t next=(uint8_t)!p.output;pit_set_output(ch,next);p.phase_remaining=next?(p.reload+1U)/2U:p.reload/2U;if(!p.phase_remaining)p.phase_remaining=1;}if(p.counter>2)p.counter-=2;else p.counter=p.reload;}
  else if(p.mode==4||p.mode==5){if(p.strobe_low){pit_set_output(ch,1);p.strobe_low=0;if(p.mode==4)p.running=0;}else if(p.counter){--p.counter;if(!p.counter){pit_set_output(ch,0);p.strobe_low=1;}}}
- if(ch==0&&p.output)pic_master.irr|=1;
+ /* The XT PIC receives IRQ0 on the channel-0 OUT low-to-high edge. */
+ if(ch==0&&!old_output&&p.output)pic_master.irr|=1;
 }
 static void dma_reset() { memset(&dma,0,sizeof(dma)); dma.mask=0x0F; }
 static uint8_t dma_read(uint16_t p) {
