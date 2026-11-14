@@ -608,18 +608,22 @@ void close() {}
 
 void advance_cycles(unsigned int cpu_cycles)
 {
-    pit0.clock_accumulator += (uint64_t)cpu_cycles * 1193182ULL;
-    while(pit0.clock_accumulator>=33000000ULL) {
-        pit0.clock_accumulator-=33000000ULL;
-        if(!pit0.running) continue;
-        if(pit0.counter) --pit0.counter;
-        if(!pit0.counter) {
-            if(pit0.mode==0) pit0.running=0;
-            else pit0.counter=pit0.reload;
-            if(pit0.mode==0 || pit0.mode==2 || pit0.mode==3) pic_master.irr|=0x01;
+    pit_clock_accumulator += (uint64_t)cpu_cycles * 1193182ULL;
+    while(pit_clock_accumulator >= 33000000ULL) {
+        pit_clock_accumulator -= 33000000ULL;
+        for(unsigned int ch=0; ch<3; ++ch) {
+            Pit8253 &p = pit[ch];
+            if(!p.running || p.null_count) continue;
+            if(p.counter) --p.counter;
+            if(!p.counter) {
+                if(p.mode<=1) { p.output=1; p.running=0; }
+                else if(p.mode==2) { p.output=0; p.counter=p.reload; }
+                else if(p.mode==3) { p.output^=1; p.counter=p.reload; }
+                else { p.output=1; p.counter=p.reload; }
+                if(ch==0 && p.mode<=3) pic_master.irr |= 0x01;
+            } else if(ch==2 && p.mode==2 && p.counter==1) p.output=1;
         }
-    }
-}
+    }}
 bool interrupt_pending() { return pic_has_pending(); }
 int acknowledge_interrupt() { return pic_acknowledge(); }
 
