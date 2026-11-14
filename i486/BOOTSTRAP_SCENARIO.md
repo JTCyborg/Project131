@@ -134,3 +134,14 @@ This is an intentional CPU-self-test bypass for the current video bring-up miles
 - Project130/PCem `PCem/keyboard_xt.c::keyboard_xt_read()` returns bit 5 from `ppispeakon`; Project131 incorrectly forced bit 5 low.
 - `i486/devices.cpp` now returns `video_status | (ppispeakon ? 0x20 : 0)`, preserving VGA status bits and restoring the PCem speaker-input behavior.
 - Expected effect: the BIOS can leave the FA18-FA1C wait loop when the speaker-input bit is asserted and continue POST. VGA register writes/framebuffer activity remain UNVERIFIED until the next runtime log.
+
+
+## XT BIOS video-port decode fix (2026-11-14)
+
+Commit `e67d1069fd697b566bb45f6d73d2b9fbcbf626bb` updates `i486/vga.cpp`:
+
+- The Project130 reference BIOS startup sequence explicitly writes the CGA-compatible mode-control ports `3D8h` and `3B8h` before video detection, then calls INT 10h to initialize the selected adapter.
+- Project131 routed the entire `3B0h-3DFh` range into the VGA handler, but the handler previously discarded writes to `3D8h/3B8h` and the color-select aliases `3D9h/3B9h`.
+- The VGA adapter now stores and returns the four CGA-compatible mode/color latches. This prevents the XT BIOS' legacy display-control writes from being silently dropped.
+
+This is a real I/O decode correction, not a forced video-mode switch. The exact 27C64 ROM trace still needs to reach the BIOS' INT 10h/video setup sequence; VGA output is not yet runtime-verified. No build or runtime test was performed for this commit.
