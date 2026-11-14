@@ -101,3 +101,15 @@ Build/runtime verification of source changes remains pending.
 ## Diagnostic capture extension (2026-11-14)
 
 Commit `57aa405584a401f54d9b79ead5a74d46229c1a3e` raises the per-run i486 diagnostic budget from 256 KiB to 2 MiB and updates the suppression marker. This is a diagnostic-only change: CPU/device behavior is unchanged. It is intended to retain the BIOS trace through the `F000:FA18` delay and expose the following POST/VGA activity in the next run. Build/runtime are not verified here.
+
+
+## BIOS delay-loop trace rate limiting (2026-11-14)
+
+Commit `b4abdaa63b4b985fbfa7c5153278c5e8accfae22` changes only diagnostic output in `i486/i486.cpp`:
+
+- The current 2 MiB log is 2,118,174 bytes / about 20,956 lines. It reaches the BIOS delay at `F000:E5B2`, opcode `E2` (`LOOP -2`), with `CX=4FFFh` at entry and `CX=2F31h` in the last captured sample.
+- Every iteration was emitted as a full `[BIOS-SI-TRACE]` line, exhausting the log budget before the BIOS exits this delay and before POST/VGA evidence is captured.
+- Keep the first `F000:E5B2 OP=E2` sample, suppress subsequent iterations, and emit one summary when the next BIOS instruction trace arrives. Other diagnostics are unchanged.
+- PCem reference `Project130/PCem/x86_ops_jump.h::opLOOP_w()` decrements CX and branches only while CX is nonzero; the reference behavior matches the expected finite loop. No CPU opcode behavior is changed.
+
+Next runtime check: confirm a summary reports the suppressed iterations, then inspect the following BIOS instruction address and VGA register/framebuffer activity. Build/runtime verification is pending; do not claim POST or VGA success yet.
