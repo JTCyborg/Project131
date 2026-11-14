@@ -180,7 +180,12 @@ namespace i486
     }
     else if (!i486_halted)
         hlt_text_dumped = false;
-        devices::advance_cycles(660000U);
+        /* While the CPU runs, PIT time is advanced per instruction by
+         * the interpreter timing bridge. A halted CPU still shares wall time
+         * with the host frame clock, so peripherals continue to advance.
+         */
+        if (i486_halted)
+            devices::advance_cycles(660000U);
         return executed;
     }
 
