@@ -336,6 +336,17 @@ unsigned int i486_pcem_execute_instructions(unsigned int instruction_budget)
         cycles = 0x7fffffff;
 
         /*
+         * Compare the C translation unit's view of the shared state layout
+         * with the C++ bootstrap adapter. A stable object address with
+         * different member offsets would explain the apparent CS loss.
+         */
+        pclog("[I486] DISPATCH STATE=%p SIZE=%u CS_OFF=%u CS_ADDR=%p CS=%04X BASE=%08X EIP=%08X",
+              (void *)&cpu_state, (unsigned int)sizeof(cpu_state),
+              (unsigned int)offsetof(x86_cpu_state, seg_cs),
+              (void *)&cpu_state.seg_cs, cpu_state.seg_cs.seg,
+              cpu_state.seg_cs.base, cpu_state.pc);
+
+        /*
          * The first dispatch must start exactly at the 27C64D reset target.
          * Refuse to execute zero-filled expansion RAM if the host reset path
          * or segment state has overwritten the bootstrap transfer.
