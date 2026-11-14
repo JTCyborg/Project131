@@ -14,6 +14,7 @@
 #include "../../i486.h"
 
 void i486_pcem_cpu_core_init(void);
+extern "C" void i486_pcem_set_interpreter_tables(void);
 
 static void reset_segment(x86seg *segment, uint16_t selector, uint32_t base)
 {
@@ -53,6 +54,10 @@ void i486_pcem_cpu_reset(void)
     /* x87 register stack is empty after reset. */
     for (i = 0; i < 8; ++i)
         cpu_state.tag[i] = 3;
+
+    /* Build PCem's real-mode decode tables and activate the interpreter tables. */
+    i486_pcem_cpu_core_init();
+    i486_pcem_set_interpreter_tables();
 }
 
 
