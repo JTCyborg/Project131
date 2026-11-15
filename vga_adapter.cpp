@@ -24,6 +24,9 @@ namespace
         unsigned char bank;
         unsigned char software_mode, aperture;
         unsigned char rgb565_mode;
+        unsigned short vbe_index, vbe_regs[10];
+        unsigned char vbe_enabled, vbe_bpp;
+        unsigned short vbe_xres, vbe_yres, vbe_pitch;
         unsigned char latch[4];
         unsigned width, height;
         DWORD pixels[MAX_PIXELS];
@@ -74,6 +77,20 @@ namespace
         }
     }
 
+    static bool configure_vbe_mode(unsigned w, unsigned h, unsigned bpp)
+    {
+        if (!w || !h || w > 1024 || h > 768 || (bpp != 8 && bpp != 15 && bpp != 16 && bpp != 24 && bpp != 32)) return false;
+        unsigned pitch = w * ((bpp + 7) >> 3);
+        if (pitch * h > VRAM_SIZE) return false;
+        vga.vbe_xres = (unsigned short)w; vga.vbe_yres = (unsigned short)h;
+        vga.vbe_bpp = (unsigned char)bpp; vga.vbe_pitch = (unsigned short)pitch;
+        vga.vbe_enabled = 1; vga.rgb565_mode = 0; vga.bank = 0;
+        vga.software_mode = 1; vga.aperture = 1;
+        vga.vbe_regs[1] = (unsigned short)w; vga.vbe_regs[2] = (unsigned short)h; vga.vbe_regs[3] = (unsigned short)bpp;
+        vga.vbe_regs[4] = 1; vga.vbe_regs[6] = (unsigned short)w; vga.vbe_regs[7] = (unsigned short)h;
+        set_mode(w, h, false); vga.dirty = true; return true;
+    }
+
     static void decode_mode()
     {
         if (!vga.software_mode)
@@ -94,21 +111,22 @@ namespace
         if (!vga.software_mode || !vga.width || !vga.height || vga.text_mode)
             return;
 
-        if (vga.rgb565_mode)
+        if (vga.vbe_enabled)
         {
-            // Linear 640x480 RGB565 framebuffer at VRAM offset 00000h.
-            const unsigned short *src = (const unsigned short *)vga.vram;
-            for (unsigned y = 0; y < 480; ++y)
+            unsigned bytes = (vga.vbe_bpp + 7) >> 3;
+            for (unsigned y = 0; y < vga.vbe_yres; ++y)
             {
-                DWORD *dst = vga.pixels + y * 640;
-                for (unsigned x = 0; x < 640; ++x)
+                DWORD *dst = vga.pixels + y * vga.vbe_xres;
+                const unsigned char *src = vga.vram + y * vga.vbe_pitch;
+                for (unsigned x = 0; x < vga.vbe_xres; ++x)
                 {
-                    unsigned value = src[y * 640 + x];
-                    unsigned r = (value >> 11) & 31;
-                    unsigned g = (value >> 5) & 63;
-                    unsigned b = value & 31;
-                    dst[x] = rgb((r * 255 + 15) / 31,
-                        (g * 255 + 31) / 63, (b * 255 + 15) / 31);
+                    const unsigned char *p = src + x * bytes;
+                    unsigned r = 0, g = 0, b = 0;
+                    if (vga.vbe_bpp == 8) { dst[x] = palette_color(p[0]); continue; }
+                    if (vga.vbe_bpp == 15) { unsigned q=p[0]|(unsigned(p[1])<<8); r=((q>>10)&31)*255/31; g=((q>>5)&31)*255/31; b=(q&31)*255/31; }
+                    else if (vga.vbe_bpp == 16) { unsigned q=p[0]|(unsigned(p[1])<<8); r=((q>>11)&31)*255/31; g=((q>>5)&63)*255/63; b=(q&31)*255/31; }
+                    else { b=p[0]; g=p[1]; r=p[2]; }
+                    dst[x] = rgb(r,g,b);
                 }
             }
         }
@@ -336,6 +354,7 @@ namespace
     static unsigned char vga_mem_read(unsigned address)
     {
         unsigned linear = (unsigned(vga.bank) * APERTURE_SIZE + (address & 0x3FFF)) & (VRAM_SIZE - 1);
+        if (vga.vbe_enabled) return vga.vram[linear];
         if (vga.rgb565_mode)
             return vga.vram[linear];
         if (vga.seq[4] & 8)
@@ -365,6 +384,7 @@ namespace
     static void vga_mem_write(unsigned address, unsigned char value)
     {
         unsigned linear = (unsigned(vga.bank) * APERTURE_SIZE + (address & 0x3FFF)) & (VRAM_SIZE - 1);
+        if (vga.vbe_enabled) { vga.vram[linear] = value; vga.dirty = true; return; }
         if (vga.rgb565_mode)
         {
             vga.vram[linear] = value;
@@ -417,8 +437,9 @@ namespace
 bool isa_vga_adapter_port_read(unsigned port, unsigned char &value)
 {
     port = normalize_port(port);
-    if (port < 0x3B0 || port > 0x3DF)
-        return false;
+    if (port == 0x1CE) { value = (unsigned char)vga.vbe_index; return true; }
+    if (port == 0x1CF) { ensure_window(); switch (vga.vbe_index) { case 0: value=0xC5; return true; case 1:value=(unsigned char)vga.vbe_regs[1];return true; case 2:value=(unsigned char)vga.vbe_regs[2];return true; case 3:value=(unsigned char)vga.vbe_regs[3];return true; case 4:value=(unsigned char)vga.vbe_regs[4];return true; case 5:value=vga.bank;return true; default:value=0;return true;} }
+    if (port < 0x3B0 || port > 0x3DF) return false;
     ensure_window();
     port = normalize_crtc(port);
     switch (port)
@@ -454,8 +475,9 @@ bool isa_vga_adapter_port_read(unsigned port, unsigned char &value)
 bool isa_vga_adapter_port_write(unsigned port, unsigned char value)
 {
     port = normalize_port(port);
-    if (port < 0x3B0 || port > 0x3DF)
-        return false;
+    if (port == 0x1CE) { vga.vbe_index = value; return true; }
+    if (port == 0x1CF) { ensure_window(); switch (vga.vbe_index) { case 1:vga.vbe_regs[1]=value;break; case 2:vga.vbe_regs[2]=value;break; case 3:vga.vbe_regs[3]=value;break; case 4:if(value&1) configure_vbe_mode(vga.vbe_regs[1],vga.vbe_regs[2],vga.vbe_regs[3]); else {vga.vbe_enabled=0;vga.rgb565_mode=0;decode_mode();} break; case 5:vga.bank=value&(APERTURE_BANKS-1);vga.vbe_regs[5]=value;break; case 6:vga.vbe_regs[6]=value;break; case 7:vga.vbe_regs[7]=value;break; default:break;} vga.dirty=true;return true; }
+    if (port < 0x3B0 || port > 0x3DF) return false;
     ensure_window();
     if (port >= 0x3B0 && port <= 0x3DF && port != 0x3DE && port != 0x3DF)
         vga.software_mode = 1;
