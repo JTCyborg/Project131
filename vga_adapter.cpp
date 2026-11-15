@@ -106,6 +106,8 @@ namespace
             set_mode(720, 400, true);              // text mode
     }
 
+    static void render_2d_cursor();
+
     static void render_pixels()
     {
         // Transparent mode already owns vga.pixels with the final RGB frame.
@@ -162,6 +164,7 @@ namespace
                 }
             }
         }
+        render_2d_cursor();
         vga.dirty = false;
     }
 
