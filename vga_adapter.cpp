@@ -437,8 +437,8 @@ namespace
 bool isa_vga_adapter_port_read(unsigned port, unsigned char &value)
 {
     port = normalize_port(port);
-    if (port == 0x1CE) { value = (unsigned char)vga.vbe_index; return true; }
-    if (port == 0x1CF) { ensure_window(); switch (vga.vbe_index) { case 0: value=0xC5; return true; case 1:value=(unsigned char)vga.vbe_regs[1];return true; case 2:value=(unsigned char)vga.vbe_regs[2];return true; case 3:value=(unsigned char)vga.vbe_regs[3];return true; case 4:value=(unsigned char)vga.vbe_regs[4];return true; case 5:value=vga.bank;return true; default:value=0;return true;} }
+    if (port == 0x3E0) { value = (unsigned char)vga.vbe_index; return true; }
+    if (port == 0x3E1) { ensure_window(); switch (vga.vbe_index) { case 0:value=(unsigned char)vga.vbe_regs[1];break; case 1:value=(unsigned char)(vga.vbe_regs[1]>>8);break; case 2:value=(unsigned char)vga.vbe_regs[2];break; case 3:value=(unsigned char)(vga.vbe_regs[2]>>8);break; case 4:value=(unsigned char)vga.vbe_regs[3];break; case 5:value=(unsigned char)vga.vbe_regs[4];break; case 6:value=vga.bank;break; default:value=0;break;} return true; }
     if (port < 0x3B0 || port > 0x3DF) return false;
     ensure_window();
     port = normalize_crtc(port);
@@ -475,8 +475,8 @@ bool isa_vga_adapter_port_read(unsigned port, unsigned char &value)
 bool isa_vga_adapter_port_write(unsigned port, unsigned char value)
 {
     port = normalize_port(port);
-    if (port == 0x1CE) { vga.vbe_index = value; return true; }
-    if (port == 0x1CF) { ensure_window(); switch (vga.vbe_index) { case 1:vga.vbe_regs[1]=value;break; case 2:vga.vbe_regs[2]=value;break; case 3:vga.vbe_regs[3]=value;break; case 4:if(value&1) configure_vbe_mode(vga.vbe_regs[1],vga.vbe_regs[2],vga.vbe_regs[3]); else {vga.vbe_enabled=0;vga.rgb565_mode=0;decode_mode();} break; case 5:vga.bank=value&(APERTURE_BANKS-1);vga.vbe_regs[5]=value;break; case 6:vga.vbe_regs[6]=value;break; case 7:vga.vbe_regs[7]=value;break; default:break;} vga.dirty=true;return true; }
+    if (port == 0x3E0) { vga.vbe_index = value; return true; }
+    if (port == 0x3E1) { ensure_window(); switch (vga.vbe_index) { case 0:vga.vbe_regs[1]=(vga.vbe_regs[1]&0xFF00)|value;break; case 1:vga.vbe_regs[1]=(vga.vbe_regs[1]&0x00FF)|(unsigned(value)<<8);break; case 2:vga.vbe_regs[2]=(vga.vbe_regs[2]&0xFF00)|value;break; case 3:vga.vbe_regs[2]=(vga.vbe_regs[2]&0x00FF)|(unsigned(value)<<8);break; case 4:vga.vbe_regs[3]=value;break; case 5:vga.vbe_regs[4]=value; if(value&1) configure_vbe_mode(vga.vbe_regs[1],vga.vbe_regs[2],vga.vbe_regs[3]); else {vga.vbe_enabled=0;vga.rgb565_mode=0;decode_mode();} break; case 6:vga.bank=value&(APERTURE_BANKS-1);break; default:break;} vga.dirty=true;return true; }
     if (port < 0x3B0 || port > 0x3DF) return false;
     ensure_window();
     if (port >= 0x3B0 && port <= 0x3DF && port != 0x3DE && port != 0x3DF)
