@@ -175,17 +175,34 @@ namespace
     {
         switch(op & 7) { case 0:return a; case 1:return a^b; case 2:return a|b; case 3:return a&b; case 4:return (unsigned char)~a; case 5:return 0xFF; case 6:return 0; default:return b; }
     }
+    static bool accel_rect_valid(unsigned base, unsigned pitch, unsigned x, unsigned y,
+        unsigned w, unsigned h, unsigned bytes)
+    {
+        if (!w || !h || x >= vga.vbe_xres || y >= vga.vbe_yres ||
+            w > vga.vbe_xres - x || h > vga.vbe_yres - y ||
+            pitch < (x + w) * bytes)
+            return false;
+        unsigned long long last = (unsigned long long)base +
+            (unsigned long long)(y + h - 1) * pitch +
+            (unsigned long long)(x + w) * bytes;
+        return last <= VRAM_SIZE;
+    }
     static bool accel_addr(unsigned base,unsigned pitch,unsigned x,unsigned y,unsigned bytes,unsigned &out)
     {
-        if(x>=vga.vbe_xres || y>=vga.vbe_yres) return false;
+        if (x >= vga.vbe_xres || y >= vga.vbe_yres || pitch < (x + 1) * bytes)
+            return false;
         unsigned long long a=(unsigned long long)base+(unsigned long long)y*pitch+(unsigned long long)x*bytes;
-        if(a+bytes>VRAM_SIZE) return false; out=(unsigned)a; return true;
+        if(a+bytes>VRAM_SIZE) return false;
+        out=(unsigned)a;
+        return true;
     }
-    static void accel_pixel(unsigned x,unsigned y,unsigned color)
+    static bool accel_pixel(unsigned x,unsigned y,unsigned color)
     {
         unsigned bytes=(vga.vbe_bpp+7)>>3, a;
-        if(!accel_addr(accel32(8),accel16(0x0E),x,y,bytes,a)) return;
-        for(unsigned i=0;i<bytes;++i) vga.vram[a+i]=accel_rop((unsigned char)(color>>(i*8)),vga.vram[a+i],vga.accel_regs[2]);
+        if(!accel_addr(accel32(8),accel16(0x0E),x,y,bytes,a)) return false;
+        for(unsigned i=0;i<bytes;++i)
+            vga.vram[a+i]=accel_rop((unsigned char)(color>>(i*8)),vga.vram[a+i],vga.accel_regs[2]);
+        return true;
     }
     static void execute_2d(unsigned cmd)
     {
@@ -193,32 +210,48 @@ namespace
         unsigned b=(vga.vbe_bpp+7)>>3, sx=accel16(0x10), sy=accel16(0x12);
         unsigned dx=accel16(0x14), dy=accel16(0x16), w=accel16(0x18), h=accel16(0x1A);
         unsigned sp=accel16(0x0C), dp=accel16(0x0E), sb=accel32(4), db=accel32(8), color=accel32(0x1C);
-        if(!w) w=1; if(!h) h=1; vga.accel_regs[1]=1;
+        if(!w) w=1;
+        if(!h) h=1;
+        vga.accel_regs[1]=0x80;
         if(cmd==1) {
-            for(unsigned y=0;y<h && dy+y<vga.vbe_yres;++y)
-                for(unsigned x=0;x<w && dx+x<vga.vbe_xres;++x) accel_pixel(dx+x,dy+y,color);
+            if (!accel_rect_valid(db,dp,dx,dy,w,h,b)) return;
+            for(unsigned y=0;y<h;++y)
+                for(unsigned x=0;x<w;++x)
+                    if(!accel_pixel(dx+x,dy+y,color)) return;
         } else if(cmd==2) {
-            if(sp<(sx+w)*b || dp<(dx+w)*b) { vga.accel_regs[1]=0x80; return; }
-            bool rev=(db+dy*dp+dx*b)>(sb+sy*sp+sx*b);
+            if (!accel_rect_valid(sb,sp,sx,sy,w,h,b) ||
+                !accel_rect_valid(db,dp,dx,dy,w,h,b)) return;
+            unsigned long long src0=(unsigned long long)sb+(unsigned long long)sy*sp+(unsigned long long)sx*b;
+            unsigned long long dst0=(unsigned long long)db+(unsigned long long)dy*dp+(unsigned long long)dx*b;
+            bool rev=dst0>src0;
             for(unsigned ry=0;ry<h;++ry) {
-                unsigned y=rev?h-1-ry:ry; if(sy+y>=vga.vbe_yres||dy+y>=vga.vbe_yres) continue;
+                unsigned y=rev?h-1-ry:ry;
                 for(unsigned rx=0;rx<w;++rx) {
-                    unsigned x=rev?w-1-rx:rx; if(sx+x>=vga.vbe_xres||dx+x>=vga.vbe_xres) continue;
-                    unsigned long long sa=(unsigned long long)sb+(sy+y)*sp+(sx+x)*b;
-                    unsigned long long da=(unsigned long long)db+(dy+y)*dp+(dx+x)*b;
-                    if(sa+b>VRAM_SIZE||da+b>VRAM_SIZE) continue;
-                    for(unsigned k=0;k<b;++k) vga.vram[(unsigned)da+k]=accel_rop(vga.vram[(unsigned)sa+k],vga.vram[(unsigned)da+k],vga.accel_regs[2]);
+                    unsigned x=rev?w-1-rx:rx;
+                    unsigned sa=sb+(sy+y)*sp+(sx+x)*b;
+                    unsigned da=db+(dy+y)*dp+(dx+x)*b;
+                    for(unsigned k=0;k<b;++k)
+                        vga.vram[da+k]=accel_rop(vga.vram[sa+k],vga.vram[da+k],vga.accel_regs[2]);
                 }
             }
         } else if(cmd==3) {
-            int x=dx,y=dy,x2=(int)accel16(0x20),y2=(int)accel16(0x22);
+            int x=(int)dx,y=(int)dy,x2=(int)accel16(0x20),y2=(int)accel16(0x22);
+            if (x<0 || y<0 || x2<0 || y2<0 ||
+                x>=(int)vga.vbe_xres || x2>=(int)vga.vbe_xres ||
+                y>=(int)vga.vbe_yres || y2>=(int)vga.vbe_yres ||
+                dp < vga.vbe_xres*b) return;
             int ax=abs(x2-x), sxdir=x<x2?1:-1, ay=-abs(y2-y), sydir=y<y2?1:-1, err=ax+ay;
-            for(;;) { if(x>=0&&y>=0) accel_pixel((unsigned)x,(unsigned)y,color); if(x==x2&&y==y2) break;
-                int e2=2*err; if(e2>=ay){err+=ay;x+=sxdir;} if(e2<=ax){err+=ax;y+=sydir;}
-                if(x < -1 || y < -1 || x > 2048 || y > 2048) break;
+            for(;;) {
+                if(!accel_pixel((unsigned)x,(unsigned)y,color)) return;
+                if(x==x2&&y==y2) break;
+                int e2=2*err;
+                if(e2>=ay){err+=ay;x+=sxdir;}
+                if(e2<=ax){err+=ax;y+=sydir;}
             }
-        } else { vga.accel_regs[1]=0x80; return; }
-        vga.dirty=true; if(vga.window) InvalidateRect(vga.window,nullptr,FALSE);
+        } else return;
+        vga.accel_regs[1]=1;
+        vga.dirty=true;
+        if(vga.window) InvalidateRect(vga.window,nullptr,FALSE);
     }
     static void render_2d_cursor()
     {
