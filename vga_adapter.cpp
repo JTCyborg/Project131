@@ -68,13 +68,11 @@ namespace
             vga.height = h;
             vga.text_mode = text;
             vga.dirty = true;
+            // Keep the VGA output window at a stable size. Resolution changes
+            // affect only the source framebuffer; WM_PAINT scales it to the
+            // existing client area above the status bar.
             if (vga.window)
-            {
-                RECT r = { 0, 0, LONG(w), LONG(h) };
-                AdjustWindowRect(&r, WS_OVERLAPPEDWINDOW, FALSE);
-                SetWindowPos(vga.window, nullptr, 0, 0, r.right-r.left, r.bottom-r.top,
-                    SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
-            }
+                InvalidateRect(vga.window, nullptr, FALSE);
         }
     }
 
@@ -277,8 +275,16 @@ namespace
             HDC dc = BeginPaint(hwnd, &ps);
             RECT rc;
             GetClientRect(hwnd, &rc);
+            const int status_height = 24;
+            const int image_height = rc.bottom > status_height ? rc.bottom - status_height : rc.bottom;
             if (vga.text_mode)
+            {
+                // Preserve the legacy text renderer while reserving a status strip.
+                SaveDC(dc);
+                IntersectClipRect(dc, 0, 0, rc.right, image_height);
                 render_text(dc);
+                RestoreDC(dc, -1);
+            }
             else
             {
                 render_pixels();
@@ -289,9 +295,25 @@ namespace
                 bmi.bmiHeader.biPlanes = 1;
                 bmi.bmiHeader.biBitCount = 32;
                 bmi.bmiHeader.biCompression = BI_RGB;
-                StretchDIBits(dc, 0, 0, rc.right, rc.bottom, 0, 0, vga.width, vga.height,
+                StretchDIBits(dc, 0, 0, rc.right, image_height, 0, 0, vga.width, vga.height,
                     vga.pixels, &bmi, DIB_RGB_COLORS, SRCCOPY);
             }
+
+            // Persistent mode information, independent of framebuffer size.
+            RECT status = { 0, image_height, rc.right, rc.bottom };
+            HBRUSH brush = CreateSolidBrush(RGB(32, 32, 32));
+            FillRect(dc, &status, brush);
+            DeleteObject(brush);
+            SetBkMode(dc, TRANSPARENT);
+            SetTextColor(dc, RGB(240, 240, 240));
+            char mode_text[96];
+            unsigned bpp = vga.vbe_enabled ? vga.vbe_bpp :
+                (vga.text_mode ? 4 : ((vga.seq[4] & 8) ? 8 : 4));
+            if (vga.text_mode)
+                wsprintfA(mode_text, "VGA TEXT  %u x %u  %u BPP", vga.width, vga.height, bpp);
+            else
+                wsprintfA(mode_text, "VGA  %u x %u  %u BPP", vga.width, vga.height, bpp);
+            TextOutA(dc, 8, image_height + 4, mode_text, lstrlenA(mode_text));
             EndPaint(hwnd, &ps);
             return 0;
         }
