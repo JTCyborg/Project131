@@ -16,37 +16,74 @@
 #include "upd765.h"
 #include "vga_adapter.h"
 
+
+void log_port_ef(unsigned char val)
+{
+    static char fallback_dir[MAX_PATH] = "";
+    static bool fallback_dir_loaded = false;
+
+    if (!fallback_dir_loaded)
+    {
+        GetPrivateProfileString("DEBUG", "PortEFLogFallbackDir", "C:\\Temp",
+            fallback_dir, sizeof(fallback_dir), ininame);
+        fallback_dir[MAX_PATH - 1] = 0;
+        fallback_dir_loaded = true;
+    }
+
+    static const char log_name[] = "spectrum_out.txt";
+    char log_path[MAX_PATH];
+    FILE* f = nullptr;
+
+    // Prefer the directory containing disk A, but only when it is a real path.
+    const char* disk_path = comp.fdd[0].name;
+    if (disk_path[0])
+    {
+        const char* slash = strrchr(disk_path, '\\');
+        const char* forward_slash = strrchr(disk_path, '/');
+        if (!slash || (forward_slash && forward_slash > slash))
+            slash = forward_slash;
+
+        if (slash)
+        {
+            size_t dir_len = size_t(slash - disk_path) + 1;
+            if (dir_len + sizeof(log_name) <= sizeof(log_path))
+            {
+                memcpy(log_path, disk_path, dir_len);
+                memcpy(log_path + dir_len, log_name, sizeof(log_name));
+                f = fopen(log_path, "a");
+            }
+        }
+    }
+
+    // If disk A is not mounted, has no directory, or its log cannot be opened,
+    // use the configurable fallback directory (default: C:\\Temp).
+    if (!f && fallback_dir[0])
+    {
+        size_t dir_len = strlen(fallback_dir);
+        while (dir_len && (fallback_dir[dir_len - 1] == '\\' || fallback_dir[dir_len - 1] == '/'))
+            fallback_dir[--dir_len] = 0;
+
+        if (dir_len && dir_len + 1 + sizeof(log_name) <= sizeof(log_path))
+        {
+            memcpy(log_path, fallback_dir, dir_len);
+            log_path[dir_len] = '\\';
+            memcpy(log_path + dir_len + 1, log_name, sizeof(log_name));
+            f = fopen(log_path, "a");
+        }
+    }
+
+    if (f)
+    {
+        fputc(val, f);
+        fclose(f);
+    }
+}
+
 void out(unsigned port, unsigned char val)
 {
    port &= 0xFFFF;
    if ((port & 0xFF) == 0xEF)
-   {
-       char log_path[MAX_PATH] = "spectrum_out.txt";
-       const char* disk_path = comp.fdd[0].name;
-       if (disk_path[0])
-       {
-           const char* slash = strrchr(disk_path, '\\');
-           const char* forward_slash = strrchr(disk_path, '/');
-           if (!slash || (forward_slash && forward_slash > slash))
-               slash = forward_slash;
-           if (slash)
-           {
-               size_t dir_len = size_t(slash - disk_path) + 1;
-               static const char log_name[] = "spectrum_out.txt";
-               if (dir_len + sizeof(log_name) <= sizeof(log_path))
-               {
-                   memcpy(log_path, disk_path, dir_len);
-                   memcpy(log_path + dir_len, log_name, sizeof(log_name));
-               }
-           }
-       }
-       FILE* f = fopen(log_path, "a");
-       if (f)
-       {
-           fputc(val, f);
-           fclose(f);
-       }
-   }
+       log_port_ef(val);
 
    if (isa_vga_adapter_port_write(port, val)) return;
    u8 p1 = (port & 0xFF);
