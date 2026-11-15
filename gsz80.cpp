@@ -1,6 +1,7 @@
 #include "std.h"
 
 #include "emul.h"
+#include "funcs.h"
 #include "vars.h"
 #include "gs.h"
 #include "gsz80.h"
