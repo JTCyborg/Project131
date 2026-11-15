@@ -480,7 +480,11 @@ bool isa_vga_adapter_port_write(unsigned port, unsigned char value)
     if (port < 0x3B0 || port > 0x3DF) return false;
     ensure_window();
     if (port >= 0x3B0 && port <= 0x3DF && port != 0x3DE && port != 0x3DF)
+    {
         vga.software_mode = 1;
+        vga.vbe_enabled = 0;
+        vga.rgb565_mode = 0;
+    }
 
     port = normalize_crtc(port);
     switch (port)
@@ -512,8 +516,9 @@ bool isa_vga_adapter_port_write(unsigned port, unsigned char value)
         vga.aperture = (value & 2) != 0;
         vga.bank = (value >> 2) & 15;
         vga.rgb565_mode = (value & 0x40) != 0;
-        if (!vga.software_mode) vga.aperture = 0;
-        decode_mode();
+        if (!vga.software_mode) { vga.aperture = 0; vga.vbe_enabled = 0; }
+        if (vga.rgb565_mode && vga.software_mode) configure_vbe_mode(640, 480, 16);
+        else decode_mode();
         vga.dirty = true;
         return true;
     case 0x3DF: vga.bank = value & (APERTURE_BANKS - 1); vga.dirty = true; return true;
