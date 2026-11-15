@@ -19,6 +19,15 @@
 void out(unsigned port, unsigned char val)
 {
    port &= 0xFFFF;
+   if ((port & 0xFF) == 0xEF)
+   {
+       FILE* f = fopen("C:\\Temp\\spectrum_out.txt", "a");
+       if (f)
+       {
+           fputc(val, f);
+           fclose(f);
+       }
+   }
    if (isa_vga_adapter_port_write(port, val)) return;
    u8 p1 = (port & 0xFF);
    brk_port_out = port; brk_port_val = val;
