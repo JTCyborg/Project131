@@ -150,3 +150,32 @@ This is a custom emulator-side VGA/SVGA implementation, not a complete Trident T
 The legacy VGA register implementation is partial: only a subset of sequencer, graphics-controller, CRTC, attribute-controller and DAC behavior is modeled. This guide documents the supported programming interface; it is not a complete IBM VGA register reference.
 
 The implementation supports the framebuffer formats and mode sizes in the tables above. It must not be described as supporting every mode of a physical VGA/SVGA card.
+
+
+## 2D accelerator extension
+
+The synchronous 2D engine is exposed at indexed ports 3E2h (register index)
+and 3E3h (register data). It operates on the active packed-pixel framebuffer.
+
+| Register | Meaning |
+|---:|---|
+| 00h | Command: 1 solid rectangle, 2 BitBLT, 3 Bresenham line |
+| 01h | Status: 1 complete, 80h error |
+| 02h | ROP: 0 COPY, 1 XOR, 2 OR, 3 AND, 4 NOT source, 5 SET, 6 CLEAR |
+| 04h..07h | Source base address |
+| 08h..0Bh | Destination base address |
+| 0Ch..0Dh | Source pitch in bytes |
+| 0Eh..0Fh | Destination pitch in bytes |
+| 10h..13h | Source X/Y |
+| 14h..17h | Destination X/Y |
+| 18h..1Bh | Rectangle width/height |
+| 1Ch..1Fh | Pixel colour |
+| 20h..23h | Line end X/Y |
+| 24h..25h | Cursor X; 26h..27h cursor Y |
+| 28h..2Bh | Cursor bitmap base (16x16, 1bpp) |
+| 2Ch..2Fh | Cursor RGB colour (00RRGGBB) |
+| 34h | Cursor control, bit 0 visible |
+
+Multi-byte registers are little-endian. Coordinates are clipped to the active
+mode. The cursor bitmap uses 32 bytes; zero bits are transparent. Commands
+complete immediately in the emulator and update status synchronously.
