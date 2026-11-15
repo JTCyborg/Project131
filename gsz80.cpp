@@ -1,6 +1,7 @@
 #include "std.h"
 
 #include "emul.h"
+#include "funcs.h"
 #include "vars.h"
 #include "gs.h"
 #include "gsz80.h"
@@ -373,6 +374,7 @@ static inline void UpdateMemMapping()
 
 void out(unsigned port, unsigned char val)
 {
+<<<<<<< HEAD
    port &= 0xFF;
    if (port == 0xEF)
    {
@@ -402,6 +404,11 @@ void out(unsigned port, unsigned char val)
            fclose(f);
        }
    }
+=======
+   port &= 0xFF;
+   if (port == 0xEF)
+       log_port_ef(val);
+>>>>>>> a60db5a802f0cfef4b700b0c1ea571563b2ab883
 //   printf(__FUNCTION__" port=0x%X, val=0x%X\n", (port & 0xFF), val);
    switch (port & 0xFF)
    {
