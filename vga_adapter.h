@@ -11,6 +11,7 @@
 //   index 5 = mode control (bit 0 enable); index 6 = aperture bank.
 // The packed-pixel framebuffer is linear at VRAM offset 00000h.
 // A complete visible frame must fit into the 1 MiB VRAM.
+void isa_vga_adapter_set_present(bool present);
 bool isa_vga_adapter_port_read(unsigned port, unsigned char &value);
 bool isa_vga_adapter_port_write(unsigned port, unsigned char value);
 bool isa_vga_adapter_mem_read(unsigned address, unsigned char &value);
