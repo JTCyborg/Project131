@@ -376,7 +376,26 @@ void out(unsigned port, unsigned char val)
    port &= 0xFF;
    if (port == 0xEF)
    {
-       FILE* f = fopen("C:\\Temp\\neogs_out.txt", "a");
+       char log_path[MAX_PATH] = "spectrum_out.txt";
+       const char* disk_path = comp.fdd[0].name;
+       if (disk_path[0])
+       {
+           const char* slash = strrchr(disk_path, '\\');
+           const char* forward_slash = strrchr(disk_path, '/');
+           if (!slash || (forward_slash && forward_slash > slash))
+               slash = forward_slash;
+           if (slash)
+           {
+               size_t dir_len = size_t(slash - disk_path) + 1;
+               static const char log_name[] = "spectrum_out.txt";
+               if (dir_len + sizeof(log_name) <= sizeof(log_path))
+               {
+                   memcpy(log_path, disk_path, dir_len);
+                   memcpy(log_path + dir_len, log_name, sizeof(log_name));
+               }
+           }
+       }
+       FILE* f = fopen(log_path, "a");
        if (f)
        {
            fputc(val, f);
