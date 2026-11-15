@@ -37,6 +37,7 @@ namespace
     };
 
     static VGA_ADAPTER vga = {};
+    static bool card_present = true;
 
     static const unsigned char ega_palette[16][3] =
     {
@@ -434,8 +435,16 @@ namespace
     }
 }
 
+void isa_vga_adapter_set_present(bool present)
+{
+    card_present = present;
+    if (!present && vga.window)
+        ShowWindow(vga.window, SW_HIDE);
+}
+
 bool isa_vga_adapter_port_read(unsigned port, unsigned char &value)
 {
+    if (!card_present) return false;
     port = normalize_port(port);
     if (port == 0x3E0) { value = (unsigned char)vga.vbe_index; return true; }
     if (port == 0x3E1) { ensure_window(); switch (vga.vbe_index) { case 0:value=(unsigned char)vga.vbe_regs[1];break; case 1:value=(unsigned char)(vga.vbe_regs[1]>>8);break; case 2:value=(unsigned char)vga.vbe_regs[2];break; case 3:value=(unsigned char)(vga.vbe_regs[2]>>8);break; case 4:value=(unsigned char)vga.vbe_regs[3];break; case 5:value=(unsigned char)vga.vbe_regs[4];break; case 6:value=vga.bank;break; default:value=0;break;} return true; }
@@ -474,6 +483,7 @@ bool isa_vga_adapter_port_read(unsigned port, unsigned char &value)
 
 bool isa_vga_adapter_port_write(unsigned port, unsigned char value)
 {
+    if (!card_present) return false;
     port = normalize_port(port);
     if (port == 0x3E0) { vga.vbe_index = value; return true; }
     if (port == 0x3E1) { ensure_window(); switch (vga.vbe_index) { case 0:vga.vbe_regs[1]=(vga.vbe_regs[1]&0xFF00)|value;break; case 1:vga.vbe_regs[1]=(vga.vbe_regs[1]&0x00FF)|(unsigned(value)<<8);break; case 2:vga.vbe_regs[2]=(vga.vbe_regs[2]&0xFF00)|value;break; case 3:vga.vbe_regs[2]=(vga.vbe_regs[2]&0x00FF)|(unsigned(value)<<8);break; case 4:vga.vbe_regs[3]=value;break; case 5:vga.vbe_regs[4]=value; if(value&1) configure_vbe_mode(vga.vbe_regs[1],vga.vbe_regs[2],vga.vbe_regs[3]); else {vga.vbe_enabled=0;vga.rgb565_mode=0;decode_mode();} break; case 6:vga.bank=value&(APERTURE_BANKS-1);break; default:break;} vga.dirty=true;return true; }
@@ -528,7 +538,7 @@ bool isa_vga_adapter_port_write(unsigned port, unsigned char value)
 
 bool isa_vga_adapter_mem_read(unsigned address, unsigned char &value)
 {
-    if (!vga.initialized || !vga.software_mode || !vga.aperture || (address & 0xC000) != 0xC000)
+    if (!card_present || !vga.initialized || !vga.software_mode || !vga.aperture || (address & 0xC000) != 0xC000)
         return false;
     value = vga_mem_read(address);
     return true;
@@ -536,7 +546,7 @@ bool isa_vga_adapter_mem_read(unsigned address, unsigned char &value)
 
 bool isa_vga_adapter_mem_write(unsigned address, unsigned char value)
 {
-    if (!vga.initialized || !vga.software_mode || !vga.aperture || (address & 0xC000) != 0xC000)
+    if (!card_present || !vga.initialized || !vga.software_mode || !vga.aperture || (address & 0xC000) != 0xC000)
         return false;
     vga_mem_write(address, value);
     return true;
@@ -544,6 +554,7 @@ bool isa_vga_adapter_mem_write(unsigned address, unsigned char value)
 
 void isa_vga_adapter_capture_frame(const unsigned char *source, unsigned width, unsigned height, unsigned stride, unsigned bits_per_pixel, bool yuy2)
 {
+    if (!card_present) return;
     ensure_window();
     if (!vga.software_mode)
         render_transparent(source, width, height, stride, bits_per_pixel, yuy2);
