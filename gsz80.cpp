@@ -1,13 +1,14 @@
 #include "std.h"
 
 #include "emul.h"
-#include "funcs.h"
 #include "vars.h"
 #include "gs.h"
 #include "gsz80.h"
 #include "vs1001.h"
 #include "sdcard.h"
 #include "debug.h"
+
+extern void log_port_ef(unsigned char val);
 
 #include "z80/op_noprefix.h"
 
