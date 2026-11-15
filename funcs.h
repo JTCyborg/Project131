@@ -26,6 +26,7 @@ void reset_tape();
 unsigned char tape_bit();
 
 void out(unsigned port, unsigned char val);
+void log_port_ef(unsigned char val);
 unsigned char in(unsigned port);
 void set_banks();
 
