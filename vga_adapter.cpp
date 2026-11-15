@@ -257,10 +257,12 @@ namespace
     {
         if(!(vga.accel_regs[0x34]&1)||!vga.vbe_enabled) return;
         unsigned x0=accel16(0x24), y0=accel16(0x26), base=accel32(0x28), c=accel32(0x2C);
+        if (base > VRAM_SIZE - 32) return;
         DWORD color=rgb((c>>16)&255,(c>>8)&255,c&255);
-        for(unsigned y=0;y<16&&y0+y<vga.vbe_yres;++y) for(unsigned x=0;x<16&&x0+x<vga.vbe_xres;++x)
-            if(base+y*2+(x>>3)<VRAM_SIZE && (vga.vram[base+y*2+(x>>3)]&(0x80>>(x&7))))
-                vga.pixels[(y0+y)*vga.vbe_xres+x0+x]=color;
+        for(unsigned y=0;y<16&&y0+y<vga.vbe_yres;++y)
+            for(unsigned x=0;x<16&&x0+x<vga.vbe_xres;++x)
+                if(vga.vram[base+y*2+(x>>3)]&(0x80>>(x&7)))
+                    vga.pixels[(y0+y)*vga.vbe_xres+x0+x]=color;
     }
 
     static unsigned char clamp_channel(int value)
