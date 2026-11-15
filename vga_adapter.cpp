@@ -684,20 +684,21 @@ bool isa_vga_adapter_port_write(unsigned port, unsigned char value)
 
 bool isa_vga_adapter_mem_read(unsigned address, unsigned char &value)
 {
-    flush_write_buffer();
+    // Ordinary RAM reads cannot observe the adapter's pending VRAM byte.
+    // Avoid flushing it on every source read (notably every LDIR iteration).
     if (!card_present || !vga.initialized || !vga.software_mode || !vga.aperture || (address & 0xC000) != 0xC000)
         return false;
+    flush_write_buffer();
     value = vga_mem_read(address);
     return true;
 }
 
 bool isa_vga_adapter_mem_write(unsigned address, unsigned char value)
 {
+    // Writes outside the VGA aperture are unrelated to VRAM ordering.
+    // Keep the pending low byte so sequential packed-pixel writes can pair.
     if (!card_present || !vga.initialized || !vga.software_mode || !vga.aperture || (address & 0xC000) != 0xC000)
-    {
-        flush_write_buffer();
         return false;
-    }
 
     const bool packed16 = vga.vbe_enabled &&
         (vga.vbe_bpp == 15 || vga.vbe_bpp == 16);
