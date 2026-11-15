@@ -1,7 +1,6 @@
 # ISA VGA/SVGA Adapter — implementation and programming guide
 
 ## Hardware model
-
 The emulator exposes a software VGA/SVGA adapter in a separate window. It has 1 MiB of VRAM and a 16 KiB Z80 aperture at C000h-FFFFh. The aperture is banked: 64 banks × 16 KiB = 1 MiB. The framebuffer is linear from VRAM offset 00000h in packed-pixel modes.
 
 There are two independent paths:
@@ -27,7 +26,7 @@ The indexed extension at ports 3E0h/3E1h selects these formats. The mode is acce
 |---|---:|---:|---:|---:|---:|
 | 320×200 | Yes | Yes | Yes | Yes | Yes |
 | 640×480 | Yes | Yes | Yes | Yes | No |
-| 800×600 | Yes | No | Yes | No | No |
+| 800×600 | Yes | Yes | Yes | No | No |
 | 1024×768 | Yes | No | No | No | No |
 
 Formats:
@@ -132,5 +131,7 @@ The following formats do not fit as a complete single framebuffer and are theref
 ## Compatibility boundary
 
 This is a custom emulator-side VGA/SVGA implementation, not a complete Trident TVGA8900D or VESA VBE 2.0 implementation. It currently does not provide a VGA/VBE option ROM, INT 10h mode services, EDID, hardware scan timing, standard VBE bank granularity, or full compatibility with arbitrary DOS VGA drivers. The 3E0h/3E1h interface is a project-specific indexed extension, not a standard VBE port interface.
+
+The legacy VGA register implementation is partial: only a subset of sequencer, graphics-controller, CRTC, attribute-controller and DAC behavior is modeled. This guide documents the supported programming interface; it is not a complete IBM VGA register reference.
 
 The implementation supports the framebuffer formats and mode sizes in the tables above. It must not be described as supporting every mode of a physical VGA/SVGA card.
