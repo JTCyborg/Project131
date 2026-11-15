@@ -34,6 +34,8 @@ namespace
         bool initialized;
         bool dirty;
         bool text_mode;
+        unsigned char accel_regs[64];
+        unsigned char accel_index;
     };
 
     static VGA_ADAPTER vga = {};
@@ -161,6 +163,68 @@ namespace
             }
         }
         vga.dirty = false;
+    }
+
+
+    static unsigned accel16(unsigned i) { return unsigned(vga.accel_regs[i]) | (unsigned(vga.accel_regs[i+1]) << 8); }
+    static unsigned accel32(unsigned i) { return accel16(i) | (accel16(i+2) << 16); }
+    static unsigned char accel_rop(unsigned char a, unsigned char b, unsigned op)
+    {
+        switch(op & 7) { case 0:return a; case 1:return a^b; case 2:return a|b; case 3:return a&b; case 4:return (unsigned char)~a; case 5:return 0xFF; case 6:return 0; default:return b; }
+    }
+    static bool accel_addr(unsigned base,unsigned pitch,unsigned x,unsigned y,unsigned bytes,unsigned &out)
+    {
+        if(x>=vga.vbe_xres || y>=vga.vbe_yres) return false;
+        unsigned long long a=(unsigned long long)base+(unsigned long long)y*pitch+(unsigned long long)x*bytes;
+        if(a+bytes>VRAM_SIZE) return false; out=(unsigned)a; return true;
+    }
+    static void accel_pixel(unsigned x,unsigned y,unsigned color)
+    {
+        unsigned bytes=(vga.vbe_bpp+7)>>3, a;
+        if(!accel_addr(accel32(8),accel16(0x0E),x,y,bytes,a)) return;
+        for(unsigned i=0;i<bytes;++i) vga.vram[a+i]=accel_rop((unsigned char)(color>>(i*8)),vga.vram[a+i],vga.accel_regs[2]);
+    }
+    static void execute_2d(unsigned cmd)
+    {
+        if(!vga.vbe_enabled || !vga.vbe_bpp) { vga.accel_regs[1]=0x80; return; }
+        unsigned b=(vga.vbe_bpp+7)>>3, sx=accel16(0x10), sy=accel16(0x12);
+        unsigned dx=accel16(0x14), dy=accel16(0x16), w=accel16(0x18), h=accel16(0x1A);
+        unsigned sp=accel16(0x0C), dp=accel16(0x0E), sb=accel32(4), db=accel32(8), color=accel32(0x1C);
+        if(!w) w=1; if(!h) h=1; vga.accel_regs[1]=1;
+        if(cmd==1) {
+            for(unsigned y=0;y<h && dy+y<vga.vbe_yres;++y)
+                for(unsigned x=0;x<w && dx+x<vga.vbe_xres;++x) accel_pixel(dx+x,dy+y,color);
+        } else if(cmd==2) {
+            if(sp<(sx+w)*b || dp<(dx+w)*b) { vga.accel_regs[1]=0x80; return; }
+            bool rev=(db+dy*dp+dx*b)>(sb+sy*sp+sx*b);
+            for(unsigned ry=0;ry<h;++ry) {
+                unsigned y=rev?h-1-ry:ry; if(sy+y>=vga.vbe_yres||dy+y>=vga.vbe_yres) continue;
+                for(unsigned rx=0;rx<w;++rx) {
+                    unsigned x=rev?w-1-rx:rx; if(sx+x>=vga.vbe_xres||dx+x>=vga.vbe_xres) continue;
+                    unsigned long long sa=(unsigned long long)sb+(sy+y)*sp+(sx+x)*b;
+                    unsigned long long da=(unsigned long long)db+(dy+y)*dp+(dx+x)*b;
+                    if(sa+b>VRAM_SIZE||da+b>VRAM_SIZE) continue;
+                    for(unsigned k=0;k<b;++k) vga.vram[(unsigned)da+k]=accel_rop(vga.vram[(unsigned)sa+k],vga.vram[(unsigned)da+k],vga.accel_regs[2]);
+                }
+            }
+        } else if(cmd==3) {
+            int x=dx,y=dy,x2=(int)accel16(0x20),y2=(int)accel16(0x22);
+            int ax=abs(x2-x), sxdir=x<x2?1:-1, ay=-abs(y2-y), sydir=y<y2?1:-1, err=ax+ay;
+            for(;;) { if(x>=0&&y>=0) accel_pixel((unsigned)x,(unsigned)y,color); if(x==x2&&y==y2) break;
+                int e2=2*err; if(e2>=ay){err+=ay;x+=sxdir;} if(e2<=ax){err+=ax;y+=sydir;}
+                if(x < -1 || y < -1 || x > 2048 || y > 2048) break;
+            }
+        } else { vga.accel_regs[1]=0x80; return; }
+        vga.dirty=true; if(vga.window) InvalidateRect(vga.window,nullptr,FALSE);
+    }
+    static void render_2d_cursor()
+    {
+        if(!(vga.accel_regs[0x34]&1)||!vga.vbe_enabled) return;
+        unsigned x0=accel16(0x24), y0=accel16(0x26), base=accel32(0x28), c=accel32(0x2C);
+        DWORD color=rgb((c>>16)&255,(c>>8)&255,c&255);
+        for(unsigned y=0;y<16&&y0+y<vga.vbe_yres;++y) for(unsigned x=0;x<16&&x0+x<vga.vbe_xres;++x)
+            if(base+y*2+(x>>3)<VRAM_SIZE && (vga.vram[base+y*2+(x>>3)]&(0x80>>(x&7))))
+                vga.pixels[(y0+y)*vga.vbe_xres+x0+x]=color;
     }
 
     static unsigned char clamp_channel(int value)
@@ -468,6 +532,8 @@ bool isa_vga_adapter_port_read(unsigned port, unsigned char &value)
 {
     if (!card_present) return false;
     port = normalize_port(port);
+    if (port == 0x3E2) { value=vga.accel_index; return true; }
+    if (port == 0x3E3) { value=vga.accel_regs[vga.accel_index&63]; return true; }
     if (port == 0x3E0) { value = (unsigned char)vga.vbe_index; return true; }
     if (port == 0x3E1) { ensure_window(); switch (vga.vbe_index) { case 0:value=(unsigned char)vga.vbe_regs[1];break; case 1:value=(unsigned char)(vga.vbe_regs[1]>>8);break; case 2:value=(unsigned char)vga.vbe_regs[2];break; case 3:value=(unsigned char)(vga.vbe_regs[2]>>8);break; case 4:value=(unsigned char)vga.vbe_regs[3];break; case 5:value=(unsigned char)vga.vbe_regs[4];break; case 6:value=vga.bank;break; default:value=0;break;} return true; }
     if (port < 0x3B0 || port > 0x3DF) return false;
@@ -507,6 +573,8 @@ bool isa_vga_adapter_port_write(unsigned port, unsigned char value)
 {
     if (!card_present) return false;
     port = normalize_port(port);
+    if (port == 0x3E2) { vga.accel_index=value&63; return true; }
+    if (port == 0x3E3) { unsigned i=vga.accel_index&63; vga.accel_regs[i]=value; if(i==0) execute_2d(value); if(i==0x34) { vga.dirty=true; if(vga.window) InvalidateRect(vga.window,nullptr,FALSE); } return true; }
     if (port == 0x3E0) { vga.vbe_index = value; return true; }
     if (port == 0x3E1) { ensure_window(); switch (vga.vbe_index) { case 0:vga.vbe_regs[1]=(vga.vbe_regs[1]&0xFF00)|value;break; case 1:vga.vbe_regs[1]=(vga.vbe_regs[1]&0x00FF)|(unsigned(value)<<8);break; case 2:vga.vbe_regs[2]=(vga.vbe_regs[2]&0xFF00)|value;break; case 3:vga.vbe_regs[2]=(vga.vbe_regs[2]&0x00FF)|(unsigned(value)<<8);break; case 4:vga.vbe_regs[3]=value;break; case 5:vga.vbe_regs[4]=value; if(value&1) configure_vbe_mode(vga.vbe_regs[1],vga.vbe_regs[2],vga.vbe_regs[3]); else {vga.vbe_enabled=0;vga.rgb565_mode=0;decode_mode();} break; case 6:vga.bank=value&(APERTURE_BANKS-1);break; default:break;} vga.dirty=true;return true; }
     if (port < 0x3B0 || port > 0x3DF) return false;
