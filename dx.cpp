@@ -20,6 +20,7 @@
 #include "emulkeys.h"
 #include "funcs.h"
 #include "util.h"
+#include "vga_adapter.h"
 
 unsigned char active = 0, pause = 0;
 
@@ -65,6 +66,14 @@ static void (*FlipBltMethod)() = nullptr;
 static void StartD3d(HWND Wnd);
 static void DoneD3d(bool DeInitDll = true);
 static void SetVideoModeD3d(bool Exclusive);
+
+// Capture the final renderer output, not the ZX-format intermediate rbuf.
+static void RenderAndCaptureVga(unsigned char *dst, unsigned pitch)
+{
+    renders[conf.render].func(dst, pitch);
+    isa_vga_adapter_capture_frame(dst, temp.ox, temp.oy, pitch, temp.obpp,
+        (renders[conf.render].flags & RF_YUY2) != 0);
+}
 
 /* ---------------------- renders ------------------------- */
 
@@ -124,15 +133,15 @@ static void FlipGdi()
         needclr--;
         gdi_frame();
     }
-    renders[conf.render].func(gdibuf, temp.ox*temp.obpp/8); // render to memory buffer
+    RenderAndCaptureVga(gdibuf, temp.ox*temp.obpp/8); // render and capture final frame
     // copy bitmap to gdi dc
     SetDIBitsToDevice(temp.gdidc, int(temp.gx), int(temp.gy), temp.ox, temp.oy, 0, 0, 0, temp.oy, gdibuf, &gdibmp.header, DIB_RGB_COLORS);
 }
 
 static void FlipBltAlign16()
 {
-   // Отрисовка в буфер выравненный на 16 байт (необходимо для запси через sse2)
-   renders[conf.render].func(PUCHAR(SurfMem1), SurfPitch1);
+   // ГЋГІГ°ГЁГ±Г®ГўГЄГ  Гў ГЎГіГґГҐГ° ГўГ»Г°Г ГўГ­ГҐГ­Г­Г»Г© Г­Г  16 ГЎГ Г©ГІ (Г­ГҐГ®ГЎГµГ®Г¤ГЁГ¬Г® Г¤Г«Гї Г§Г ГЇГ±ГЁ Г·ГҐГ°ГҐГ§ sse2)
+   RenderAndCaptureVga(PUCHAR(SurfMem1), SurfPitch1);
 
 restore_lost:;
    DDSURFACEDESC desc;
@@ -210,8 +219,8 @@ restore_lost:;
        exit();
    }
 
-   // Отрисовка в буфер выравненный на 4 байта
-   renders[conf.render].func(PUCHAR(desc.lpSurface), unsigned(desc.lPitch));
+   // ГЋГІГ°ГЁГ±Г®ГўГЄГ  Гў ГЎГіГґГҐГ° ГўГ»Г°Г ГўГ­ГҐГ­Г­Г»Г© Г­Г  4 ГЎГ Г©ГІГ 
+   RenderAndCaptureVga(PUCHAR(desc.lpSurface), unsigned(desc.lPitch));
 
    r = surf1->Unlock(nullptr);
    if(r != DD_OK)
@@ -266,7 +275,7 @@ restore_lost:;
    if(!CalcFlipRect(&R))
        return;
 
-   // Очистка back буфера
+   // ГЋГ·ГЁГ±ГІГЄГ  back ГЎГіГґГҐГ°Г 
    Fx.dwFillColor = 0;
    r = surf2->Blt(nullptr, nullptr, nullptr, DDBLT_WAIT | DDBLT_ASYNC |  DDBLT_COLORFILL, &Fx);
    if (r != DD_OK)
@@ -282,7 +291,7 @@ restore_lost:;
        exit();
    }
 
-   // Рисование картинки с масштабированием в n раз из surf1 (320x240) -> surf2 (размер экрана)
+   // ГђГЁГ±Г®ГўГ Г­ГЁГҐ ГЄГ Г°ГІГЁГ­ГЄГЁ Г± Г¬Г Г±ГёГІГ ГЎГЁГ°Г®ГўГ Г­ГЁГҐГ¬ Гў n Г°Г Г§ ГЁГ§ surf1 (320x240) -> surf2 (Г°Г Г§Г¬ГҐГ° ГЅГЄГ°Г Г­Г )
    r = surf2->Blt(&R, surf1, nullptr, DDBLT_WAIT | DDBLT_ASYNC | DDBLT_DDFX, &Fx);
    if (r != DD_OK)
    {
@@ -298,7 +307,7 @@ restore_lost:;
        exit();
    }
 
-   // Копирование surf2 на surf0 (экран, размер экрана)
+   // ГЉГ®ГЇГЁГ°Г®ГўГ Г­ГЁГҐ surf2 Г­Г  surf0 (ГЅГЄГ°Г Г­, Г°Г Г§Г¬ГҐГ° ГЅГЄГ°Г Г­Г )
    r = surf0->Blt(nullptr, surf2, nullptr, DDBLT_WAIT | DDBLT_ASYNC | DDBLT_DDFX, &Fx);
    if (r != DD_OK)
    {
@@ -351,7 +360,7 @@ static void FlipD3d()
         exit();
     }
 
-    renders[conf.render].func((u8 *)Rect.pBits, unsigned(Rect.Pitch));
+    RenderAndCaptureVga((u8 *)Rect.pBits, unsigned(Rect.Pitch));
 
     Hr = SurfTexture->UnlockRect();
     if(FAILED(Hr))
@@ -433,7 +442,7 @@ restore_lost:;
        needclr--;
        _render_black((unsigned char*)desc.lpSurface, unsigned(desc.lPitch));
    }
-   renders[conf.render].func((unsigned char*)desc.lpSurface + unsigned(desc.lPitch)*temp.ody + temp.odx, unsigned(desc.lPitch));
+   RenderAndCaptureVga((unsigned char*)desc.lpSurface + unsigned(desc.lPitch)*temp.ody + temp.odx, unsigned(desc.lPitch));
    drawsurf->Unlock(nullptr);
 
    if (conf.flip) // draw direct to video memory
@@ -740,8 +749,8 @@ void OnEnterGui()
 //    printf("%s->%p\n", __FUNCTION__, D3dDev);
     sound_stop();
 
-    // Вывод GUI при активном d3d exclusive режиме
-    // на время вывода GUI переход в non exclusive fullscreen
+    // Г‚Г»ГўГ®Г¤ GUI ГЇГ°ГЁ Г ГЄГІГЁГўГ­Г®Г¬ d3d exclusive Г°ГҐГ¦ГЁГ¬ГҐ
+    // Г­Г  ГўГ°ГҐГ¬Гї ГўГ»ГўГ®Г¤Г  GUI ГЇГҐГ°ГҐГµГ®Г¤ Гў non exclusive fullscreen
     if((temp.rflags & RF_D3DE) && D3dDev)
     {
         OldRflags = temp.rflags;
@@ -765,13 +774,13 @@ void OnExitGui(bool RestoreVideo)
         return;
     }
 
-    // Возврат из GUI в d3d exclusive режим
+    // Г‚Г®Г§ГўГ°Г ГІ ГЁГ§ GUI Гў d3d exclusive Г°ГҐГ¦ГЁГ¬
     if((temp.rflags & RF_D3DE))
     {
         SetVideoModeD3d(true);
     }
 
-    // Переключение RF_D3DE->RF_D3D (в меню настроек переключен видеодрайвер)
+    // ГЏГҐГ°ГҐГЄГ«ГѕГ·ГҐГ­ГЁГҐ RF_D3DE->RF_D3D (Гў Г¬ГҐГ­Гѕ Г­Г Г±ГІГ°Г®ГҐГЄ ГЇГҐГ°ГҐГЄГ«ГѕГ·ГҐГ­ ГўГЁГ¤ГҐГ®Г¤Г°Г Г©ГўГҐГ°)
     if((OldRflags & RF_D3DE) && (temp.rflags & RF_D3D))
     {
         SetVideoModeD3d(false);
@@ -1168,11 +1177,11 @@ static LRESULT CALLBACK WndProc(HWND hwnd,UINT uMessage,WPARAM wparam,LPARAM lpa
    }
 
    // WM_NCLBUTTONDOWN -> WM_SYSCOMMAND(SC_MOVE) -|-> WM_CAPTURECHANGED -> WM_GETMINMAXINFO -> WM_ENTERSIZEMOVE
-   // При получении WM_SYSCOMMAND(SC_MOVE) стандартная процедура обработки сообщения запускает модальный цикл
+   // ГЏГ°ГЁ ГЇГ®Г«ГіГ·ГҐГ­ГЁГЁ WM_SYSCOMMAND(SC_MOVE) Г±ГІГ Г­Г¤Г Г°ГІГ­Г Гї ГЇГ°Г®Г¶ГҐГ¤ГіГ°Г  Г®ГЎГ°Г ГЎГ®ГІГЄГЁ Г±Г®Г®ГЎГ№ГҐГ­ГЁГї Г§Г ГЇГіГ±ГЄГ ГҐГІ Г¬Г®Г¤Г Г«ГјГ­Г»Г© Г¶ГЁГЄГ«
    if(uMessage == WM_SYSCOMMAND)
    {
 //       printf("WM_SYSCOMMAND(0x%X), w=%X, l=%X\n", uMessage, wparam, lparam);
-// Кодирование сторон рамки окна для SC_SIZE (код угла получается суммированием кодов смежных сторон)
+// ГЉГ®Г¤ГЁГ°Г®ГўГ Г­ГЁГҐ Г±ГІГ®Г°Г®Г­ Г°Г Г¬ГЄГЁ Г®ГЄГ­Г  Г¤Г«Гї SC_SIZE (ГЄГ®Г¤ ГіГЈГ«Г  ГЇГ®Г«ГіГ·Г ГҐГІГ±Гї Г±ГіГ¬Г¬ГЁГ°Г®ГўГ Г­ГЁГҐГ¬ ГЄГ®Г¤Г®Гў Г±Г¬ГҐГ¦Г­Г»Гµ Г±ГІГ®Г°Г®Г­)
 //     4           5
 //      \ ___3___ /
 //       |       |
@@ -1366,7 +1375,7 @@ void readdevice(VOID *md, DWORD sz, LPDIRECTINPUTDEVICE dev)
       while(r == DIERR_INPUTLOST)
           r = dev->Acquire();
 
-      if(r == DIERR_OTHERAPPHASPRIO) // Приложение находится в background
+      if(r == DIERR_OTHERAPPHASPRIO) // ГЏГ°ГЁГ«Г®Г¦ГҐГ­ГЁГҐ Г­Г ГµГ®Г¤ГЁГІГ±Гї Гў background
           return;
 
       if (r != DI_OK)
@@ -1416,11 +1425,11 @@ static struct MODEPARAM {
 } modes[MAX_MODES];
 static unsigned max_modes;
 
-// Для инициализации fullscreen режима необходимо выполнение несколтких условий:
-// 1. Размер окна должен совпадать с разрешением экрана, координаты левого верхнего угла должны быть 0, 0
-// 2. Окно должно иметь расширенный стиль WS_EX_TOPMOST
-// При не выполнении хотя бы одного из пунктов при возврате из fullscreen к окнному режиму на vista и выше будет 
-// откючен DWM и окно приобретет "устаревший" вид бордюра
+// Г„Г«Гї ГЁГ­ГЁГ¶ГЁГ Г«ГЁГ§Г Г¶ГЁГЁ fullscreen Г°ГҐГ¦ГЁГ¬Г  Г­ГҐГ®ГЎГµГ®Г¤ГЁГ¬Г® ГўГ»ГЇГ®Г«Г­ГҐГ­ГЁГҐ Г­ГҐГ±ГЄГ®Г«ГІГЄГЁГµ ГіГ±Г«Г®ГўГЁГ©:
+// 1. ГђГ Г§Г¬ГҐГ° Г®ГЄГ­Г  Г¤Г®Г«Г¦ГҐГ­ Г±Г®ГўГЇГ Г¤Г ГІГј Г± Г°Г Г§Г°ГҐГёГҐГ­ГЁГҐГ¬ ГЅГЄГ°Г Г­Г , ГЄГ®Г®Г°Г¤ГЁГ­Г ГІГ» Г«ГҐГўГ®ГЈГ® ГўГҐГ°ГµГ­ГҐГЈГ® ГіГЈГ«Г  Г¤Г®Г«Г¦Г­Г» ГЎГ»ГІГј 0, 0
+// 2. ГЋГЄГ­Г® Г¤Г®Г«Г¦Г­Г® ГЁГ¬ГҐГІГј Г°Г Г±ГёГЁГ°ГҐГ­Г­Г»Г© Г±ГІГЁГ«Гј WS_EX_TOPMOST
+// ГЏГ°ГЁ Г­ГҐ ГўГ»ГЇГ®Г«Г­ГҐГ­ГЁГЁ ГµГ®ГІГї ГЎГ» Г®Г¤Г­Г®ГЈГ® ГЁГ§ ГЇГіГ­ГЄГІГ®Гў ГЇГ°ГЁ ГўГ®Г§ГўГ°Г ГІГҐ ГЁГ§ fullscreen ГЄ Г®ГЄГ­Г­Г®Г¬Гі Г°ГҐГ¦ГЁГ¬Гі Г­Г  vista ГЁ ГўГ»ГёГҐ ГЎГіГ¤ГҐГІ 
+// Г®ГІГЄГѕГ·ГҐГ­ DWM ГЁ Г®ГЄГ­Г® ГЇГ°ГЁГ®ГЎГ°ГҐГІГҐГІ "ГіГ±ГІГ Г°ГҐГўГёГЁГ©" ГўГЁГ¤ ГЎГ®Г°Г¤ГѕГ°Г 
 
 static void SetVideoModeD3d(bool Exclusive)
 {
@@ -1487,7 +1496,7 @@ static void SetVideoModeD3d(bool Exclusive)
         printf("r1={%d,%d,%d,%d} [%dx%d]\n", rr.left, rr.top, rr.right, rr.bottom, rr.right - rr.left, rr.bottom - rr.top);
         printf("SetWindowPos(%p, HWND_TOPMOST, 0, 0, %u, %u)\n", wnd, DispMode.Width, DispMode.Height);
 #endif
-        if(!SetWindowPos(wnd, HWND_TOPMOST, 0, 0, int(DispMode.Width), int(DispMode.Height), 0)) // Установка WS_EX_TOPMOST
+        if(!SetWindowPos(wnd, HWND_TOPMOST, 0, 0, int(DispMode.Width), int(DispMode.Height), 0)) // Г“Г±ГІГ Г­Г®ГўГЄГ  WS_EX_TOPMOST
         {
             __debugbreak();
         }
@@ -1638,7 +1647,7 @@ void set_vidmode()
    if (!temp.ofq)
        temp.ofq = conf.refresh;
 
-   // Проверка наличия hw overlay
+   // ГЏГ°Г®ГўГҐГ°ГЄГ  Г­Г Г«ГЁГ·ГЁГї hw overlay
    if(drivers[conf.driver].flags & RF_OVR)
    {
        DDCAPS Caps;
@@ -1789,14 +1798,14 @@ void set_vidmode()
 //      printf("vmode=%ux%u %uHz\n", newx, newy, newfq);
 //      ShowWindow(wnd, SW_SHOWMAXIMIZED);
 //      printf("SetWindowPos(%p, HWND_TOPMOST, 0, 0, %u, %u)\n", wnd, newx, newy);
-      if(!SetWindowPos(wnd, HWND_TOPMOST, 0, 0, int(newx), int(newy), 0)) // Установка WS_EX_TOPMOST
+      if(!SetWindowPos(wnd, HWND_TOPMOST, 0, 0, int(newx), int(newy), 0)) // Г“Г±ГІГ Г­Г®ГўГЄГ  WS_EX_TOPMOST
       {
           __debugbreak();
       }
    }
    else
    {
-      // Восстановление предыдущего видеорежима при возврате из fullscreen (если была переустановка видеорежима)
+      // Г‚Г®Г±Г±ГІГ Г­Г®ГўГ«ГҐГ­ГЁГҐ ГЇГ°ГҐГ¤Г»Г¤ГіГ№ГҐГЈГ® ГўГЁГ¤ГҐГ®Г°ГҐГ¦ГЁГ¬Г  ГЇГ°ГЁ ГўГ®Г§ГўГ°Г ГІГҐ ГЁГ§ fullscreen (ГҐГ±Г«ГЁ ГЎГ»Г«Г  ГЇГҐГ°ГҐГіГ±ГІГ Г­Г®ГўГЄГ  ГўГЁГ¤ГҐГ®Г°ГҐГ¦ГЁГ¬Г )
       if(NeedRestoreDisplayMode)
       {
         if ((r = dd->RestoreDisplayMode()) != DD_OK)
@@ -1891,8 +1900,8 @@ void set_vidmode()
    else if(temp.rflags & (RF_D3D | RF_D3DE)) // d3d windowed, d3d full screen exclusive
    {
 //      printf("%s(RF_D3D)\n", __FUNCTION__);
-      // Сначала нужно отмасштабировать окно до нужного размера, а только потом устанавливать видеорежим
-      // т.к. видеорежим определяет размеры back buffer'а из размеров окна.
+      // Г‘Г­Г Г·Г Г«Г  Г­ГіГ¦Г­Г® Г®ГІГ¬Г Г±ГёГІГ ГЎГЁГ°Г®ГўГ ГІГј Г®ГЄГ­Г® Г¤Г® Г­ГіГ¦Г­Г®ГЈГ® Г°Г Г§Г¬ГҐГ°Г , Г  ГІГ®Г«ГјГЄГ® ГЇГ®ГІГ®Г¬ ГіГ±ГІГ Г­Г ГўГ«ГЁГўГ ГІГј ГўГЁГ¤ГҐГ®Г°ГҐГ¦ГЁГ¬
+      // ГІ.ГЄ. ГўГЁГ¤ГҐГ®Г°ГҐГ¦ГЁГ¬ Г®ГЇГ°ГҐГ¤ГҐГ«ГїГҐГІ Г°Г Г§Г¬ГҐГ°Г» back buffer'Г  ГЁГ§ Г°Г Г§Г¬ГҐГ°Г®Гў Г®ГЄГ­Г .
    }
    else  // blt, direct video mem
    {
@@ -1941,16 +1950,16 @@ void set_vidmode()
          desc.dwFlags = DDSD_CAPS | DDSD_HEIGHT | DDSD_WIDTH | DDSD_PIXELFORMAT;
          desc.dwWidth = temp.ox; desc.dwHeight = temp.oy;
 
-         // Видеокарты AMD Radeon HD не поддерживают surface в системной памяти
-         // из за этого приходится отдельный буфер в системно памяти и делать программное
-         // копирование в surface выделенный в видеопамяти иначе никак не задать выравнивание на 16 байт
+         // Г‚ГЁГ¤ГҐГ®ГЄГ Г°ГІГ» AMD Radeon HD Г­ГҐ ГЇГ®Г¤Г¤ГҐГ°Г¦ГЁГўГ ГѕГІ surface Гў Г±ГЁГ±ГІГҐГ¬Г­Г®Г© ГЇГ Г¬ГїГІГЁ
+         // ГЁГ§ Г§Г  ГЅГІГ®ГЈГ® ГЇГ°ГЁГµГ®Г¤ГЁГІГ±Гї Г®ГІГ¤ГҐГ«ГјГ­Г»Г© ГЎГіГґГҐГ° Гў Г±ГЁГ±ГІГҐГ¬Г­Г® ГЇГ Г¬ГїГІГЁ ГЁ Г¤ГҐГ«Г ГІГј ГЇГ°Г®ГЈГ°Г Г¬Г¬Г­Г®ГҐ
+         // ГЄГ®ГЇГЁГ°Г®ГўГ Г­ГЁГҐ Гў surface ГўГ»Г¤ГҐГ«ГҐГ­Г­Г»Г© Гў ГўГЁГ¤ГҐГ®ГЇГ Г¬ГїГІГЁ ГЁГ­Г Г·ГҐ Г­ГЁГЄГ ГЄ Г­ГҐ Г§Г Г¤Г ГІГј ГўГ»Г°Г ГўГ­ГЁГўГ Г­ГЁГҐ Г­Г  16 ГЎГ Г©ГІ
          desc.ddsCaps.dwCaps = DDSCAPS_OFFSCREENPLAIN | DDSCAPS_VIDEOMEMORY | DDSCAPS_LOCALVIDMEM;
 
 #ifdef MOD_SSE2
          if(!(renders[conf.render].flags & RF_1X))
          {
              SurfPitch1 = (temp.ox * temp.obpp) >> 3;
-             SurfPitch1 = (SurfPitch1 + 15) & ~15U; // Выравнивание на 16
+             SurfPitch1 = (SurfPitch1 + 15) & ~15U; // Г‚Г»Г°Г ГўГ­ГЁГўГ Г­ГЁГҐ Г­Г  16
 
              if(SurfMem1)
                  _aligned_free(SurfMem1);
@@ -1998,7 +2007,7 @@ void set_vidmode()
       { printrdd("IDirectDraw2::GetAttachedSurface()", r); exit(); }
    }
 
-   // Настраиваем функцию конвертирования из текущего формата в BGR24
+   // ГЌГ Г±ГІГ°Г ГЁГўГ ГҐГ¬ ГґГіГ­ГЄГ¶ГЁГѕ ГЄГ®Г­ГўГҐГ°ГІГЁГ°Г®ГўГ Г­ГЁГї ГЁГ§ ГІГҐГЄГіГ№ГҐГЈГ® ГґГ®Г°Г¬Г ГІГ  Гў BGR24
    switch(temp.obpp)
    {
    case 8: ConvBgr24 = ConvPal8ToBgr24; break;
@@ -2019,8 +2028,8 @@ void set_vidmode()
 
    if(temp.rflags & (RF_D3D | RF_D3DE)) // d3d windowed, d3d full screen exclusive
    {
-       // Сначала нужно отмасштабировать окно до нужного размера, а только потом устанавливать видеорежим
-       // т.к. видеорежим определяет размеры back buffer'а из размеров окна.
+       // Г‘Г­Г Г·Г Г«Г  Г­ГіГ¦Г­Г® Г®ГІГ¬Г Г±ГёГІГ ГЎГЁГ°Г®ГўГ ГІГј Г®ГЄГ­Г® Г¤Г® Г­ГіГ¦Г­Г®ГЈГ® Г°Г Г§Г¬ГҐГ°Г , Г  ГІГ®Г«ГјГЄГ® ГЇГ®ГІГ®Г¬ ГіГ±ГІГ Г­Г ГўГ«ГЁГўГ ГІГј ГўГЁГ¤ГҐГ®Г°ГҐГ¦ГЁГ¬
+       // ГІ.ГЄ. ГўГЁГ¤ГҐГ®Г°ГҐГ¦ГЁГ¬ Г®ГЇГ°ГҐГ¤ГҐГ«ГїГҐГІ Г°Г Г§Г¬ГҐГ°Г» back buffer'Г  ГЁГ§ Г°Г Г§Г¬ГҐГ°Г®Гў Г®ГЄГ­Г .
        SetVideoModeD3d((temp.rflags & RF_D3DE) != 0);
    }
 }
