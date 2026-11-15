@@ -24,7 +24,7 @@ Z80INLINE u8 *am_r(u32 addr);
 Z80INLINE unsigned char m1_cycle(Z80 *cpu);
 unsigned char in(unsigned port);
 void out(unsigned port, unsigned char val);
-// FIXME: Сделать переключаемый интерфейс в зависимости от флага gscpu.dbgchk
+// FIXME: Г‘Г¤ГҐГ«Г ГІГј ГЇГҐГ°ГҐГЄГ«ГѕГ·Г ГҐГ¬Г»Г© ГЁГ­ГІГҐГ°ГґГҐГ©Г± Гў Г§Г ГўГЁГ±ГЁГ¬Г®Г±ГІГЁ Г®ГІ ГґГ«Г ГЈГ  gscpu.dbgchk
 namespace z80fast
 {
 Z80INLINE unsigned char xm(unsigned addr);
@@ -137,7 +137,7 @@ static unsigned char gsvol[8], gsbyte[8]{ 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x
 static unsigned char gsdata_in, gsdata_out, gspage = 0;
 static unsigned char gscmd, gsstat;
 
-static bool GsSilent = false; // Признак нулевой громкости во всех каналах
+static bool GsSilent = false; // ГЏГ°ГЁГ§Г­Г ГЄ Г­ГіГ«ГҐГўГ®Г© ГЈГ°Г®Г¬ГЄГ®Г±ГІГЁ ГўГ® ГўГ±ГҐГµ ГЄГ Г­Г Г«Г Гµ
 
 static unsigned long long mult_gs, mult_gs2;
 
@@ -373,6 +373,16 @@ static inline void UpdateMemMapping()
 
 void out(unsigned port, unsigned char val)
 {
+   port &= 0xFF;
+   if (port == 0xEF)
+   {
+       FILE* f = fopen("C:\\Temp\\neogs_out.txt", "a");
+       if (f)
+       {
+           fputc(val, f);
+           fclose(f);
+       }
+   }
 //   printf(__FUNCTION__" port=0x%X, val=0x%X\n", (port & 0xFF), val);
    switch (port & 0xFF)
    {
