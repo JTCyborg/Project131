@@ -336,6 +336,8 @@ namespace
     static unsigned char vga_mem_read(unsigned address)
     {
         unsigned linear = (unsigned(vga.bank) * APERTURE_SIZE + (address & 0x3FFF)) & (VRAM_SIZE - 1);
+        if (vga.rgb565_mode)
+            return vga.vram[linear];
         if (vga.seq[4] & 8)
         {
             unsigned plane = linear & 3;
@@ -362,7 +364,13 @@ namespace
 
     static void vga_mem_write(unsigned address, unsigned char value)
     {
-        unsigned linear = (unsigned(vga.bank) * APERTURE_SIZE + (address & 0x3FFF)) & 0x3FFFF;
+        unsigned linear = (unsigned(vga.bank) * APERTURE_SIZE + (address & 0x3FFF)) & (VRAM_SIZE - 1);
+        if (vga.rgb565_mode)
+        {
+            vga.vram[linear] = value;
+            vga.dirty = true;
+            return;
+        }
         if (vga.seq[4] & 8)
         {
             unsigned plane = linear & 3;
