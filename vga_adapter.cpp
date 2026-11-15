@@ -86,7 +86,8 @@ namespace
 
     static void render_pixels()
     {
-        if (!vga.width || !vga.height || vga.text_mode)
+        // Transparent mode already owns vga.pixels with the final RGB frame.
+        if (!vga.software_mode || !vga.width || !vga.height || vga.text_mode)
             return;
 
         if (vga.width == 320)
