@@ -374,41 +374,9 @@ static inline void UpdateMemMapping()
 
 void out(unsigned port, unsigned char val)
 {
-<<<<<<< HEAD
-   port &= 0xFF;
-   if (port == 0xEF)
-   {
-       char log_path[MAX_PATH] = "spectrum_out.txt";
-       const char* disk_path = comp.fdd[0].name;
-       if (disk_path[0])
-       {
-           const char* slash = strrchr(disk_path, '\\');
-           const char* forward_slash = strrchr(disk_path, '/');
-           if (!slash || (forward_slash && forward_slash > slash))
-               slash = forward_slash;
-           if (slash)
-           {
-               size_t dir_len = size_t(slash - disk_path) + 1;
-               static const char log_name[] = "spectrum_out.txt";
-               if (dir_len + sizeof(log_name) <= sizeof(log_path))
-               {
-                   memcpy(log_path, disk_path, dir_len);
-                   memcpy(log_path + dir_len, log_name, sizeof(log_name));
-               }
-           }
-       }
-       FILE* f = fopen(log_path, "a");
-       if (f)
-       {
-           fputc(val, f);
-           fclose(f);
-       }
-   }
-=======
    port &= 0xFF;
    if (port == 0xEF)
        log_port_ef(val);
->>>>>>> a60db5a802f0cfef4b700b0c1ea571563b2ab883
 //   printf(__FUNCTION__" port=0x%X, val=0x%X\n", (port & 0xFF), val);
    switch (port & 0xFF)
    {
