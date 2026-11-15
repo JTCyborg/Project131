@@ -130,7 +130,7 @@ void init_all(int argc, char **argv)
    load_config(config);
    const bool isa_vga_enabled = GetPrivateProfileInt("ISA_VGA", "Enabled", 1, ininame) != 0;
    isa_vga_adapter_set_present(isa_vga_enabled);
-   printf("ISA VGA adapter: %s ([ISA_VGA] Enabled)\\n", isa_vga_enabled ? "enabled" : "disabled");
+   printf("ISA VGA adapter: %s ([ISA_VGA] Enabled)\n", isa_vga_enabled ? "enabled" : "disabled");
    //make_samples();
    init_leds();
    init_tape();
