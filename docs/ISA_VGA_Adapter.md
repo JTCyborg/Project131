@@ -1,5 +1,20 @@
 # ISA VGA/SVGA Adapter — implementation and programming guide
 
+## Enable or disable the adapter in unreal.ini
+
+The adapter can be installed or removed from the emulated machine without changing source code. Add this section to `unreal.ini`:
+
+```ini
+[ISA_VGA]
+Enabled=1
+```
+
+- `Enabled=1` — adapter is present. Its ports, memory aperture and display capture are active.
+- `Enabled=0` — adapter is absent. Reads/writes to its ports and memory aperture are not claimed by the adapter, and its window is hidden.
+- If the section or key is missing, the default is `1` to preserve the previous behavior.
+
+The setting is read during emulator startup. Restart Unreal Speccy after changing it; it is not hot-reloaded while the emulator is running. The startup console reports whether the adapter is enabled or disabled.
+
 ## Hardware model
 The emulator exposes a software VGA/SVGA adapter in a separate window. It has 1 MiB of VRAM and a 16 KiB Z80 aperture at C000h-FFFFh. The aperture is banked: 64 banks × 16 KiB = 1 MiB. The framebuffer is linear from VRAM offset 00000h in packed-pixel modes.
 
