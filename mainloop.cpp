@@ -15,7 +15,6 @@
 #include "z80.h"
 #include "mainloop.h"
 #include "funcs.h"
-#include "vga_adapter.h"
 
 #include "util.h"
 
@@ -43,7 +42,6 @@ void spectrum_frame()
 
    flush_snd_frame();
    flush_frame();
-   isa_vga_adapter_frame(rbuf, temp.scx, temp.scy, temp.scx / 4);
    showleds();
 
    if (!cpu.iff1 || // int disabled in CPU
