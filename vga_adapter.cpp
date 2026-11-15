@@ -123,51 +123,76 @@ namespace
         vga.dirty = false;
     }
 
-    static void render_transparent(const unsigned char *source, unsigned sw, unsigned sh, unsigned stride)
+    static unsigned char clamp_channel(int value)
     {
-        if (!source || !sw || !sh || !stride)
+        if (value < 0) return 0;
+        if (value > 255) return 255;
+        return (unsigned char)value;
+    }
+
+    static void render_transparent(const unsigned char *source, unsigned sw, unsigned sh,
+        unsigned pitch, unsigned bpp, bool yuy2)
+    {
+        if (!source || !sw || !sh || sw > 1024 || sh > 768 || sw * sh > MAX_PIXELS)
+            return;
+        const unsigned bytes_per_pixel = (bpp + 7) >> 3;
+        if (yuy2)
+        {
+            if (bytes_per_pixel != 2 || (sw & 1)) return;
+        }
+        else if (bpp != 8 && bpp != 16 && bpp != 32)
+            return;
+        if (pitch < sw * bytes_per_pixel)
             return;
 
-        // Spectrum/ATM renderers publish a normalized stream of 8 pixels + one
-        // packed ink/paper attribute. The VGA card receives indexed pixels.
-        for (unsigned i = 0; i < 16; ++i)
+        // This is the final image produced by the selected renderer. Its source
+        // format is determined by the active video driver, not by the emulated clone.
+        for (unsigned y = 0; y < sh; ++y)
         {
-            // The transparent bridge feeds an RGB8 emulator palette into the
-            // VGA's 6-bit DAC. Apply a mild +15% level correction here only;
-            // software-programmed VGA modes retain their exact DAC values.
-            unsigned r = (unsigned(pal0[i].peRed) * 115 + 50) / 100;
-            unsigned g = (unsigned(pal0[i].peGreen) * 115 + 50) / 100;
-            unsigned b = (unsigned(pal0[i].peBlue) * 115 + 50) / 100;
-            if (r > 255) r = 255;
-            if (g > 255) g = 255;
-            if (b > 255) b = 255;
-            vga.dac[i][0] = (unsigned char)(r >> 2);
-            vga.dac[i][1] = (unsigned char)(g >> 2);
-            vga.dac[i][2] = (unsigned char)(b >> 2);
-        }
-
-        const unsigned outw = 320, outh = 200;
-        const unsigned x0 = sw > outw ? (sw - outw) / 2 : 0;
-        const unsigned y0 = sh > outh ? (sh - outh) / 2 : 0;
-        for (unsigned y = 0; y < outh; ++y)
-        {
-            unsigned sy = y0 + (y * (sh - y0 < outh ? sh - y0 : outh)) / outh;
-            if (sy >= sh) sy = sh - 1;
-            for (unsigned x = 0; x < outw; ++x)
+            const unsigned char *src = source + y * pitch;
+            DWORD *dst = vga.pixels + y * sw;
+            for (unsigned x = 0; x < sw; ++x)
             {
-                unsigned sx = x0 + (x * (sw - x0 < outw ? sw - x0 : outw)) / outw;
-                if (sx >= sw) sx = sw - 1;
-                unsigned group = sx >> 3;
-                unsigned bit = 7 - (sx & 7);
-                const unsigned char *cell = source + sy * stride + group * 2;
-                unsigned char pixels = cell[0];
-                unsigned char attr = cell[1];
-                unsigned colour = (pixels & (1U << bit)) ? (attr & 15) : (attr >> 4);
-                unsigned address = y * outw + x;
-                vga.vram[(address & 3) * PLANE_SIZE + (address >> 2)] = (unsigned char)colour;
+                unsigned r = 0, g = 0, b = 0;
+                if (yuy2)
+                {
+                    const unsigned char *pair = src + (x & ~1U) * 2;
+                    int yy = pair[(x & 1U) ? 2 : 0];
+                    int u = int(pair[1]) - 128;
+                    int v = int(pair[3]) - 128;
+                    r = clamp_channel((298 * (yy - 16) + 409 * v + 128) >> 8);
+                    g = clamp_channel((298 * (yy - 16) - 100 * u - 208 * v + 128) >> 8);
+                    b = clamp_channel((298 * (yy - 16) + 516 * u + 128) >> 8);
+                }
+                else if (bpp == 8)
+                {
+                    const PALETTEENTRY &c = pal0[src[x]];
+                    r = c.peRed; g = c.peGreen; b = c.peBlue;
+                }
+                else if (bpp == 16)
+                {
+                    unsigned value = ((const unsigned short *)src)[x];
+                    r = ((value >> 11) & 31) * 255 / 31;
+                    g = ((value >> 5) & 63) * 255 / 63;
+                    b = (value & 31) * 255 / 31;
+                }
+                else
+                {
+                    unsigned value = ((const unsigned *)src)[x];
+                    r = (value >> 16) & 255;
+                    g = (value >> 8) & 255;
+                    b = value & 255;
+                }
+                r = (r * 115 + 50) / 100;
+                g = (g * 115 + 50) / 100;
+                b = (b * 115 + 50) / 100;
+                if (r > 255) r = 255;
+                if (g > 255) g = 255;
+                if (b > 255) b = 255;
+                dst[x] = rgb(r, g, b);
             }
         }
-        set_mode(320, 200, false);
+        set_mode(sw, sh, false);
         vga.dirty = true;
     }
 
@@ -457,11 +482,11 @@ bool isa_vga_adapter_mem_write(unsigned address, unsigned char value)
     return true;
 }
 
-void isa_vga_adapter_frame(const unsigned char *source, unsigned width, unsigned height, unsigned stride)
+void isa_vga_adapter_capture_frame(const unsigned char *source, unsigned width, unsigned height, unsigned stride, unsigned bits_per_pixel, bool yuy2)
 {
     ensure_window();
     if (!vga.software_mode)
-        render_transparent(source, width, height, stride);
+        render_transparent(source, width, height, stride, bits_per_pixel, yuy2);
     if (vga.window && vga.dirty)
         InvalidateRect(vga.window, nullptr, FALSE);
 }
