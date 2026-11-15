@@ -28,6 +28,9 @@ namespace
         unsigned char vbe_enabled, vbe_bpp;
         unsigned short vbe_xres, vbe_yres, vbe_pitch;
         unsigned char latch[4];
+        bool write_buffer_pending;
+        unsigned write_buffer_address;
+        unsigned char write_buffer_low;
         unsigned width, height;
         DWORD pixels[MAX_PIXELS];
         HWND window;
@@ -557,10 +560,23 @@ namespace
         }
         vga.dirty = true;
     }
+
+    // Z80 writes are 8-bit, while packed 15/16-bpp pixels are 16-bit.
+    // Hold an aligned low byte and combine the immediately following high
+    // byte into one adapter-side 16-bit VRAM commit.
+    static void flush_write_buffer()
+    {
+        if (!vga.write_buffer_pending)
+            return;
+        vga.vram[vga.write_buffer_address] = vga.write_buffer_low;
+        vga.write_buffer_pending = false;
+        vga.dirty = true;
+    }
 }
 
 void isa_vga_adapter_set_present(bool present)
 {
+    if (!present) flush_write_buffer();
     card_present = present;
     if (!present && vga.window)
         ShowWindow(vga.window, SW_HIDE);
@@ -569,6 +585,7 @@ void isa_vga_adapter_set_present(bool present)
 bool isa_vga_adapter_port_read(unsigned port, unsigned char &value)
 {
     if (!card_present) return false;
+    flush_write_buffer();
     port = normalize_port(port);
     if (port == 0x3E2) { value=vga.accel_index; return true; }
     if (port == 0x3E3) { value=vga.accel_regs[vga.accel_index&63]; return true; }
@@ -610,6 +627,7 @@ bool isa_vga_adapter_port_read(unsigned port, unsigned char &value)
 bool isa_vga_adapter_port_write(unsigned port, unsigned char value)
 {
     if (!card_present) return false;
+    flush_write_buffer();
     port = normalize_port(port);
     if (port == 0x3E2) { vga.accel_index=value&63; return true; }
     if (port == 0x3E3) { unsigned i=vga.accel_index&63; vga.accel_regs[i]=value; if(i==0) execute_2d(value); if(i==0x34) { vga.dirty=true; if(vga.window) InvalidateRect(vga.window,nullptr,FALSE); } return true; }
@@ -666,6 +684,7 @@ bool isa_vga_adapter_port_write(unsigned port, unsigned char value)
 
 bool isa_vga_adapter_mem_read(unsigned address, unsigned char &value)
 {
+    flush_write_buffer();
     if (!card_present || !vga.initialized || !vga.software_mode || !vga.aperture || (address & 0xC000) != 0xC000)
         return false;
     value = vga_mem_read(address);
@@ -675,7 +694,41 @@ bool isa_vga_adapter_mem_read(unsigned address, unsigned char &value)
 bool isa_vga_adapter_mem_write(unsigned address, unsigned char value)
 {
     if (!card_present || !vga.initialized || !vga.software_mode || !vga.aperture || (address & 0xC000) != 0xC000)
+    {
+        flush_write_buffer();
         return false;
+    }
+
+    const bool packed16 = vga.vbe_enabled &&
+        (vga.vbe_bpp == 15 || vga.vbe_bpp == 16);
+    if (packed16)
+    {
+        unsigned linear = unsigned(vga.bank) * APERTURE_SIZE + (address & 0x3FFF);
+        if (vga.write_buffer_pending &&
+            linear == vga.write_buffer_address + 1)
+        {
+            // Complete the little-endian pixel as a single 16-bit commit.
+            vga.vram[vga.write_buffer_address] = vga.write_buffer_low;
+            vga.vram[linear] = value;
+            vga.write_buffer_pending = false;
+            vga.dirty = true;
+            return true;
+        }
+
+        flush_write_buffer();
+        // Only buffer an aligned low byte. Do not pair across the 16-KiB
+        // aperture boundary, where the Z80 address wraps to another bank.
+        if (!(address & 1) && (address & 0x3FFF) != 0x3FFF)
+        {
+            vga.write_buffer_address = linear;
+            vga.write_buffer_low = value;
+            vga.write_buffer_pending = true;
+            return true;
+        }
+    }
+    else
+        flush_write_buffer();
+
     vga_mem_write(address, value);
     return true;
 }
@@ -683,6 +736,7 @@ bool isa_vga_adapter_mem_write(unsigned address, unsigned char value)
 void isa_vga_adapter_capture_frame(const unsigned char *source, unsigned width, unsigned height, unsigned stride, unsigned bits_per_pixel, bool yuy2)
 {
     if (!card_present) return;
+    flush_write_buffer();
     ensure_window();
     if (!vga.software_mode)
         render_transparent(source, width, height, stride, bits_per_pixel, yuy2);
@@ -692,6 +746,7 @@ void isa_vga_adapter_capture_frame(const unsigned char *source, unsigned width, 
 
 void isa_vga_adapter_done()
 {
+    flush_write_buffer();
     if (vga.window)
     {
         DestroyWindow(vga.window);
