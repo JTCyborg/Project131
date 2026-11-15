@@ -6,9 +6,10 @@
 
 namespace
 {
-    static const unsigned VRAM_SIZE = 256 * 1024;
+    static const unsigned VRAM_SIZE = 1024 * 1024;
     static const unsigned PLANE_SIZE = 64 * 1024;
     static const unsigned APERTURE_SIZE = 16 * 1024;
+    static const unsigned APERTURE_BANKS = VRAM_SIZE / APERTURE_SIZE;
     static const unsigned MAX_PIXELS = 1024 * 768;
 
     struct VGA_ADAPTER
@@ -22,6 +23,7 @@ namespace
         unsigned char dac_read, dac_write, dac_component;
         unsigned char bank;
         unsigned char software_mode, aperture;
+        unsigned char rgb565_mode;
         unsigned char latch[4];
         unsigned width, height;
         DWORD pixels[MAX_PIXELS];
@@ -76,7 +78,9 @@ namespace
     {
         if (!vga.software_mode)
             return;
-        if (vga.seq[4] & 8)
+        if (vga.rgb565_mode)
+            set_mode(640, 480, false);           // 640x480 RGB565 direct colour
+        else if (vga.seq[4] & 8)
             set_mode(320, 200, false);             // VGA mode 13h, chain-4
         else if (vga.gc[6] & 1)
             set_mode(640, 480, false);             // planar 16-colour graphics
@@ -90,7 +94,25 @@ namespace
         if (!vga.software_mode || !vga.width || !vga.height || vga.text_mode)
             return;
 
-        if (vga.width == 320)
+        if (vga.rgb565_mode)
+        {
+            // Linear 640x480 RGB565 framebuffer at VRAM offset 00000h.
+            const unsigned short *src = (const unsigned short *)vga.vram;
+            for (unsigned y = 0; y < 480; ++y)
+            {
+                DWORD *dst = vga.pixels + y * 640;
+                for (unsigned x = 0; x < 640; ++x)
+                {
+                    unsigned value = src[y * 640 + x];
+                    unsigned r = (value >> 11) & 31;
+                    unsigned g = (value >> 5) & 63;
+                    unsigned b = value & 31;
+                    dst[x] = rgb((r * 255 + 15) / 31,
+                        (g * 255 + 31) / 63, (b * 255 + 15) / 31);
+                }
+            }
+        }
+        else if (vga.width == 320)
         {
             for (unsigned y = 0; y < 200; ++y)
             {
@@ -313,7 +335,7 @@ namespace
 
     static unsigned char vga_mem_read(unsigned address)
     {
-        unsigned linear = (unsigned(vga.bank) * APERTURE_SIZE + (address & 0x3FFF)) & 0x3FFFF;
+        unsigned linear = (unsigned(vga.bank) * APERTURE_SIZE + (address & 0x3FFF)) & (VRAM_SIZE - 1);
         if (vga.seq[4] & 8)
         {
             unsigned plane = linear & 3;
@@ -413,7 +435,8 @@ bool isa_vga_adapter_port_read(unsigned port, unsigned char &value)
         value = vga.status;
         return true;
     case 0x3DE:
-        value = (vga.software_mode ? 1 : 0) | (vga.aperture ? 2 : 0) | ((vga.bank & 15) << 2);
+        value = (vga.software_mode ? 1 : 0) | (vga.aperture ? 2 : 0) |
+            ((vga.bank & 15) << 2) | (vga.rgb565_mode ? 0x40 : 0);
         return true;
     case 0x3DF: value = vga.bank; return true;
     default: return false;
@@ -458,11 +481,12 @@ bool isa_vga_adapter_port_write(unsigned port, unsigned char value)
         vga.software_mode = (value & 1) != 0;
         vga.aperture = (value & 2) != 0;
         vga.bank = (value >> 2) & 15;
+        vga.rgb565_mode = (value & 0x40) != 0;
         if (!vga.software_mode) vga.aperture = 0;
         decode_mode();
         vga.dirty = true;
         return true;
-    case 0x3DF: vga.bank = value & 15; return true;
+    case 0x3DF: vga.bank = value & (APERTURE_BANKS - 1); vga.dirty = true; return true;
     default: return false;
     }
 }
