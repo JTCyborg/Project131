@@ -51,6 +51,9 @@ namespace
     static VGA_ADAPTER vga = {};
     static bool card_present = true;
 
+    static void trident_recalc_banking();
+    static void trident_recalc_timings();
+
     static const unsigned char ega_palette[16][3] =
     {
         {0,0,0},{0,0,42},{0,42,0},{0,42,42},
