@@ -534,8 +534,11 @@ namespace
                     // a reset or partially programmed DAC can turn the whole
                     // text screen blue and make otherwise valid text unreadable.
                     char text_char = hidden ? ' ' : (ch ? char(ch) : ' ');
-                    SetTextColor(dc, RGB(255, 255, 255));
-                    SetBkColor(dc, RGB(0, 0, 0));
+                    // The fallback glyph source must still honour VGA text
+                    // attributes. Without a guest-loaded plane-2 font, use
+                    // the host glyph shape but keep VGA foreground/background.
+                    SetTextColor(dc, hidden ? bg_color : fg_color);
+                    SetBkColor(dc, bg_color);
                     SetBkMode(dc, OPAQUE);
                     TextOutA(dc, int(x * char_width), int(y * char_height),
                         &text_char, 1);
@@ -657,7 +660,8 @@ namespace
         wc.lpszClassName = "UnrealSpeccyISAVGAScreen";
         RegisterClassA(&wc);
         vga.window = CreateWindowA(wc.lpszClassName, "ISA VGA Adapter - Trident TVGA8900D",
-            WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, 660, 440,
+            // Fit the 720x400 mode-3 viewport and the 24-pixel status strip.
+            WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, 760, 460,
             nullptr, nullptr, wc.hInstance, nullptr);
         if (vga.window)
         {
