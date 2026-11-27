@@ -1329,8 +1329,16 @@ bool isa_vga_adapter_mem_write(unsigned address, unsigned char value)
         (!vga.vbe_enabled && (vga.bpp == 15 || vga.bpp == 16));
     if (packed16)
     {
-        unsigned linear = (vga.write_bank + unsigned(vga.bridge_bank) * APERTURE_SIZE +
-            (address & 0x3FFF)) & vga.vram_mask;
+        const unsigned bridge_offset = unsigned(vga.bridge_bank) * APERTURE_SIZE +
+            (address & 0x3FFF);
+        const unsigned linear = (bridge_offset & vga.banked_mask) + vga.write_bank;
+        // PCem checks the decoded address against installed VRAM before
+        // applying the physical VRAM mask. Do not wrap an invalid bank.
+        if (linear + 1 >= vga.vram_size)
+        {
+            flush_write_buffer();
+            return true;
+        }
         if (vga.write_buffer_pending &&
             linear == vga.write_buffer_address + 1)
         {
