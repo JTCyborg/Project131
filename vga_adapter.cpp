@@ -3,6 +3,7 @@
 #include "vars.h"
 #include "draw.h"
 #include "vga_adapter.h"
+#include "rom/tvga-c4.3-8x16.h"
 
 namespace
 {
@@ -94,6 +95,21 @@ namespace
         return rgb((c[0] & 63) * 4, (c[1] & 63) * 4, (c[2] & 63) * 4);
     }
 
+    static void load_tvga_c43_font()
+    {
+        // VGA character generator RAM is plane 2. The ROM stores tightly
+        // packed 8x16 glyphs; VGA text mode addresses each glyph with a
+        // 32-byte slot, so expand each glyph into that hardware layout.
+        unsigned char *plane2 = vga.vram + 2 * vga.plane_size;
+        for (unsigned ch = 0; ch < 256; ++ch)
+        {
+            unsigned char *glyph = plane2 + ch * 32;
+            memcpy(glyph, tvga_c43_font_8x16 + ch * 16, 16);
+            memset(glyph + 16, 0, 16);
+        }
+        vga.text_font_written = true;
+    }
+
     static void set_mode(unsigned w, unsigned h, bool text)
     {
         if (w > 1024 || h > 768 || w * h > MAX_PIXELS)
@@ -106,7 +122,7 @@ namespace
             // A previous graphics frame may leave arbitrary bytes in plane 2.
             // Only font data written after entering text mode is a valid text font.
             if (text)
-                vga.text_font_written = false;
+                load_tvga_c43_font();
             // Drop the old frame on every graphics/text transition. WM_PAINT
             // will then redraw only the newly selected mode.
             if (text)
