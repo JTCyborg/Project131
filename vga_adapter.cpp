@@ -470,13 +470,24 @@ namespace
         if (vga.window)
         {
             char diagnostic[192];
+            const unsigned first_attr = vga.vram[vga.plane_size + start];
+            const unsigned color_select = vga.attr[0x14] & 0x0F;
+            unsigned fg_index = vga.attr[first_attr & 0x0F] & 0x3F;
+            unsigned bg_index = vga.attr[(first_attr >> 4) & 0x0F] & 0x3F;
+            if (vga.attr[0x10] & 0x80) {
+                fg_index = (fg_index & 0x0F) | (color_select << 4);
+                bg_index = (bg_index & 0x0F) | (color_select << 4);
+            } else {
+                fg_index = (fg_index & 0x3F) | ((color_select & 0x0C) << 4);
+                bg_index = (bg_index & 0x3F) | ((color_select & 0x0C) << 4);
+            }
             wsprintfA(diagnostic,
-                "ISA VGA Adapter - Trident TVGA8900D | MA=%04X C=%02X A=%02X "
-                "S1=%02X S2=%02X S4=%02X BPP=%u BK=%u RB=%X WB=%X P13=%02X",
-                start & 0xFFFF, vga.vram[start],
-                vga.vram[vga.plane_size + start],
-                vga.seq[1], vga.seq[2], vga.seq[4], vga.bpp,
-                vga.bank, vga.read_bank, vga.write_bank, vga.crtc[0x13]);
+                "Trident TVGA8900D MA=%04X C=%02X A=%02X AT10=%02X AT14=%02X "
+                "FG=%02X BG=%02X D0=%02X%02X%02X D1=%02X%02X%02X",
+                start & 0xFFFF, vga.vram[start], first_attr,
+                vga.attr[0x10], vga.attr[0x14], fg_index, bg_index,
+                vga.dac[0][0], vga.dac[0][1], vga.dac[0][2],
+                vga.dac[1][0], vga.dac[1][1], vga.dac[1][2]);
             SetWindowTextA(vga.window, diagnostic);
         }
         unsigned pitch = unsigned(vga.crtc[0x13]) * 2;
