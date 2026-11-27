@@ -464,6 +464,21 @@ namespace
         const unsigned start =
             ((unsigned(vga.crtc[0x0C]) << 8) | vga.crtc[0x0D]) &
             (vga.plane_size - 1);
+        // Temporary scanout diagnostics: expose the exact CRTC address and
+        // the first character/attribute bytes currently visible to the renderer.
+        // This distinguishes a VRAM write/addressing fault from a glyph/palette fault.
+        if (vga.window)
+        {
+            char diagnostic[192];
+            wsprintfA(diagnostic,
+                "ISA VGA Adapter - Trident TVGA8900D | MA=%04X C=%02X A=%02X "
+                "S1=%02X S2=%02X S4=%02X BPP=%u BK=%u RB=%X WB=%X P13=%02X",
+                start & 0xFFFF, vga.vram[start],
+                vga.vram[vga.plane_size + start],
+                vga.seq[1], vga.seq[2], vga.seq[4], vga.bpp,
+                vga.bank, vga.read_bank, vga.write_bank, vga.crtc[0x13]);
+            SetWindowTextA(vga.window, diagnostic);
+        }
         unsigned pitch = unsigned(vga.crtc[0x13]) * 2;
         // Display scanout is addressed by the CRTC start-address registers.
         // CPU aperture banking is independent and must not shift the displayed
