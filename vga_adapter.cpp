@@ -15,7 +15,12 @@ namespace
     struct VGA_ADAPTER
     {
         unsigned char vram[VRAM_SIZE];
-        unsigned char seq[5], gc[9], crtc[0x19], attr[0x15];
+        unsigned char seq[16], gc[16], crtc[0x40], attr[0x15];
+        // Trident TVGA8900D extension state, following PCem's vid_tvga.c.
+        unsigned char tvga_3d8, tvga_3d9;
+        unsigned char oldmode, oldctrl1, oldctrl2, newctrl2;
+        unsigned char ramdac_state, ramdac_ctrl, bpp;
+        unsigned read_bank, write_bank, vram_mask;
         unsigned char seq_index, gc_index, crtc_index, attr_index;
         unsigned char attr_data, attr_flip;
         unsigned char misc_out, status;
@@ -481,6 +486,10 @@ namespace
         vga.seq[4] = 0x0E;
         vga.gc[6] = 0x05;
         vga.misc_out = 1;
+        vga.bpp = 8;
+        vga.vram_mask = VRAM_SIZE - 1;
+        vga.ramdac_ctrl = 0;
+        trident_recalc_banking();
     }
 
     static unsigned normalize_port(unsigned port)
@@ -501,9 +510,29 @@ namespace
         return ((unsigned)value >> count) | ((unsigned)value << ((8 - count) & 7));
     }
 
+    static void trident_recalc_banking()
+    {
+        vga.write_bank = unsigned(vga.tvga_3d8 & 0x1F) * 65536U;
+        vga.read_bank = (vga.gc[0x0F] & 1)
+            ? unsigned(vga.tvga_3d9 & 0x1F) * 65536U
+            : vga.write_bank;
+    }
+
+    static unsigned char trident_crtc_mask(unsigned index)
+    {
+        static const unsigned char masks[0x40] = {
+            0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0x7f,0xff,0x3f,0x7f,0xff,0xff,0xff,0xff,
+            0xff,0xff,0xff,0xff,0x7f,0xff,0xff,0xef,0xff,0x00,0x00,0x00,0x00,0x00,0xff,0xff,
+            0x7f,0x00,0x00,0x2f,0x00,0x00,0x00,0x03,0x00,0x13,0x00,0x00,0x00,0x00,0x00,0x00,
+            0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+        };
+        return masks[index & 0x3F];
+    }
+
     static unsigned char vga_mem_read(unsigned address)
     {
-        unsigned linear = (unsigned(vga.bank) * APERTURE_SIZE + (address & 0x3FFF)) & (VRAM_SIZE - 1);
+        unsigned linear = (vga.read_bank + unsigned(vga.bank) * APERTURE_SIZE +
+            (address & 0x3FFF)) & vga.vram_mask;
         if (vga.vbe_enabled) return vga.vram[linear];
         if (vga.rgb565_mode)
             return vga.vram[linear];
@@ -533,7 +562,8 @@ namespace
 
     static void vga_mem_write(unsigned address, unsigned char value)
     {
-        unsigned linear = (unsigned(vga.bank) * APERTURE_SIZE + (address & 0x3FFF)) & (VRAM_SIZE - 1);
+        unsigned linear = (vga.write_bank + unsigned(vga.bank) * APERTURE_SIZE +
+            (address & 0x3FFF)) & vga.vram_mask;
         if (vga.vbe_enabled) { vga.vram[linear] = value; vga.dirty = true; return; }
         if (vga.rgb565_mode)
         {
@@ -620,12 +650,22 @@ bool isa_vga_adapter_port_read(unsigned port, unsigned char &value)
     {
     case 0x3C1: value = vga.attr[vga.attr_index & 0x1F]; return true;
     case 0x3C2: value = vga.status; return true;
-    case 0x3C5: value = vga.seq[vga.seq_index % 5]; return true;
+    case 0x3C5:
+        if ((vga.seq_index & 0x0F) == 0x0B) { vga.oldmode = 0; value = 0x33; return true; }
+        if ((vga.seq_index & 0x0F) == 0x0C) { value = vga.seq[0x0C]; return true; }
+        if ((vga.seq_index & 0x0F) == 0x0D) { value = vga.oldmode ? vga.oldctrl2 : vga.newctrl2; return true; }
+        if ((vga.seq_index & 0x0F) == 0x0E && vga.oldmode) { value = vga.oldctrl1; return true; }
+        value = vga.seq[vga.seq_index & 0x0F]; return true;
     case 0x3CC: value = vga.misc_out; return true;
-    case 0x3CF: value = vga.gc[vga.gc_index % 9]; return true;
+    case 0x3CF:
+        if ((vga.gc_index & 0x0F) == 0x0E) { value = vga.gc[0x0E]; return true; }
+        if ((vga.gc_index & 0x0F) == 0x0F) { value = vga.gc[0x0F]; return true; }
+        value = vga.gc[vga.gc_index & 0x0F]; return true;
     case 0x3D4: value = vga.crtc_index; return true;
-    case 0x3D5: value = vga.crtc[vga.crtc_index % 0x19]; return true;
-    case 0x3C6: value = vga.dac_mask; return true;
+    case 0x3D5: value = (vga.crtc_index > 0x18 && vga.crtc_index < 0x1E) ? 0xFF : vga.crtc[vga.crtc_index & 0x3F]; return true;
+    case 0x3C6:
+        if (vga.ramdac_state == 4) { value = vga.ramdac_ctrl; return true; }
+        ++vga.ramdac_state; value = vga.dac_mask; return true;
     case 0x3C7: value = 0; return true;
     case 0x3C8: value = vga.dac_write; return true;
     case 0x3C9:
@@ -642,6 +682,8 @@ bool isa_vga_adapter_port_read(unsigned port, unsigned char &value)
             ((vga.bank & 15) << 2) | (vga.rgb565_mode ? 0x40 : 0);
         return true;
     case 0x3DF: value = vga.bank; return true;
+    case 0x3D8: value = vga.tvga_3d8; return true;
+    case 0x3D9: value = vga.tvga_3d9; return true;
     default: return false;
     }
 }
@@ -676,15 +718,55 @@ bool isa_vga_adapter_port_write(unsigned port, unsigned char value)
         return true;
     case 0x3C2: vga.misc_out = value; decode_mode(); return true;
     case 0x3C4: vga.seq_index = value & 7; return true;
-    case 0x3C5: vga.seq[vga.seq_index % 5] = value; decode_mode(); vga.dirty = true; return true;
+    case 0x3C5:
+        switch (vga.seq_index & 0x0F)
+        {
+        case 0x0B: vga.oldmode = 1; return true;
+        case 0x0C: if (vga.seq[0x0E] & 0x80) vga.seq[0x0C] = value; return true;
+        case 0x0D:
+            if (vga.oldmode) vga.oldctrl2 = value;
+            else vga.newctrl2 = value;
+            break;
+        case 0x0E:
+            if (vga.oldmode) vga.oldctrl1 = value;
+            else { vga.seq[0x0E] = value ^ 2; vga.tvga_3d8 = vga.seq[0x0E] & 0x0F; trident_recalc_banking(); }
+            break;
+        default: vga.seq[vga.seq_index & 0x0F] = value; break;
+        }
+        decode_mode(); vga.dirty = true; return true;
     case 0x3CE: vga.gc_index = value & 15; return true;
-    case 0x3CF: vga.gc[vga.gc_index % 9] = value; decode_mode(); vga.dirty = true; return true;
-    case 0x3D4: vga.crtc_index = value & 0x1F; return true;
-    case 0x3D5: vga.crtc[vga.crtc_index % 0x19] = value; vga.dirty = true; return true;
-    case 0x3C6: vga.dac_mask = value; return true;
-    case 0x3C7: vga.dac_read = value; vga.dac_component = 0; return true;
-    case 0x3C8: vga.dac_write = value; vga.dac_component = 0; return true;
+    case 0x3CF:
+        switch (vga.gc_index & 0x0F)
+        {
+        case 0x06:
+            { unsigned char old = vga.gc[6]; vga.gc[6] = value;
+              if ((old & 0x0C) && !(value & 0x0C)) vga.vram_mask = 0x1FFFF; }
+            break;
+        case 0x0E: vga.gc[0x0E] = value ^ 2; vga.tvga_3d9 = vga.gc[0x0E] & 0x0F; trident_recalc_banking(); break;
+        case 0x0F: vga.gc[0x0F] = value; trident_recalc_banking(); break;
+        default: vga.gc[vga.gc_index & 0x0F] = value; break;
+        }
+        decode_mode(); vga.dirty = true; return true;
+    case 0x3D4: vga.crtc_index = value & 0x3F; return true;
+    case 0x3D5:
+        if ((vga.crtc_index < 7) && (vga.crtc[0x11] & 0x80)) return true;
+        if ((vga.crtc_index == 7) && (vga.crtc[0x11] & 0x80))
+            value = (vga.crtc[7] & ~0x10) | (value & 0x10);
+        vga.crtc[vga.crtc_index & 0x3F] = value & trident_crtc_mask(vga.crtc_index);
+        if (vga.crtc_index == 0x1E)
+            vga.vram_mask = (value & 0x80) ? (VRAM_SIZE - 1) : 0x3FFFF;
+        vga.dirty = true; return true;
+    case 0x3C6:
+        if (vga.ramdac_state == 4) {
+            vga.ramdac_state = 0; vga.ramdac_ctrl = value;
+            switch (value >> 5) { case 0: case 1: case 2: case 3: vga.bpp=8; break; case 5:vga.bpp=15;break; case 6:vga.bpp=24;break; case 7:vga.bpp=16;break; }
+            vga.dirty = true; return true;
+        }
+        vga.dac_mask = value; return true;
+    case 0x3C7: vga.ramdac_state=0; vga.dac_read = value; vga.dac_component = 0; return true;
+    case 0x3C8: vga.ramdac_state=0; vga.dac_write = value; vga.dac_component = 0; return true;
     case 0x3C9:
+        vga.ramdac_state=0;
         vga.dac[vga.dac_write][vga.dac_component++] = value & 63;
         if (vga.dac_component == 3) { vga.dac_component = 0; ++vga.dac_write; }
         vga.dirty = true;
@@ -700,6 +782,13 @@ bool isa_vga_adapter_port_write(unsigned port, unsigned char value)
         vga.dirty = true;
         return true;
     case 0x3DF: vga.bank = value & (APERTURE_BANKS - 1); vga.dirty = true; return true;
+    case 0x3D8: if (vga.gc[0x0F] & 4) { vga.tvga_3d8=value; trident_recalc_banking(); } return true;
+    case 0x3D9: if (vga.gc[0x0F] & 4) { vga.tvga_3d9=value; trident_recalc_banking(); } return true;
+    case 0x3DB:
+        vga.misc_out = (vga.misc_out & ~0x0C) | ((value & 3) << 2);
+        vga.newctrl2 = (vga.newctrl2 & ~1) | ((value & 4) >> 2);
+        vga.oldctrl1 = (vga.oldctrl1 & ~0x10) | ((value & 8) << 1);
+        vga.dirty = true; return true;
     default: return false;
     }
 }
