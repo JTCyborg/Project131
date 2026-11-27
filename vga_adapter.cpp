@@ -809,7 +809,10 @@ namespace
             ? unsigned(vga.bank) * APERTURE_SIZE + (address & 0x3FFF)
             : address;
         unsigned linear = (vga.read_bank + bridge_linear) & vga.vram_mask;
-        if (vga.vbe_enabled || vga.bpp > 8 || (vga.oldctrl2 & 0x10) || vga.rgb565_mode)
+        // Text mode is selected by VGA GC/Attribute Controller state. A previous
+        // packed-pixel/2D mode may leave the RAMDAC bpp at 16 or 24, but that
+        // must not bypass the four VGA planes while the CRTC is scanning text.
+        if (!vga.text_mode && (vga.vbe_enabled || vga.bpp > 8 || (vga.oldctrl2 & 0x10) || vga.rgb565_mode))
             return vga.vram[linear];
         if (vga.seq[4] & 8)
         {
@@ -844,7 +847,9 @@ namespace
             ? unsigned(vga.bank) * APERTURE_SIZE + (address & 0x3FFF)
             : address;
         unsigned linear = (vga.write_bank + bridge_linear) & vga.vram_mask;
-        if (vga.vbe_enabled || vga.bpp > 8 || (vga.oldctrl2 & 0x10) || vga.rgb565_mode) { vga.vram[linear] = value; vga.dirty = true; return; }
+        // Text mode always uses VGA planar memory, regardless of a stale
+        // packed-pixel RAMDAC depth left by the preceding accelerator test.
+        if (!vga.text_mode && (vga.vbe_enabled || vga.bpp > 8 || (vga.oldctrl2 & 0x10) || vga.rgb565_mode)) { vga.vram[linear] = value; vga.dirty = true; return; }
         if (vga.seq[4] & 8)
         {
             unsigned plane = linear & 3;
