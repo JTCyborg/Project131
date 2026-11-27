@@ -7,7 +7,7 @@
 namespace
 {
     static const unsigned VRAM_SIZE = 1024 * 1024;
-    static const unsigned PLANE_SIZE = 64 * 1024;
+    static const unsigned PLANE_SIZE = 256 * 1024; // 1 MiB VRAM split across four VGA planes.
     static const unsigned APERTURE_SIZE = 16 * 1024;
     static const unsigned APERTURE_BANKS = VRAM_SIZE / APERTURE_SIZE;
     static const unsigned MAX_PIXELS = 1024 * 768;
@@ -597,14 +597,14 @@ namespace
         if (vga.seq[4] & 8)
         {
             unsigned plane = linear & 3;
-            unsigned offset = (linear >> 2) & 0xFFFF;
+            unsigned offset = (linear >> 2) & (PLANE_SIZE - 1);
             return vga.vram[plane * PLANE_SIZE + offset];
         }
 
         // In planar modes the Trident 64-KiB bank selector advances the
         // per-plane address by 16 KiB; the Z80 bridge bank remains a planar
         // byte offset to preserve the emulator's 16-KiB window semantics.
-        unsigned offset = ((vga.read_bank >> 2) + bridge_linear) & 0xFFFF;
+        unsigned offset = ((vga.read_bank >> 2) + bridge_linear) & (PLANE_SIZE - 1);
         for (unsigned p = 0; p < 4; ++p)
             vga.latch[p] = vga.vram[p * PLANE_SIZE + offset];
         if (vga.gc[5] & 8)
@@ -636,7 +636,7 @@ namespace
             return;
         }
 
-        unsigned offset = ((vga.write_bank >> 2) + bridge_linear) & 0xFFFF;
+        unsigned offset = ((vga.write_bank >> 2) + bridge_linear) & (PLANE_SIZE - 1);
         unsigned rotated = rotate_right(value, vga.gc[3] & 7);
         unsigned mode = vga.gc[5] & 3;
         unsigned logical = (vga.gc[3] >> 3) & 3;
