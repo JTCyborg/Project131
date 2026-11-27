@@ -893,7 +893,9 @@ namespace
         else if (vga.chain2_read)
         {
             plane = (plane & 2U) | (address & 1U);
-            offset = address & ~1U;
+            // PCem loads all four latches from the unmodified byte address;
+            // only the returned plane selection is affected by odd/even mode.
+            offset = address;
         }
 
         offset &= vga.plane_size - 1;
