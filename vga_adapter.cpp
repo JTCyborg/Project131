@@ -836,7 +836,7 @@ namespace
     static void vga_mem_write(unsigned address, unsigned char value, bool spectrum_bridge = true)
     {
         const unsigned bridge_address = spectrum_bridge
-            ? unsigned(vga.bank) * APERTURE_SIZE + (address & 0x3FFFU)
+            ? unsigned(vga.bridge_bank) * APERTURE_SIZE + (address & 0x3FFFU)
             : address;
         const unsigned decoded = bridge_address + vga.write_bank;
 
@@ -1316,7 +1316,7 @@ bool isa_vga_adapter_mem_write(unsigned address, unsigned char value)
         (!vga.vbe_enabled && (vga.bpp == 15 || vga.bpp == 16));
     if (packed16)
     {
-        unsigned linear = (vga.write_bank + unsigned(vga.bank) * APERTURE_SIZE +
+        unsigned linear = (vga.write_bank + unsigned(vga.bridge_bank) * APERTURE_SIZE +
             (address & 0x3FFF)) & vga.vram_mask;
         if (vga.write_buffer_pending &&
             linear == vga.write_buffer_address + 1)
