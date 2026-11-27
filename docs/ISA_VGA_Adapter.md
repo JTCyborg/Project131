@@ -160,7 +160,7 @@ and 3E3h (register data). It operates on the active packed-pixel framebuffer.
 | Register | Meaning |
 |---:|---|
 | 00h | Command: 1 solid rectangle, 2 BitBLT, 3 Bresenham line, 4 horizontal gradient fill |
-| 01h | Status: 1 complete, 80h error |
+| 01h | Status: 1 complete; 80h generic error; 81h VBE disabled; 82h invalid rectangle; 83h invalid VRAM address; 84h unsupported command |
 | 02h | ROP: 0 COPY, 1 XOR, 2 OR, 3 AND, 4 NOT source, 5 SET, 6 CLEAR |
 | 04h..07h | Source base address |
 | 08h..0Bh | Destination base address |
