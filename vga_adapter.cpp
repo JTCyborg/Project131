@@ -1088,6 +1088,11 @@ bool isa_vga_adapter_mem_write(unsigned address, unsigned char value)
             vga.vram[linear] = value;
             vga.write_buffer_pending = false;
             vga.dirty = true;
+            // Keep the standalone adapter window synchronized with VRAM.
+            // Windows coalesces invalidations while a large framebuffer is
+            // being uploaded; refresh at a modest interval, not per byte.
+            if ((address & 0x3F) == 1 && vga.window)
+                InvalidateRect(vga.window, nullptr, FALSE);
             return true;
         }
 
@@ -1106,6 +1111,11 @@ bool isa_vga_adapter_mem_write(unsigned address, unsigned char value)
         flush_write_buffer();
 
     vga_mem_write(address, value);
+    // Mode changes can happen before the guest has populated VRAM. A dirty
+    // flag alone does not schedule WM_PAINT, so periodically invalidate the
+    // adapter window as framebuffer/text data arrives.
+    if ((address & 0x3F) == 0 && vga.window)
+        InvalidateRect(vga.window, nullptr, FALSE);
     return true;
 }
 
