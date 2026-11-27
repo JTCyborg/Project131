@@ -560,7 +560,8 @@ namespace
                 // plane 0 for the character and plane 1 for its attribute.
                 const unsigned ma = ((display_start << 2) +
                     (y * unsigned(vga.crtc[0x13]) << 3) + (x << 2));
-                const unsigned physical = text_display_address(ma, 0);
+                const unsigned physical =
+                    text_display_address(ma, 0) & vga.display_mask;
                 const unsigned cell = (physical >> 2) & (vga.plane_size - 1);
                 const unsigned char ch = vga.vram[cell];
                 const unsigned char at = vga.vram[vga.plane_size + cell];
