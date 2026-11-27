@@ -876,31 +876,32 @@ namespace
     static unsigned char isa_vga_mem_read(unsigned aperture_offset)
     {
         unsigned address = (aperture_offset & vga.banked_mask) + vga.read_bank;
-        unsigned offset = address;
+        unsigned latch_offset = address;
+        unsigned read_offset = address;
         unsigned plane = vga.readplane & 3;
 
         if (vga.chain4)
         {
-            offset = (address & ~3U) >> 2;
+            read_offset = (address & ~3U) >> 2;
             plane = address & 3U;
+            latch_offset = read_offset;
         }
         else if (vga.chain2_read)
         {
             plane = (plane & 2U) | (address & 1U);
-            // PCem loads all four latches from the unmodified byte address;
-            // only the returned plane selection is affected by odd/even mode.
-            offset = address;
+            // PCem fetches the four latches from the original byte address,
+            // but odd/even mode returns data from the preceding even address.
+            read_offset = address & ~1U;
         }
 
         // PCem rejects addresses beyond installed VRAM; masking the
         // per-plane offset here would incorrectly alias an invalid bank.
-        if (offset >= vga.plane_size)
+        if (latch_offset >= vga.plane_size || read_offset >= vga.plane_size)
             return 0xFF;
         for (unsigned p = 0; p < 4; ++p)
-            vga.latch[p] = vga.vram[p * vga.plane_size + offset];
+            vga.latch[p] = vga.vram[p * vga.plane_size + latch_offset];
 
-        // PCem's chain-4 fast path returns the selected byte directly;
-        // colour-compare read mode is used only by planar/odd-even reads.
+        // Chain-4 bypasses colour-compare mode and returns the selected plane.
         if (vga.chain4)
             return vga.latch[plane];
 
@@ -915,7 +916,9 @@ namespace
                 }
             return (unsigned char)result;
         }
-        return vga.latch[plane];
+        return vga.chain2_read
+            ? vga.vram[plane * vga.plane_size + read_offset]
+            : vga.latch[plane];
     }
 
     static void isa_vga_mem_write(unsigned aperture_offset, unsigned char value)
