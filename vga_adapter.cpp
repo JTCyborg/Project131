@@ -378,9 +378,12 @@ namespace
         {
             for (unsigned x = 0; x < 80; ++x)
             {
-                unsigned a = 0x18000 + (y * 80 + x) * 2;
-                unsigned char ch = vga.vram[a & (VRAM_SIZE - 1)];
-                unsigned char at = vga.vram[(a + 1) & (VRAM_SIZE - 1)];
+                // Text memory is stored in the VGA character and attribute
+                // planes. The 16 KiB aperture bank 6 maps B8000-style text
+                // memory to plane offset 8000h in this adapter model.
+                unsigned a = 0x8000 + y * 80 + x;
+                unsigned char ch = vga.vram[a & (PLANE_SIZE - 1)];
+                unsigned char at = vga.vram[PLANE_SIZE + (a & (PLANE_SIZE - 1))];
                 SetTextColor(dc, colors[at & 15]);
                 SetBkColor(dc, colors[(at >> 4) & 15]);
                 char c = ch ? (char)ch : ' ';
