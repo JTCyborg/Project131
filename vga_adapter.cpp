@@ -781,9 +781,11 @@ namespace
         return vga.status;
     }
 
-    static unsigned char vga_mem_read(unsigned address)
+    static unsigned char vga_mem_read(unsigned address, bool spectrum_bridge = true)
     {
-        unsigned bridge_linear = unsigned(vga.bank) * APERTURE_SIZE + (address & 0x3FFF);
+        unsigned bridge_linear = spectrum_bridge
+            ? unsigned(vga.bank) * APERTURE_SIZE + (address & 0x3FFF)
+            : address;
         unsigned linear = (vga.read_bank + bridge_linear) & vga.vram_mask;
         if (vga.vbe_enabled || vga.bpp > 8 || (vga.oldctrl2 & 0x10) || vga.rgb565_mode)
             return vga.vram[linear];
@@ -814,9 +816,11 @@ namespace
         return vga.latch[vga.gc[4] & 3];
     }
 
-    static void vga_mem_write(unsigned address, unsigned char value)
+    static void vga_mem_write(unsigned address, unsigned char value, bool spectrum_bridge = true)
     {
-        unsigned bridge_linear = unsigned(vga.bank) * APERTURE_SIZE + (address & 0x3FFF);
+        unsigned bridge_linear = spectrum_bridge
+            ? unsigned(vga.bank) * APERTURE_SIZE + (address & 0x3FFF)
+            : address;
         unsigned linear = (vga.write_bank + bridge_linear) & vga.vram_mask;
         if (vga.vbe_enabled || vga.bpp > 8 || (vga.oldctrl2 & 0x10) || vga.rgb565_mode) { vga.vram[linear] = value; vga.dirty = true; return; }
         if (vga.seq[4] & 8)
@@ -1088,6 +1092,41 @@ bool isa_vga_adapter_port_write(unsigned port, unsigned char value)
         trident_recalc_timings(); decode_mode(); vga.dirty = true; return true;
     default: return false;
     }
+}
+
+static bool decode_isa_vga_aperture(unsigned address, unsigned &offset)
+{
+    // VGA Graphics Controller register 06h selects the CPU aperture:
+    // 00=A0000-BFFFF (128 KiB), 01=A0000-AFFFF (64 KiB),
+    // 10=B0000-B7FFF (32 KiB), 11=B8000-BFFFF (32 KiB).
+    const unsigned map = (vga.gc[6] >> 2) & 3;
+    unsigned base = 0xA0000, size = 0x20000;
+    if (map == 1) size = 0x10000;
+    else if (map == 2) { base = 0xB0000; size = 0x8000; }
+    else if (map == 3) { base = 0xB8000; size = 0x8000; }
+    if (address < base || address >= base + size) return false;
+    offset = address - base;
+    return true;
+}
+
+bool isa_vga_adapter_isa_mem_read(unsigned address, unsigned char &value)
+{
+    if (!card_present || !vga.initialized) return false;
+    unsigned offset = 0;
+    if (!decode_isa_vga_aperture(address, offset)) return false;
+    flush_write_buffer();
+    value = vga_mem_read(offset, false);
+    return true;
+}
+
+bool isa_vga_adapter_isa_mem_write(unsigned address, unsigned char value)
+{
+    if (!card_present || !vga.initialized) return false;
+    unsigned offset = 0;
+    if (!decode_isa_vga_aperture(address, offset)) return false;
+    flush_write_buffer();
+    vga_mem_write(offset, value, false);
+    return true;
 }
 
 bool isa_vga_adapter_mem_read(unsigned address, unsigned char &value)
