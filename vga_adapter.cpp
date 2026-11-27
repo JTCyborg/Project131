@@ -823,9 +823,10 @@ bool isa_vga_adapter_port_read(unsigned port, unsigned char &value)
     case 0x3C6:
         if (vga.ramdac_state == 4) { value = vga.ramdac_ctrl; return true; }
         ++vga.ramdac_state; value = vga.dac_mask; return true;
-    case 0x3C7: value = vga.dac_status; return true;
-    case 0x3C8: value = vga.dac_write; return true;
+    case 0x3C7: vga.ramdac_state = 0; value = vga.dac_status; return true;
+    case 0x3C8: vga.ramdac_state = 0; value = vga.dac_write; return true;
     case 0x3C9:
+        vga.ramdac_state = 0;
         vga.dac_status = 3;
         value = vga.dac[vga.dac_read][vga.dac_component++] & 63;
         if (vga.dac_component == 3) { vga.dac_component = 0; ++vga.dac_read; }
