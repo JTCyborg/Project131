@@ -71,6 +71,13 @@ namespace
         return (r << 16) | (g << 8) | b;
     }
 
+    // GDI COLORREF stores channels as 0x00BBGGRR, unlike the adapter's
+    // framebuffer/DIB pixels, which use 0x00RRGGBB.
+    static COLORREF gdi_color(DWORD color)
+    {
+        return RGB((color >> 16) & 0xFF, (color >> 8) & 0xFF, color & 0xFF);
+    }
+
     static DWORD palette_color(unsigned index, bool attribute_map = false)
     {
         if (attribute_map)
@@ -570,8 +577,8 @@ namespace
                     // The fallback glyph source must still honour VGA text
                     // attributes. Without a guest-loaded plane-2 font, use
                     // the host glyph shape but keep VGA foreground/background.
-                    SetTextColor(dc, hidden ? bg_color : fg_color);
-                    SetBkColor(dc, bg_color);
+                    SetTextColor(dc, gdi_color(hidden ? bg_color : fg_color));
+                    SetBkColor(dc, gdi_color(bg_color));
                     // ETO_OPAQUE paints the complete VGA character cell,
                     // while ETO_CLIPPED prevents a host-font glyph whose
                     // metrics differ from 8/9-dot VGA cells from bleeding
@@ -606,7 +613,7 @@ namespace
                             on = (bits & 1) != 0;
                         if (cursor_line) on = !on;
                         SetPixelV(dc, int(x * char_width + sx), int(py),
-                            on ? fg_color : bg_color);
+                            gdi_color(on ? fg_color : bg_color));
                     }
                 }
             }
