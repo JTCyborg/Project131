@@ -6,6 +6,8 @@
 // interface narrow: non-VGA ports remain unclaimed by this device.
 extern bool isa_vga_adapter_port_read(unsigned port, unsigned char &value);
 extern bool isa_vga_adapter_port_write(unsigned port, unsigned char value);
+extern bool isa_vga_adapter_isa_mem_read(unsigned address, unsigned char &value);
+extern bool isa_vga_adapter_isa_mem_write(unsigned address, unsigned char value);
 
 namespace i486
 {
@@ -29,6 +31,11 @@ namespace i486
         if (vga_bios_size && address >= VgaBiosBase &&
             address < VgaBiosBase + vga_bios_size)
             return vga_bios[address - VgaBiosBase];
+
+        // VGA owns the decoded ISA aperture before ordinary RAM.
+        unsigned char video_value = 0xFF;
+        if (isa_vga_adapter_isa_mem_read(address, video_value))
+            return video_value;
 
         // Legacy PC-compatible system BIOS window.
         if (address >= 0x000F0000U && address <= 0x000FFFFFU)
@@ -194,6 +201,10 @@ namespace i486
             (address >= 0x000F0000U && address <= 0x000FFFFFU) ||
             (vga_bios_size && address >= VgaBiosBase &&
              address < VgaBiosBase + vga_bios_size))
+            return;
+
+        // Route writes into the active VGA aperture; do not mirror them to RAM.
+        if (isa_vga_adapter_isa_mem_write(address, value))
             return;
 
         if (ram && (unsigned long)address < ram_size)
