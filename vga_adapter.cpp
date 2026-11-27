@@ -465,6 +465,46 @@ namespace
         vga.dirty = true;
     }
 
+    // PCem's SVGA renderer keeps CRTC MA in interleaved (four-byte) VRAM
+    // addresses. Reproduce its remap before translating the result to this
+    // adapter's four contiguous VGA planes.
+    static unsigned text_display_address(unsigned ma, unsigned scanline)
+    {
+        const unsigned crtc14 = vga.crtc[0x14];
+        const unsigned crtc17 = vga.crtc[0x17];
+        unsigned mapped;
+
+        if (crtc14 & 0x40)
+        {
+            // Non-packed chain-4 uses the SVGA dword address permutation.
+            mapped = ((ma << 2) & 0x3FFF0U) |
+                ((ma >> 14) & 0xCU) | (ma & ~0x3FFFFU);
+        }
+        else if (crtc17 & 0x40)
+            mapped = ma;
+        else if (crtc17 & 0x20)
+        {
+            // Word mode, MA15 routed through address bit 17.
+            mapped = ((ma << 1) & 0x1FFF8U) |
+                ((ma >> 15) & 0x4U) | (ma & ~0x1FFFFU);
+        }
+        else
+        {
+            // Word mode, MA13 routed through address bit 15.
+            mapped = ((ma << 1) & 0x1FFF8U) |
+                ((ma >> 13) & 0x4U) | (ma & ~0x1FFFFU);
+        }
+
+        // CRTC row-scan address substitution (PCem VAR_ROW0/ROW1).
+        if (!(crtc17 & 0x01))
+            mapped = (mapped & ~(1U << 15)) |
+                ((scanline & 1U) ? (1U << 15) : 0U);
+        if (!(crtc17 & 0x02))
+            mapped = (mapped & ~(1U << 16)) |
+                ((scanline & 2U) ? (1U << 16) : 0U);
+        return mapped;
+    }
+
     static void render_text()
     {
         // Render into the adapter's 32-bit framebuffer. Calling SetPixelV for
@@ -509,7 +549,13 @@ namespace
         {
             for (unsigned x = 0; x < columns; ++x)
             {
-                const unsigned cell = (start + y * pitch + x) & (vga.plane_size - 1);
+                // PCem starts MA at CRTC start << 2, advances four
+                // interleaved bytes per character and rowoffset << 3 per
+                // character row. The remapped physical byte address selects
+                // plane 0 for the character and plane 1 for its attribute.
+                const unsigned ma = ((start << 2) + (y * unsigned(vga.crtc[0x13]) << 3) + (x << 2));
+                const unsigned physical = text_display_address(ma, 0);
+                const unsigned cell = (physical >> 2) & (vga.plane_size - 1);
                 const unsigned char ch = vga.vram[cell];
                 const unsigned char at = vga.vram[vga.plane_size + cell];
                 const unsigned fg = at & 0x0F;
