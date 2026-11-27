@@ -560,25 +560,27 @@ namespace
                 // plane 0 for the character and plane 1 for its attribute.
                 const unsigned ma = ((display_start << 2) +
                     (y * unsigned(vga.crtc[0x13]) << 3) + (x << 2));
-                const unsigned physical =
-                    text_display_address(ma, 0) & vga.display_mask;
-                const unsigned cell = (physical >> 2) & (vga.plane_size - 1);
-                const unsigned char ch = vga.vram[cell];
-                const unsigned char at = vga.vram[vga.plane_size + cell];
-                const unsigned fg = at & 0x0F;
-                const unsigned bg = blink_enabled ? ((at >> 4) & 7) : ((at >> 4) & 0x0F);
-                const bool hidden = blink_enabled && (at & 0x80) && blink_phase;
-                const unsigned map_base = ((at & 0x08) && (map_a != map_b)) ? map_b : map_a;
-                const unsigned glyph_base = map_base + unsigned(ch) * 32;
                 const bool cursor_here = cursor_enabled &&
                     (((start + y * pitch + x) & 0xFFFF) == cursor_address);
-                const DWORD fg_color = palette_color(fg, true);
-                const DWORD bg_color = palette_color(bg, true);
 
                 for (unsigned sy = 0; sy < char_height; ++sy)
                 {
                     const unsigned py = y * char_height + sy;
                     if (py >= height) break;
+
+                    // PCem remaps the display MA with the current CRTC
+                    // scanline counter (svga->sc), not once per character row.
+                    // This matters when CRTC17 routes MA13/MA14 through RA0/RA1.
+                    const unsigned physical =
+                        text_display_address(ma, sy) & vga.display_mask;
+                    const unsigned cell = (physical >> 2) & (vga.plane_size - 1);
+                    const unsigned char ch = vga.vram[cell];
+                    const unsigned char at = vga.vram[vga.plane_size + cell];
+                    const unsigned fg = at & 0x0F;
+                    const unsigned bg = blink_enabled ? ((at >> 4) & 7) : ((at >> 4) & 0x0F);
+                    const bool hidden = blink_enabled && (at & 0x80) && blink_phase;
+                    const unsigned map_base = ((at & 0x08) && (map_a != map_b)) ? map_b : map_a;
+                    const unsigned glyph_base = map_base + unsigned(ch) * 32;
                     const unsigned font_row = sy & 31;
                     const unsigned char bits = hidden ? 0 :
                         vga.vram[2 * vga.plane_size + ((glyph_base + font_row) & (vga.plane_size - 1))];
@@ -586,6 +588,9 @@ namespace
                         (cursor_start <= cursor_end ?
                             (sy >= cursor_start && sy <= cursor_end) :
                             (sy >= cursor_start || sy <= cursor_end));
+                    const DWORD fg_color = palette_color(fg, true);
+                    const DWORD bg_color = palette_color(bg, true);
+
                     for (unsigned sx = 0; sx < char_width; ++sx)
                     {
                         const unsigned px = x * char_width + sx;
