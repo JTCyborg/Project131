@@ -1016,6 +1016,10 @@ namespace
             if (!(plane_mask & (1U << p))) continue;
             unsigned char &dst = vga.vram[p * vga.plane_size + offset];
             const unsigned char old = vga.latch[p];
+            // Track writes through the real ISA aperture as well as the
+            // Spectrum bridge. VGA BIOS font uploads commonly use this path.
+            if (vga.text_mode && p == 2)
+                vga.text_font_written = true;
             if (mode == 1)
             {
                 dst = old;
