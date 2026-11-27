@@ -525,9 +525,16 @@ namespace
                 const DWORD bg_color = palette_color(bg, true);
                 if (!font_loaded && fallback_font)
                 {
+                    // Until the guest uploads a VGA character generator into
+                    // plane 2, use the host's fixed OEM font as a diagnostic
+                    // fallback. Do not route these fallback colours through
+                    // the still-being-initialized VGA attribute/DAC palette:
+                    // a reset or partially programmed DAC can turn the whole
+                    // text screen blue and make otherwise valid text unreadable.
                     char text_char = hidden ? ' ' : (ch ? char(ch) : ' ');
-                    SetTextColor(dc, fg_color);
-                    SetBkColor(dc, bg_color);
+                    SetTextColor(dc, RGB(255, 255, 255));
+                    SetBkColor(dc, RGB(0, 0, 0));
+                    SetBkMode(dc, OPAQUE);
                     TextOutA(dc, int(x * char_width), int(y * char_height),
                         &text_char, 1);
                     continue;
