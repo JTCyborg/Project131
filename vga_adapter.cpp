@@ -902,6 +902,11 @@ namespace
         for (unsigned p = 0; p < 4; ++p)
             vga.latch[p] = vga.vram[p * vga.plane_size + offset];
 
+        // PCem's chain-4 fast path returns the selected byte directly;
+        // colour-compare read mode is used only by planar/odd-even reads.
+        if (vga.chain4)
+            return vga.latch[plane];
+
         if (vga.gc[5] & 0x08)
         {
             unsigned result = 0xFF;
