@@ -120,16 +120,42 @@ namespace
     {
         if (!vga.software_mode)
             return;
+
+        if (vga.vbe_enabled)
+        {
+            set_mode(vga.vbe_xres, vga.vbe_yres, false);
+            return;
+        }
+
         if (vga.rgb565_mode)
-            set_mode(640, 480, false);           // 640x480 RGB565 direct colour
-        else if (vga.bpp > 8 || (vga.oldctrl2 & 0x10))
-            set_mode(640, 480, false);             // Trident packed-pixel/high-resolution mode
-        else if (vga.seq[4] & 8)
-            set_mode(320, 200, false);             // VGA mode 13h, chain-4
-        else if (vga.gc[6] & 1)
-            set_mode(640, 480, false);             // planar 16-colour graphics
+        {
+            set_mode(640, 480, false);
+            return;
+        }
+
+        // Match PCem's SVGA mode selection: text requires both the
+        // Graphics Controller alphanumeric mode and Attribute Controller
+        // graphics-enable bit to be clear. A disabled attribute palette
+        // blanks the output rather than changing the underlying mode.
+        const bool text = !(vga.gc[6] & 1) && !(vga.attr[0x10] & 1);
+        if (text)
+        {
+            set_mode(720, 400, true);
+            return;
+        }
+
+        const unsigned graphics_mode = vga.gc[5] & 0x60;
+        const bool packed = graphics_mode == 0x40 || graphics_mode == 0x60;
+        if (packed && (vga.bpp == 15 || vga.bpp == 16 || vga.bpp == 24 || vga.bpp == 32))
+        {
+            set_mode(640, 480, false);
+            return;
+        }
+
+        if ((vga.seq[4] & 8) || (vga.seq[1] & 8))
+            set_mode(320, 200, false);
         else
-            set_mode(720, 400, true);              // text mode
+            set_mode(640, 480, false);
     }
 
     static void render_2d_cursor();
@@ -839,6 +865,8 @@ bool isa_vga_adapter_port_write(unsigned port, unsigned char value)
         }
         else vga.attr[vga.attr_index & 0x1F] = value;
         vga.attr_flip ^= 1;
+        if (vga.attr_flip && (vga.attr_index == 0x10 || vga.attr_index == 0x12 || vga.attr_index == 0x14))
+            trident_recalc_timings();
         decode_mode();
         vga.dirty = true;
         return true;
