@@ -251,6 +251,24 @@ namespace
                 if(e2>=ay){err+=ay;x+=sxdir;}
                 if(e2<=ax){err+=ax;y+=sydir;}
             }
+        } else if(cmd==4) {
+            // Horizontal Gradient Fill. Register 1Ch..1Fh is the start
+            // pixel and 20h..23h is the end pixel. Interpolate each
+            // stored pixel byte across the rectangle, then repeat per row.
+            unsigned end_color=accel32(0x20);
+            if (!accel_rect_valid(db,dp,dx,dy,w,h,b)) return;
+            for(unsigned y=0;y<h;++y) {
+                for(unsigned x=0;x<w;++x) {
+                    unsigned a;
+                    if(!accel_addr(db,dp,dx+x,dy+y,b,a)) return;
+                    for(unsigned k=0;k<b;++k) {
+                        unsigned c0=(color>>(k*8))&255;
+                        unsigned c1=(end_color>>(k*8))&255;
+                        unsigned value=(c0*(w-1-x)+c1*x+(w-1)/2)/(w-1 ? w-1 : 1);
+                        vga.vram[a+k]=accel_rop((unsigned char)value,vga.vram[a+k],vga.accel_regs[2]);
+                    }
+                }
+            }
         } else return;
         vga.accel_regs[1]=1;
         vga.dirty=true;
