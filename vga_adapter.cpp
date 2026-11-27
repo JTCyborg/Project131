@@ -22,6 +22,7 @@ namespace
         unsigned read_bank, write_bank, vram_mask, banked_mask, display_mask;
         unsigned vram_size, plane_size;
         unsigned rowoffset, ma_latch, clock_hz;
+        DWORD frame_epoch;
         bool interlace;
         unsigned char seq_index, gc_index, crtc_index, attr_index;
         unsigned char attr_data, attr_flip;
@@ -591,6 +592,35 @@ namespace
             88000000,98000000,118800000,108000000,72000000,77000000,80000000,75000000
         };
         vga.clock_hz = clocks[clksel & 0x0F];
+        vga.frame_epoch = GetTickCount();
+    }
+
+    static unsigned char trident_status1()
+    {
+        if (!vga.clock_hz) return vga.status & ~8;
+        unsigned htotal = (unsigned(vga.crtc[0]) + 5) * 8;
+        unsigned vtotal = unsigned(vga.crtc[6]) |
+            ((unsigned(vga.crtc[7] & 0x01)) << 8) |
+            ((unsigned(vga.crtc[7] & 0x20)) << 4);
+        vtotal += 2;
+        if (!htotal || vtotal < 16) return vga.status & ~8;
+
+        unsigned long long frame_pixels = (unsigned long long)htotal * vtotal;
+        unsigned frame_ms = (unsigned)(frame_pixels * 1000ULL / vga.clock_hz);
+        if (!frame_ms) frame_ms = 1;
+        unsigned vsync_start = unsigned(vga.crtc[0x10]) |
+            ((unsigned(vga.crtc[7] & 0x04)) << 6);
+        unsigned retrace_lines = (unsigned(vga.crtc[0x11] & 0x0F) -
+            unsigned(vga.crtc[0x10] & 0x0F)) & 0x0F;
+        if (!retrace_lines) retrace_lines = 16;
+
+        unsigned phase_ms = (GetTickCount() - vga.frame_epoch) % frame_ms;
+        unsigned scanline = (unsigned)((unsigned long long)phase_ms * vtotal / frame_ms);
+        if (scanline >= vsync_start && scanline < vsync_start + retrace_lines)
+            vga.status |= 8;
+        else
+            vga.status &= ~8;
+        return vga.status;
     }
 
     static unsigned char vga_mem_read(unsigned address)
@@ -734,8 +764,7 @@ bool isa_vga_adapter_port_read(unsigned port, unsigned char &value)
         return true;
     case 0x3DA:
         vga.attr_flip = 0;
-        vga.status ^= 8;
-        value = vga.status;
+        value = trident_status1();
         return true;
     case 0x3DE:
         value = (vga.software_mode ? 1 : 0) | (vga.aperture ? 2 : 0) |
