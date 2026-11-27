@@ -7,7 +7,6 @@
 namespace
 {
     static const unsigned VRAM_SIZE = 1024 * 1024;
-    static const unsigned PLANE_SIZE = 256 * 1024; // 1 MiB VRAM split across four VGA planes.
     static const unsigned APERTURE_SIZE = 16 * 1024;
     static const unsigned APERTURE_BANKS = VRAM_SIZE / APERTURE_SIZE;
     static const unsigned MAX_PIXELS = 1024 * 768;
@@ -21,6 +20,7 @@ namespace
         unsigned char oldmode, oldctrl1, oldctrl2, newctrl2;
         unsigned char ramdac_state, ramdac_ctrl, bpp;
         unsigned read_bank, write_bank, vram_mask, banked_mask, display_mask;
+        unsigned vram_size, plane_size;
         unsigned rowoffset, ma_latch, clock_hz;
         bool interlace;
         unsigned char seq_index, gc_index, crtc_index, attr_index;
@@ -95,7 +95,7 @@ namespace
     {
         if (!w || !h || w > 1024 || h > 768 || (bpp != 8 && bpp != 15 && bpp != 16 && bpp != 24 && bpp != 32)) return false;
         unsigned pitch = w * ((bpp + 7) >> 3);
-        if (pitch * h > VRAM_SIZE) return false;
+        if (pitch * h > vga.vram_size) return false;
         vga.vbe_xres = (unsigned short)w; vga.vbe_yres = (unsigned short)h;
         vga.vbe_bpp = (unsigned char)bpp; vga.vbe_pitch = (unsigned short)pitch;
         vga.vbe_enabled = 1; vga.rgb565_mode = 0; vga.bank = 0;
@@ -178,7 +178,7 @@ namespace
                     unsigned a = y * 320 + x;
                     unsigned plane = a & 3;
                     unsigned offset = a >> 2;
-                    dst[x] = palette_color(vga.vram[plane * PLANE_SIZE + offset]);
+                    dst[x] = palette_color(vga.vram[plane * vga.plane_size + offset]);
                 }
             }
         }
@@ -220,14 +220,14 @@ namespace
         unsigned long long last = (unsigned long long)base +
             (unsigned long long)(y + h - 1) * pitch +
             (unsigned long long)(x + w) * bytes;
-        return last <= VRAM_SIZE;
+        return last <= vga.vram_size;
     }
     static bool accel_addr(unsigned base,unsigned pitch,unsigned x,unsigned y,unsigned bytes,unsigned &out)
     {
         if (x >= vga.vbe_xres || y >= vga.vbe_yres || pitch < (x + 1) * bytes)
             return false;
         unsigned long long a=(unsigned long long)base+(unsigned long long)y*pitch+(unsigned long long)x*bytes;
-        if(a+bytes>VRAM_SIZE) return false;
+        if(a+bytes>vga.vram_size) return false;
         out=(unsigned)a;
         return true;
     }
@@ -311,7 +311,7 @@ namespace
     {
         if(!(vga.accel_regs[0x34]&1)||!vga.vbe_enabled) return;
         unsigned x0=accel16(0x24), y0=accel16(0x26), base=accel32(0x28), c=accel32(0x2C);
-        if (base > VRAM_SIZE - 32) return;
+        if (base > vga.vram_size - 32) return;
         DWORD color=rgb((c>>16)&255,(c>>8)&255,c&255);
         for(unsigned y=0;y<16&&y0+y<vga.vbe_yres;++y)
             for(unsigned x=0;x<16&&x0+x<vga.vbe_xres;++x)
@@ -489,6 +489,11 @@ namespace
         if (vga.initialized)
             return;
         vga.initialized = true;
+        unsigned memory_kb = GetPrivateProfileInt("ISA_VGA", "MemoryKB", 1024, ininame);
+        if (memory_kb != 256 && memory_kb != 512 && memory_kb != 1024)
+            memory_kb = 1024;
+        vga.vram_size = memory_kb * 1024;
+        vga.plane_size = vga.vram_size / 4;
         WNDCLASSA wc = {};
         wc.lpfnWndProc = vga_window_proc;
         wc.hInstance = GetModuleHandle(nullptr);
@@ -514,7 +519,7 @@ namespace
         vga.gc[6] = 0x05;
         vga.misc_out = 1;
         vga.bpp = 8;
-        vga.vram_mask = VRAM_SIZE - 1;
+        vga.vram_mask = vga.vram_size - 1;
         vga.banked_mask = 0x1FFFF;
         vga.display_mask = 0x3FFFF;
         vga.rowoffset = 0x100;
@@ -811,7 +816,7 @@ bool isa_vga_adapter_port_write(unsigned port, unsigned char value)
             value = (vga.crtc[7] & ~0x10) | (value & 0x10);
         vga.crtc[vga.crtc_index & 0x3F] = value & trident_crtc_mask(vga.crtc_index);
         if (vga.crtc_index == 0x1E)
-            vga.display_mask = (value & 0x80) ? (VRAM_SIZE - 1) : 0x3FFFF;
+            vga.display_mask = (value & 0x80) ? vga.vram_mask : 0x3FFFF;
         trident_recalc_timings(); decode_mode(); vga.dirty = true; return true;
     case 0x3C6:
         if (vga.ramdac_state == 4) {
