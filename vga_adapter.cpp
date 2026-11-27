@@ -556,10 +556,9 @@ namespace
 
     static unsigned char vga_mem_read(unsigned address)
     {
-        unsigned linear = (vga.read_bank + unsigned(vga.bank) * APERTURE_SIZE +
-            (address & 0x3FFF)) & vga.vram_mask;
-        if (vga.vbe_enabled || vga.bpp > 8 || (vga.oldctrl2 & 0x10)) return vga.vram[linear];
-        if (vga.rgb565_mode)
+        unsigned bridge_linear = unsigned(vga.bank) * APERTURE_SIZE + (address & 0x3FFF);
+        unsigned linear = (vga.read_bank + bridge_linear) & vga.vram_mask;
+        if (vga.vbe_enabled || vga.bpp > 8 || (vga.oldctrl2 & 0x10) || vga.rgb565_mode)
             return vga.vram[linear];
         if (vga.seq[4] & 8)
         {
@@ -568,7 +567,10 @@ namespace
             return vga.vram[plane * PLANE_SIZE + offset];
         }
 
-        unsigned offset = linear & 0xFFFF;
+        // In planar modes the Trident 64-KiB bank selector advances the
+        // per-plane address by 16 KiB; the Z80 bridge bank remains a planar
+        // byte offset to preserve the emulator's 16-KiB window semantics.
+        unsigned offset = ((vga.read_bank >> 2) + bridge_linear) & 0xFFFF;
         for (unsigned p = 0; p < 4; ++p)
             vga.latch[p] = vga.vram[p * PLANE_SIZE + offset];
         if (vga.gc[5] & 8)
@@ -587,9 +589,9 @@ namespace
 
     static void vga_mem_write(unsigned address, unsigned char value)
     {
-        unsigned linear = (vga.write_bank + unsigned(vga.bank) * APERTURE_SIZE +
-            (address & 0x3FFF)) & vga.vram_mask;
-        if (vga.vbe_enabled || vga.bpp > 8 || (vga.oldctrl2 & 0x10)) { vga.vram[linear] = value; vga.dirty = true; return; }
+        unsigned bridge_linear = unsigned(vga.bank) * APERTURE_SIZE + (address & 0x3FFF);
+        unsigned linear = (vga.write_bank + bridge_linear) & vga.vram_mask;
+        if (vga.vbe_enabled || vga.bpp > 8 || (vga.oldctrl2 & 0x10) || vga.rgb565_mode) { vga.vram[linear] = value; vga.dirty = true; return; }
         if (vga.rgb565_mode)
         {
             vga.vram[linear] = value;
@@ -606,7 +608,7 @@ namespace
             return;
         }
 
-        unsigned offset = linear & 0xFFFF;
+        unsigned offset = ((vga.write_bank >> 2) + bridge_linear) & 0xFFFF;
         unsigned rotated = rotate_right(value, vga.gc[3] & 7);
         unsigned mode = vga.gc[5] & 3;
         unsigned logical = (vga.gc[3] >> 3) & 3;
