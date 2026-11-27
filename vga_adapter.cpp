@@ -604,7 +604,7 @@ namespace
         // In planar modes the Trident 64-KiB bank selector advances the
         // per-plane address by 16 KiB; the Z80 bridge bank remains a planar
         // byte offset to preserve the emulator's 16-KiB window semantics.
-        unsigned offset = ((vga.read_bank >> 2) + bridge_linear) & (PLANE_SIZE - 1);
+        unsigned offset = ((vga.read_bank >> 2) + (bridge_linear & 0xFFFF)) & (PLANE_SIZE - 1);
         for (unsigned p = 0; p < 4; ++p)
             vga.latch[p] = vga.vram[p * PLANE_SIZE + offset];
         if (vga.gc[5] & 8)
@@ -636,7 +636,7 @@ namespace
             return;
         }
 
-        unsigned offset = ((vga.write_bank >> 2) + bridge_linear) & (PLANE_SIZE - 1);
+        unsigned offset = ((vga.write_bank >> 2) + (bridge_linear & 0xFFFF)) & (PLANE_SIZE - 1);
         unsigned rotated = rotate_right(value, vga.gc[3] & 7);
         unsigned mode = vga.gc[5] & 3;
         unsigned logical = (vga.gc[3] >> 3) & 3;
