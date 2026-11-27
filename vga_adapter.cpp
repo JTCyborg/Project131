@@ -782,9 +782,12 @@ namespace
         const unsigned bridge_address = spectrum_bridge
             ? unsigned(vga.bridge_bank) * APERTURE_SIZE + (address & 0x3FFFU)
             : address;
-        // Match PCem svga_read(): apply the selected VGA aperture mask
-        // before adding the independent Trident read bank.
-        const unsigned decoded = (bridge_address & vga.banked_mask) + vga.read_bank;
+        // The Spectrum bridge has a fixed 16-KiB window into adapter
+        // VRAM. Its bank is already a physical VRAM offset and must not be
+        // folded through the ISA VGA aperture-size mask (GDC register 6).
+        // ISA accesses, in contrast, follow PCem's aperture mask.
+        const unsigned decoded = (spectrum_bridge ? bridge_address :
+            (bridge_address & vga.banked_mask)) + vga.read_bank;
 
         // Packed/VBE memory is byte-addressed, not planar. Keep the Spectrum
         // window and Trident bank offsets, but do not apply VGA plane logic.
@@ -840,9 +843,10 @@ namespace
         const unsigned bridge_address = spectrum_bridge
             ? unsigned(vga.bridge_bank) * APERTURE_SIZE + (address & 0x3FFFU)
             : address;
-        // Match PCem svga_write(): apply the selected VGA aperture mask
-        // before adding the independent Trident write bank.
-        const unsigned decoded = (bridge_address & vga.banked_mask) + vga.write_bank;
+        // Keep the Spectrum bridge's physical 16-KiB bank independent
+        // from the ISA aperture mask; ISA accesses use PCem's GDC6 mask.
+        const unsigned decoded = (spectrum_bridge ? bridge_address :
+            (bridge_address & vga.banked_mask)) + vga.write_bank;
 
         if (!vga.text_mode && (vga.vbe_enabled || vga.bpp > 8 ||
             (vga.oldctrl2 & 0x10) || vga.rgb565_mode))
