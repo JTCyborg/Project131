@@ -16,7 +16,7 @@ Enabled=1
 The setting is read during emulator startup. Restart Unreal Speccy after changing it; it is not hot-reloaded while the emulator is running. The startup console reports whether the adapter is enabled or disabled.
 
 ## Hardware model
-The emulator exposes a software VGA/SVGA adapter in a separate window. It has 1 MiB of VRAM and a 16 KiB Z80 aperture at C000h-FFFFh. The aperture is banked: 64 banks × 16 KiB = 1 MiB. The framebuffer is linear from VRAM offset 00000h in packed-pixel modes.
+The emulator exposes a Trident TVGA8900D-compatible VGA/SVGA adapter in a separate window. It has 1 MiB of VRAM and a 16 KiB Z80-side bridge at C000h-FFFFh. The bridge is banked: 64 banks × 16 KiB = 1 MiB. This bridge is an emulator integration path, not an ISA register of the physical Trident card. The standard VGA ports and Trident extensions are modeled separately.
 
 There are two independent paths:
 
@@ -166,7 +166,7 @@ The following formats do not fit as a complete single framebuffer and are theref
 
 This is a custom emulator-side VGA/SVGA implementation, not a complete Trident TVGA8900D or VESA VBE 2.0 implementation. It currently does not provide a VGA/VBE option ROM, INT 10h mode services, EDID, hardware scan timing, standard VBE bank granularity, or full compatibility with arbitrary DOS VGA drivers. The 3E0h/3E1h interface is a project-specific indexed extension, not a standard VBE port interface.
 
-The legacy VGA register implementation is partial: only a subset of sequencer, graphics-controller, CRTC, attribute-controller and DAC behavior is modeled. This guide documents the supported programming interface; it is not a complete IBM VGA register reference.
+The Trident implementation is being ported against PCem's `vid_tvga.c`, `vid_svga.c`, `vid_svga_render.c`, and TKD8001 RAMDAC implementation. The current port includes Trident ID/old-mode sequencing, extended Sequencer and Graphics Controller registers, CRTC register masks/write protection, 3D8h/3D9h banking, 3DBh clock-select register state, TKD8001 DAC unlock/control behavior, and packed-pixel 8/15/16/24-bpp rendering paths. This is an incremental port, not yet a complete PCem-equivalent SVGA core: scan timing/retrace, full CRTC-derived geometry, interlace, complete VGA latch/planar edge cases, and all PCem rendering modes remain outstanding.
 
 The implementation supports the framebuffer formats and mode sizes in the tables above. It must not be described as supporting every mode of a physical VGA/SVGA card.
 
