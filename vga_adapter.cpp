@@ -456,11 +456,9 @@ namespace
         // glyph shape, 8/9-dot width and cursor now come from VGA state.
         const unsigned start = (unsigned(vga.crtc[0x0C]) << 8) | vga.crtc[0x0D];
         unsigned pitch = unsigned(vga.crtc[0x13]) * 2;
-        // The bridge's bank-6 aperture contributes 0x8000 to the
-        // per-plane address. Trident's 64-KiB CPU bank register contributes
-        // another 16-KiB per-plane offset; the text scanout must follow the
-        // same effective VRAM location that guest writes reached.
-        const unsigned text_base = ((vga.write_bank >> 2) + 0x8000) & (vga.plane_size - 1);
+        // Display scanout is addressed by the CRTC start-address registers.
+        // CPU aperture banking is independent and must not shift the displayed
+        // image; the guest selects a non-zero CRTC start address when needed.
         const unsigned char_width = (vga.seq[1] & 1) ? 8 : 9;
         const unsigned char_height = (vga.crtc[9] & 0x1F) + 1;
         unsigned columns = unsigned(vga.crtc[1]) + 1;
@@ -513,14 +511,14 @@ namespace
         {
             for (unsigned x = 0; x < columns; ++x)
             {
-                const unsigned cell = (text_base + start + y * pitch + x) & (vga.plane_size - 1);
+                const unsigned cell = (start + y * pitch + x) & (vga.plane_size - 1);
                 const unsigned char ch = vga.vram[cell];
                 const unsigned char at = vga.vram[vga.plane_size + cell];
                 const unsigned fg = at & 0x0F;
                 const unsigned bg = blink_enabled ? ((at >> 4) & 7) : ((at >> 4) & 0x0F);
                 const bool hidden = blink_enabled && (at & 0x80) && blink_phase;
                 const unsigned map_base = ((at & 0x08) && (map_a != map_b)) ? map_b : map_a;
-                const unsigned glyph_base = text_base + map_base + unsigned(ch) * 32;
+                const unsigned glyph_base = map_base + unsigned(ch) * 32;
                 const bool cursor_here = cursor_enabled &&
                     (((start + y * pitch + x) & 0xFFFF) == cursor_address);
                 const DWORD fg_color = palette_color(fg, true);
