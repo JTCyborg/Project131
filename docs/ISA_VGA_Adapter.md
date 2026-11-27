@@ -7,16 +7,18 @@ The adapter can be installed or removed from the emulated machine without changi
 ```ini
 [ISA_VGA]
 Enabled=1
+MemoryKB=1024
 ```
 
 - `Enabled=1` — adapter is present. Its ports, memory aperture and display capture are active.
 - `Enabled=0` — adapter is absent. Reads/writes to its ports and memory aperture are not claimed by the adapter, and its window is hidden.
+- `MemoryKB=256`, `512`, or `1024` — installed Trident VRAM size. The default is `1024`; other values are ignored and fall back to 1024 KB.
 - If the section or key is missing, the default is `1` to preserve the previous behavior.
 
 The setting is read during emulator startup. Restart Unreal Speccy after changing it; it is not hot-reloaded while the emulator is running. The startup console reports whether the adapter is enabled or disabled.
 
 ## Hardware model
-The emulator exposes a Trident TVGA8900D-compatible VGA/SVGA adapter in a separate window. It has 1 MiB of VRAM and a 16 KiB Z80-side bridge at C000h-FFFFh. The bridge is banked: 64 banks × 16 KiB = 1 MiB. This bridge is an emulator integration path, not an ISA register of the physical Trident card. The standard VGA ports and Trident extensions are modeled separately.
+The emulator exposes a Trident TVGA8900D-compatible VGA/SVGA adapter in a separate window. It has configurable 256/512 KiB or 1 MiB VRAM and a 16 KiB Z80-side bridge at C000h-FFFFh. The bridge is banked: 64 banks × 16 KiB = 1 MiB. This bridge is an emulator integration path, not an ISA register of the physical Trident card. The standard VGA ports and Trident extensions are modeled separately.
 
 There are two independent paths:
 
