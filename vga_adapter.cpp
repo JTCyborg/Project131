@@ -520,7 +520,7 @@ namespace
                 const unsigned bg = blink_enabled ? ((at >> 4) & 7) : ((at >> 4) & 0x0F);
                 const bool hidden = blink_enabled && (at & 0x80) && blink_phase;
                 const unsigned map_base = ((at & 0x08) && (map_a != map_b)) ? map_b : map_a;
-                const unsigned glyph_base = map_base + unsigned(ch) * 32;
+                const unsigned glyph_base = text_base + map_base + unsigned(ch) * 32;
                 const bool cursor_here = cursor_enabled &&
                     (((start + y * pitch + x) & 0xFFFF) == cursor_address);
                 const DWORD fg_color = palette_color(fg, true);
