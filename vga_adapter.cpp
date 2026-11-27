@@ -539,9 +539,18 @@ namespace
                     // the host glyph shape but keep VGA foreground/background.
                     SetTextColor(dc, hidden ? bg_color : fg_color);
                     SetBkColor(dc, bg_color);
-                    SetBkMode(dc, OPAQUE);
-                    TextOutA(dc, int(x * char_width), int(y * char_height),
-                        &text_char, 1);
+                    // ETO_OPAQUE paints the complete VGA character cell,
+                    // while ETO_CLIPPED prevents a host-font glyph whose
+                    // metrics differ from 8/9-dot VGA cells from bleeding
+                    // into the next character or beyond column 79.
+                    RECT cell_rect = {
+                        LONG(x * char_width),
+                        LONG(y * char_height),
+                        LONG((x + 1) * char_width),
+                        LONG((y + 1) * char_height)
+                    };
+                    ExtTextOutA(dc, cell_rect.left, cell_rect.top,
+                        ETO_OPAQUE | ETO_CLIPPED, &cell_rect, &text_char, 1, nullptr);
                     continue;
                 }
                 for (unsigned sy = 0; sy < char_height; ++sy)
