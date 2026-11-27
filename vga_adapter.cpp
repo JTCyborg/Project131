@@ -782,7 +782,9 @@ namespace
         const unsigned bridge_address = spectrum_bridge
             ? unsigned(vga.bridge_bank) * APERTURE_SIZE + (address & 0x3FFFU)
             : address;
-        const unsigned decoded = bridge_address + vga.read_bank;
+        // Match PCem svga_read(): apply the selected VGA aperture mask
+        // before adding the independent Trident read bank.
+        const unsigned decoded = (bridge_address & vga.banked_mask) + vga.read_bank;
 
         // Packed/VBE memory is byte-addressed, not planar. Keep the Spectrum
         // window and Trident bank offsets, but do not apply VGA plane logic.
@@ -838,7 +840,9 @@ namespace
         const unsigned bridge_address = spectrum_bridge
             ? unsigned(vga.bridge_bank) * APERTURE_SIZE + (address & 0x3FFFU)
             : address;
-        const unsigned decoded = bridge_address + vga.write_bank;
+        // Match PCem svga_write(): apply the selected VGA aperture mask
+        // before adding the independent Trident write bank.
+        const unsigned decoded = (bridge_address & vga.banked_mask) + vga.write_bank;
 
         if (!vga.text_mode && (vga.vbe_enabled || vga.bpp > 8 ||
             (vga.oldctrl2 & 0x10) || vga.rgb565_mode))
