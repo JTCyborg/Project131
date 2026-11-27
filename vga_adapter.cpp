@@ -30,7 +30,7 @@ namespace
         unsigned char misc_out, status, dac_status;
         unsigned char dac[256][3], dac_mask;
         unsigned char dac_read, dac_write, dac_component;
-        unsigned char bank;
+        unsigned char bridge_bank, vbe_bank;
         unsigned char software_mode, aperture;
         unsigned char rgb565_mode;
         unsigned short vbe_index, vbe_regs[10];
@@ -145,7 +145,7 @@ namespace
         if (pitch * h > vga.vram_size) return false;
         vga.vbe_xres = (unsigned short)w; vga.vbe_yres = (unsigned short)h;
         vga.vbe_bpp = (unsigned char)bpp; vga.vbe_pitch = (unsigned short)pitch;
-        vga.vbe_enabled = 1; vga.rgb565_mode = 0; vga.bank = 0;
+        vga.vbe_enabled = 1; vga.rgb565_mode = 0; vga.vbe_bank = 0;
         vga.software_mode = 1; vga.aperture = 1;
         vga.vbe_regs[1] = (unsigned short)w; vga.vbe_regs[2] = (unsigned short)h; vga.vbe_regs[3] = (unsigned short)bpp;
         vga.vbe_regs[4] = 1; vga.vbe_regs[6] = (unsigned short)w; vga.vbe_regs[7] = (unsigned short)h;
@@ -780,7 +780,7 @@ namespace
         // From this point onward, address decoding follows the TVGA8900D
         // SVGA memory rules used by the ISA aperture.
         const unsigned bridge_address = spectrum_bridge
-            ? unsigned(vga.bank) * APERTURE_SIZE + (address & 0x3FFFU)
+            ? unsigned(vga.bridge_bank) * APERTURE_SIZE + (address & 0x3FFFU)
             : address;
         const unsigned decoded = bridge_address + vga.read_bank;
 
@@ -1056,7 +1056,7 @@ bool isa_vga_adapter_port_read(unsigned port, unsigned char &value)
     if (port == 0x3E2) { value=vga.accel_index; return true; }
     if (port == 0x3E3) { value=vga.accel_regs[vga.accel_index&63]; return true; }
     if (port == 0x3E0) { value = (unsigned char)vga.vbe_index; return true; }
-    if (port == 0x3E1) { ensure_window(); switch (vga.vbe_index) { case 0:value=(unsigned char)vga.vbe_regs[1];break; case 1:value=(unsigned char)(vga.vbe_regs[1]>>8);break; case 2:value=(unsigned char)vga.vbe_regs[2];break; case 3:value=(unsigned char)(vga.vbe_regs[2]>>8);break; case 4:value=(unsigned char)vga.vbe_regs[3];break; case 5:value=(unsigned char)vga.vbe_regs[4];break; case 6:value=vga.bank;break; default:value=0;break;} return true; }
+    if (port == 0x3E1) { ensure_window(); switch (vga.vbe_index) { case 0:value=(unsigned char)vga.vbe_regs[1];break; case 1:value=(unsigned char)(vga.vbe_regs[1]>>8);break; case 2:value=(unsigned char)vga.vbe_regs[2];break; case 3:value=(unsigned char)(vga.vbe_regs[2]>>8);break; case 4:value=(unsigned char)vga.vbe_regs[3];break; case 5:value=(unsigned char)vga.vbe_regs[4];break; case 6:value=vga.vbe_bank;break; default:value=0;break;} return true; }
     if (port < 0x3B0 || port > 0x3DF) return false;
     ensure_window();
     port = normalize_crtc(port);
@@ -1099,9 +1099,9 @@ bool isa_vga_adapter_port_read(unsigned port, unsigned char &value)
         return true;
     case 0x3DE:
         value = (vga.software_mode ? 1 : 0) | (vga.aperture ? 2 : 0) |
-            ((vga.bank & 15) << 2) | (vga.rgb565_mode ? 0x40 : 0);
+            ((vga.bridge_bank & 15) << 2) | (vga.rgb565_mode ? 0x40 : 0);
         return true;
-    case 0x3DF: value = vga.bank; return true;
+    case 0x3DF: value = vga.bridge_bank; return true;
     case 0x3D8: value = vga.tvga_3d8; return true;
     case 0x3D9: value = vga.tvga_3d9; return true;
     default: return false;
@@ -1116,7 +1116,7 @@ bool isa_vga_adapter_port_write(unsigned port, unsigned char value)
     if (port == 0x3E2) { ensure_window(); vga.accel_index=value&63; return true; }
     if (port == 0x3E3) { ensure_window(); unsigned i=vga.accel_index&63; vga.accel_regs[i]=value; if(i==0) execute_2d(value); if(i==0x34) vga.dirty=true; return true; }
     if (port == 0x3E0) { vga.vbe_index = value; return true; }
-    if (port == 0x3E1) { ensure_window(); switch (vga.vbe_index) { case 0:vga.vbe_regs[1]=(vga.vbe_regs[1]&0xFF00)|value;break; case 1:vga.vbe_regs[1]=(vga.vbe_regs[1]&0x00FF)|(unsigned(value)<<8);break; case 2:vga.vbe_regs[2]=(vga.vbe_regs[2]&0xFF00)|value;break; case 3:vga.vbe_regs[2]=(vga.vbe_regs[2]&0x00FF)|(unsigned(value)<<8);break; case 4:vga.vbe_regs[3]=value;break; case 5:vga.vbe_regs[4]=value; if(value&1) configure_vbe_mode(vga.vbe_regs[1],vga.vbe_regs[2],vga.vbe_regs[3]); else {vga.vbe_enabled=0;vga.rgb565_mode=0;decode_mode();} break; case 6:vga.bank=value&(APERTURE_BANKS-1);break; default:break;} vga.dirty=true;return true; }
+    if (port == 0x3E1) { ensure_window(); switch (vga.vbe_index) { case 0:vga.vbe_regs[1]=(vga.vbe_regs[1]&0xFF00)|value;break; case 1:vga.vbe_regs[1]=(vga.vbe_regs[1]&0x00FF)|(unsigned(value)<<8);break; case 2:vga.vbe_regs[2]=(vga.vbe_regs[2]&0xFF00)|value;break; case 3:vga.vbe_regs[2]=(vga.vbe_regs[2]&0x00FF)|(unsigned(value)<<8);break; case 4:vga.vbe_regs[3]=value;break; case 5:vga.vbe_regs[4]=value; if(value&1) configure_vbe_mode(vga.vbe_regs[1],vga.vbe_regs[2],vga.vbe_regs[3]); else {vga.vbe_enabled=0;vga.rgb565_mode=0;decode_mode();} break; case 6:vga.vbe_bank=value;break; default:break;} vga.dirty=true;return true; }
     if (port < 0x3B0 || port > 0x3DF) return false;
     ensure_window();
     if (port >= 0x3B0 && port <= 0x3DF && port != 0x3DE && port != 0x3DF)
@@ -1240,14 +1240,14 @@ bool isa_vga_adapter_port_write(unsigned port, unsigned char value)
     case 0x3DE:
         vga.software_mode = (value & 1) != 0;
         vga.aperture = (value & 2) != 0;
-        vga.bank = (value >> 2) & 15;
+        vga.bridge_bank = (value >> 2) & 15;
         vga.rgb565_mode = (value & 0x40) != 0;
         if (!vga.software_mode) { vga.aperture = 0; vga.vbe_enabled = 0; }
         if (vga.rgb565_mode && vga.software_mode) configure_vbe_mode(640, 480, 16);
         else decode_mode();
         vga.dirty = true;
         return true;
-    case 0x3DF: vga.bank = value & (APERTURE_BANKS - 1); vga.dirty = true; return true;
+    case 0x3DF: vga.bridge_bank = value & (APERTURE_BANKS - 1); vga.dirty = true; return true;
     case 0x3D8: if (vga.gc[0x0F] & 4) { vga.tvga_3d8=value; trident_recalc_banking(); } return true;
     case 0x3D9: if (vga.gc[0x0F] & 4) { vga.tvga_3d9=value; trident_recalc_banking(); } return true;
     case 0x3DB:
