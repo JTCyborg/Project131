@@ -15,7 +15,7 @@ namespace
     struct VGA_ADAPTER
     {
         unsigned char vram[VRAM_SIZE];
-        unsigned char seq[16], gc[16], crtc[0x40], attr[0x15];
+        unsigned char seq[16], gc[16], crtc[0x40], attr[0x20];
         // Trident TVGA8900D extension state, following PCem's vid_tvga.c.
         unsigned char tvga_3d8, tvga_3d9;
         unsigned char oldmode, oldctrl1, oldctrl2, newctrl2;
@@ -151,10 +151,9 @@ namespace
             for (unsigned y = 0; y < vga.height; ++y)
             {
                 DWORD *dst = vga.pixels + y * vga.width;
-                const unsigned char *src = vga.vram + ((start + y * pitch) & vga.display_mask);
                 for (unsigned x = 0; x < vga.width; ++x)
                 {
-                    const unsigned char *p = src + x * bytes;
+                    const unsigned char *p = vga.vram + ((start + y * pitch + x * bytes) & vga.display_mask);
                     unsigned r = 0, g = 0, b = 0;
                     if (vga.bpp == 8) { dst[x] = palette_color(p[0]); continue; }
                     if (vga.bpp == 15) { unsigned q=p[0] | (unsigned(p[1]) << 8); r=((q>>10)&31)*255/31; g=((q>>5)&31)*255/31; b=(q&31)*255/31; }
@@ -592,12 +591,6 @@ namespace
         unsigned bridge_linear = unsigned(vga.bank) * APERTURE_SIZE + (address & 0x3FFF);
         unsigned linear = (vga.write_bank + bridge_linear) & vga.vram_mask;
         if (vga.vbe_enabled || vga.bpp > 8 || (vga.oldctrl2 & 0x10) || vga.rgb565_mode) { vga.vram[linear] = value; vga.dirty = true; return; }
-        if (vga.rgb565_mode)
-        {
-            vga.vram[linear] = value;
-            vga.dirty = true;
-            return;
-        }
         if (vga.seq[4] & 8)
         {
             unsigned plane = linear & 3;
