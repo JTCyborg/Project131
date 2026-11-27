@@ -515,10 +515,14 @@ namespace
 
         // VGA Sequencer Character Map Select: two independently selectable
         // 8-KiB font maps. The selected map is addressed in plane 2.
-        const unsigned map_a = ((vga.seq[3] & 0x03) |
-            ((vga.seq[3] & 0x10) >> 2)) * 0x2000;
-        const unsigned map_b = (((vga.seq[3] >> 2) & 0x03) |
-            ((vga.seq[3] & 0x20) >> 3)) * 0x2000;
+        // PCem svga.c: charseta/charsetb are byte addresses in the
+        // interleaved four-plane VRAM. Convert those addresses to plane-2
+        // offsets: each 64-KiB map selector advances 16 KiB in one plane,
+        // while the A16/B16 selector bit advances 8 KiB.
+        const unsigned map_a = ((vga.seq[3] & 0x03) << 14) |
+            ((vga.seq[3] & 0x10) ? 0x2000 : 0);
+        const unsigned map_b = (((vga.seq[3] >> 2) & 0x03) << 14) |
+            ((vga.seq[3] & 0x20) ? 0x2000 : 0);
         // Never infer font validity from the contents of VRAM: a previous
         // packed-pixel frame can leave non-zero garbage in plane 2. A font is
         // considered present only after the guest writes plane 2 in text mode.
