@@ -522,7 +522,10 @@ namespace
         vga.height = 200;
         vga.dac_mask = 0xFF;
         for (unsigned i = 0; i < 16; ++i)
+        {
             memcpy(vga.dac[i], ega_palette[i], 3);
+            vga.attr[i] = (unsigned char)i;
+        }
 
         // Power-on VGA register state used by the transparent bridge.
         vga.seq[2] = 0x0F;
