@@ -898,7 +898,10 @@ namespace
             offset = address;
         }
 
-        offset &= vga.plane_size - 1;
+        // PCem rejects addresses beyond installed VRAM; masking the
+        // per-plane offset here would incorrectly alias an invalid bank.
+        if (offset >= vga.plane_size)
+            return 0xFF;
         for (unsigned p = 0; p < 4; ++p)
             vga.latch[p] = vga.vram[p * vga.plane_size + offset];
 
@@ -939,7 +942,8 @@ namespace
             offset = address & ~1U;
         }
 
-        offset &= vga.plane_size - 1;
+        if (offset >= vga.plane_size)
+            return;
         const unsigned mode = vga.gc[5] & 3;
         const unsigned logical = (vga.gc[3] >> 3) & 3;
         const unsigned rotated = rotate_right(value, vga.gc[3] & 7);
