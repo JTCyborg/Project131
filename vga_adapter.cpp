@@ -146,7 +146,7 @@ namespace
 
         const unsigned graphics_mode = vga.gc[5] & 0x60;
         const bool packed = graphics_mode == 0x40 || graphics_mode == 0x60;
-        if (packed && (vga.bpp == 15 || vga.bpp == 16 || vga.bpp == 24 || vga.bpp == 32))
+        if (packed && (vga.bpp == 8 || vga.bpp == 15 || vga.bpp == 16 || vga.bpp == 24 || vga.bpp == 32))
         {
             set_mode(640, 480, false);
             return;
@@ -185,7 +185,7 @@ namespace
                 }
             }
         }
-        else if (vga.bpp > 8 || (vga.oldctrl2 & 0x10))
+        else if (vga.bpp > 8 || (vga.oldctrl2 & 0x10) || ((vga.gc[5] & 0x60) >= 0x40 && vga.bpp == 8))
         {
             unsigned bytes = (vga.bpp + 7) >> 3;
             unsigned pitch = vga.rowoffset ? vga.rowoffset : vga.width * bytes;
