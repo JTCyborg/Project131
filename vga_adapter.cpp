@@ -68,8 +68,18 @@ namespace
         return (r << 16) | (g << 8) | b;
     }
 
-    static DWORD palette_color(unsigned index)
+    static DWORD palette_color(unsigned index, bool attribute_map = false)
     {
+        if (attribute_map)
+        {
+            unsigned mapped = vga.attr[index & 0x0F] & 0x3F;
+            unsigned color_select = vga.attr[0x14] & 0x0F;
+            if (vga.attr[0x10] & 0x80)
+                mapped = (mapped & 0x0F) | (color_select << 4);
+            else
+                mapped = (mapped & 0x3F) | ((color_select & 0x0C) << 4);
+            index = mapped;
+        }
         const unsigned char *c = vga.dac[index & vga.dac_mask];
         return rgb((c[0] & 63) * 4, (c[1] & 63) * 4, (c[2] & 63) * 4);
     }
@@ -196,7 +206,7 @@ namespace
                     for (unsigned p = 0; p < 4; ++p)
                         if (vga.vram[p * vga.plane_size + offset] & mask)
                             colour |= 1U << p;
-                    dst[x] = palette_color(colour);
+                    dst[x] = palette_color(colour, true);
                 }
             }
         }
