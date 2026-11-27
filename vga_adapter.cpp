@@ -193,7 +193,7 @@ namespace
                     unsigned mask = 0x80 >> (x & 7);
                     unsigned colour = 0;
                     for (unsigned p = 0; p < 4; ++p)
-                        if (vga.vram[p * PLANE_SIZE + offset] & mask)
+                        if (vga.vram[p * vga.plane_size + offset] & mask)
                             colour |= 1U << p;
                     dst[x] = palette_color(colour);
                 }
@@ -414,8 +414,8 @@ namespace
                 // planes. The 16 KiB aperture bank 6 maps B8000-style text
                 // memory to plane offset 8000h in this adapter model.
                 unsigned a = 0x8000 + y * 80 + x;
-                unsigned char ch = vga.vram[a & (PLANE_SIZE - 1)];
-                unsigned char at = vga.vram[PLANE_SIZE + (a & (PLANE_SIZE - 1))];
+                unsigned char ch = vga.vram[a & (vga.plane_size - 1)];
+                unsigned char at = vga.vram[vga.plane_size + (a & (vga.plane_size - 1))];
                 SetTextColor(dc, colors[at & 15]);
                 SetBkColor(dc, colors[(at >> 4) & 15]);
                 char c = ch ? (char)ch : ' ';
@@ -602,16 +602,16 @@ namespace
         if (vga.seq[4] & 8)
         {
             unsigned plane = linear & 3;
-            unsigned offset = (linear >> 2) & (PLANE_SIZE - 1);
-            return vga.vram[plane * PLANE_SIZE + offset];
+            unsigned offset = (linear >> 2) & (vga.plane_size - 1);
+            return vga.vram[plane * vga.plane_size + offset];
         }
 
         // In planar modes the Trident 64-KiB bank selector advances the
         // per-plane address by 16 KiB; the Z80 bridge bank remains a planar
         // byte offset to preserve the emulator's 16-KiB window semantics.
-        unsigned offset = ((vga.read_bank >> 2) + (bridge_linear & 0xFFFF)) & (PLANE_SIZE - 1);
+        unsigned offset = ((vga.read_bank >> 2) + (bridge_linear & 0xFFFF)) & (vga.plane_size - 1);
         for (unsigned p = 0; p < 4; ++p)
-            vga.latch[p] = vga.vram[p * PLANE_SIZE + offset];
+            vga.latch[p] = vga.vram[p * vga.plane_size + offset];
         if (vga.gc[5] & 8)
         {
             unsigned result = 0xFF;
@@ -636,12 +636,12 @@ namespace
             unsigned plane = linear & 3;
             unsigned offset = (linear >> 2) & 0xFFFF;
             if (vga.seq[2] & (1U << plane))
-                vga.vram[plane * PLANE_SIZE + offset] = value;
+                vga.vram[plane * vga.plane_size + offset] = value;
             vga.dirty = true;
             return;
         }
 
-        unsigned offset = ((vga.write_bank >> 2) + (bridge_linear & 0xFFFF)) & (PLANE_SIZE - 1);
+        unsigned offset = ((vga.write_bank >> 2) + (bridge_linear & 0xFFFF)) & (vga.plane_size - 1);
         unsigned rotated = rotate_right(value, vga.gc[3] & 7);
         unsigned mode = vga.gc[5] & 3;
         unsigned logical = (vga.gc[3] >> 3) & 3;
@@ -668,7 +668,7 @@ namespace
             if (logical == 1) data &= old;
             else if (logical == 2) data |= old;
             else if (logical == 3) data ^= old;
-            vga.vram[p * PLANE_SIZE + offset] = (unsigned char)((data & mask) | (old & ~mask));
+            vga.vram[p * vga.plane_size + offset] = (unsigned char)((data & mask) | (old & ~mask));
         }
         vga.dirty = true;
     }
