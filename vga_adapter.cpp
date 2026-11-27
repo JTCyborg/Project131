@@ -921,114 +921,17 @@ namespace
         return physical >> 2;
     }
 
+    // ISA and Spectrum bridge share the same VGA memory engine. The
+    // caller selects only how the CPU-visible aperture offset is formed;
+    // bank masking, Trident banking and VGA plane decoding stay identical.
     static unsigned char isa_vga_mem_read(unsigned aperture_offset)
     {
-        unsigned address = (aperture_offset & vga.banked_mask) + vga.read_bank;
-        unsigned latch_offset = address;
-        unsigned read_offset = address;
-        unsigned plane = vga.readplane & 3;
-
-        if (vga.chain4)
-        {
-            // PCem's chain-4 translation preserves the bank bits above
-            // 64 KiB and folds address bits 16-17 into the plane offset.
-            read_offset = chain4_plane_offset(address);
-            plane = address & 3U;
-            latch_offset = read_offset;
-        }
-        else if (vga.chain2_read)
-        {
-            plane = (plane & 2U) | (address & 1U);
-            // Latches use the original address; the returned byte uses
-            // the even-address translation (PCem: (addr & ~1) << 2).
-            read_offset = address & ~1U;
-        }
-
-        // PCem rejects addresses beyond installed VRAM; masking the
-        // per-plane offset here would incorrectly alias an invalid bank.
-        if (latch_offset >= vga.plane_size || read_offset >= vga.plane_size)
-            return 0xFF;
-        for (unsigned p = 0; p < 4; ++p)
-            vga.latch[p] = vga.vram[p * vga.plane_size + latch_offset];
-
-        // Chain-4 bypasses colour-compare mode and returns the selected plane.
-        if (vga.chain4)
-            return vga.latch[plane];
-
-        if (vga.gc[5] & 0x08)
-        {
-            unsigned result = 0xFF;
-            for (unsigned p = 0; p < 4; ++p)
-                if (vga.gc[7] & (1U << p))
-                {
-                    const unsigned compare = (vga.gc[2] & (1U << p)) ? 0xFF : 0;
-                    result &= ~(unsigned(vga.latch[p]) ^ compare);
-                }
-            return (unsigned char)result;
-        }
-        return vga.chain2_read
-            ? vga.vram[plane * vga.plane_size + read_offset]
-            : vga.latch[plane];
+        return vga_mem_read(aperture_offset, false);
     }
 
     static void isa_vga_mem_write(unsigned aperture_offset, unsigned char value)
     {
-        unsigned address = (aperture_offset & vga.banked_mask) + vga.write_bank;
-        unsigned offset = address;
-        unsigned plane_mask = vga.seq[2] & 0x0F;
-
-        if (vga.chain4)
-        {
-            plane_mask = 1U << (address & 3U);
-            offset = chain4_plane_offset(address);
-        }
-        else if (vga.chain2_write)
-        {
-            plane_mask &= 0x05;
-            if (address & 1U) plane_mask <<= 1;
-            offset = address & ~1U;
-        }
-
-        if (offset >= vga.plane_size)
-            return;
-        const unsigned mode = vga.gc[5] & 3;
-        const unsigned logical = (vga.gc[3] >> 3) & 3;
-        const unsigned rotated = rotate_right(value, vga.gc[3] & 7);
-        const unsigned bitmask = vga.gc[8];
-
-        for (unsigned p = 0; p < 4; ++p)
-        {
-            if (!(plane_mask & (1U << p))) continue;
-            unsigned char &dst = vga.vram[p * vga.plane_size + offset];
-            const unsigned char old = vga.latch[p];
-            // Track writes through the real ISA aperture as well as the
-            // Spectrum bridge. VGA BIOS font uploads commonly use this path.
-            if (vga.text_mode && p == 2)
-                vga.text_font_written = true;
-            if (mode == 1)
-            {
-                dst = old;
-                continue;
-            }
-
-            unsigned char source = (vga.gc[1] & (1U << p))
-                ? ((vga.gc[0] & (1U << p)) ? 0xFF : 0)
-                : (unsigned char)rotated;
-            unsigned char mask = (unsigned char)bitmask;
-            if (mode == 2)
-                source = (value & (1U << p)) ? 0xFF : 0;
-            else if (mode == 3)
-            {
-                source = (vga.gc[0] & (1U << p)) ? 0xFF : 0;
-                mask = (unsigned char)(rotated & bitmask);
-            }
-
-            if (logical == 1) source &= old;
-            else if (logical == 2) source |= old;
-            else if (logical == 3) source ^= old;
-            dst = (unsigned char)((source & mask) | (old & ~mask));
-        }
-        vga.dirty = true;
+        vga_mem_write(aperture_offset, value, false);
     }
 
     // Z80 writes are 8-bit, while packed 15/16-bpp pixels are 16-bit.
