@@ -431,16 +431,9 @@ namespace
 
     static void render_text(HDC dc)
     {
-        static const COLORREF colors[16] =
-        {
-            RGB(0,0,0),RGB(0,0,170),RGB(0,170,0),RGB(0,170,170),
-            RGB(170,0,0),RGB(170,0,170),RGB(170,85,0),RGB(170,170,170),
-            RGB(85,85,85),RGB(85,85,255),RGB(85,255,85),RGB(85,255,255),
-            RGB(255,85,85),RGB(255,85,255),RGB(255,255,85),RGB(255,255,255)
-        };
-
-        // The text page is exposed to Project137 through bridge bank 6,
-        // but the visible geometry and page stride are VGA CRTC-controlled.
+        // VGA text rendering uses character/attribute planes plus the font
+        // bitmap stored in plane 2. This deliberately avoids host fonts:
+        // glyph shape, 8/9-dot width and cursor now come from VGA state.
         const unsigned start = (unsigned(vga.crtc[0x0C]) << 8) | vga.crtc[0x0D];
         unsigned pitch = unsigned(vga.crtc[0x13]) * 2;
         const unsigned text_base = 0x8000;
@@ -456,14 +449,19 @@ namespace
         if (!rows || rows > 100) rows = 25;
         if (pitch < columns) pitch = columns;
 
+        // VGA Sequencer Character Map Select: two independently selectable
+        // 8-KiB font maps. The selected map is addressed in plane 2.
+        const unsigned map_a = ((vga.seq[3] & 0x03) |
+            ((vga.seq[3] & 0x10) >> 2)) * 0x2000;
+        const unsigned map_b = (((vga.seq[3] >> 2) & 0x03) |
+            ((vga.seq[3] & 0x20) >> 3)) * 0x2000;
         const bool blink_enabled = (vga.attr[0x10] & 0x08) != 0;
         const bool blink_phase = ((GetTickCount() / 500) & 1) != 0;
-        HFONT font = CreateFontW(-int(char_height), int(char_width), 0, 0,
-            FW_NORMAL, FALSE, FALSE, FALSE, OEM_CHARSET, OUT_DEFAULT_PRECIS,
-            CLIP_DEFAULT_PRECIS, NONANTIALIASED_QUALITY, FIXED_PITCH | FF_MODERN,
-            L"Terminal");
-        HGDIOBJ old = SelectObject(dc, font);
-        SetBkMode(dc, OPAQUE);
+        const unsigned cursor_address = (unsigned(vga.crtc[0x0E]) << 8) | vga.crtc[0x0F];
+        const unsigned cursor_start = vga.crtc[0x0A] & 0x1F;
+        const unsigned cursor_end = vga.crtc[0x0B] & 0x1F;
+        const bool cursor_enabled = !(vga.crtc[0x0A] & 0x20) &&
+            (((GetTickCount() / 500) & 1) == 0);
 
         for (unsigned y = 0; y < rows; ++y)
         {
@@ -475,18 +473,38 @@ namespace
                 const unsigned fg = at & 0x0F;
                 const unsigned bg = blink_enabled ? ((at >> 4) & 7) : ((at >> 4) & 0x0F);
                 const bool hidden = blink_enabled && (at & 0x80) && blink_phase;
-                const unsigned char glyph = hidden ? ' ' : ch;
-                WCHAR wide = L' ';
-                if (glyph)
-                    MultiByteToWideChar(437, 0, reinterpret_cast<const char *>(&glyph), 1, &wide, 1);
-                SetTextColor(dc, colors[fg]);
-                SetBkColor(dc, colors[bg]);
-                TextOutW(dc, int(x * char_width), int(y * char_height), &wide, 1);
+                const unsigned map_base = ((vga.seq[3] & 0x03) == ((vga.seq[3] >> 2) & 0x03) &&
+                    ((vga.seq[3] & 0x10) == ((vga.seq[3] & 0x20) >> 1)) ) ? map_a : map_b;
+                const unsigned glyph_base = map_base + unsigned(ch) * 32;
+                const bool cursor_here = cursor_enabled &&
+                    (((start + y * pitch + x) & 0xFFFF) == cursor_address);
+                const DWORD fg_color = palette_color(fg, true);
+                const DWORD bg_color = palette_color(bg, true);
+                for (unsigned sy = 0; sy < char_height; ++sy)
+                {
+                    const unsigned py = y * char_height + sy;
+                    const unsigned font_row = sy & 31;
+                    unsigned char bits = hidden ? 0 :
+                        vga.vram[2 * vga.plane_size + ((glyph_base + font_row) & (vga.plane_size - 1))];
+                    const bool cursor_line = cursor_here &&
+                        (cursor_start <= cursor_end ?
+                            (sy >= cursor_start && sy <= cursor_end) :
+                            (sy >= cursor_start || sy <= cursor_end));
+                    for (unsigned sx = 0; sx < char_width; ++sx)
+                    {
+                        bool on = sx < 8 && ((bits >> (7 - sx)) & 1);
+                        // VGA's ninth dot repeats bit 0 for line-drawing
+                        // characters C0h-DFh when line-graphics is enabled.
+                        if (sx == 8 && (vga.attr[0x10] & 0x04) &&
+                            ch >= 0xC0 && ch <= 0xDF)
+                            on = (bits & 1) != 0;
+                        if (cursor_line) on = !on;
+                        SetPixelV(dc, int(x * char_width + sx), int(py),
+                            on ? fg_color : bg_color);
+                    }
+                }
             }
         }
-
-        SelectObject(dc, old);
-        DeleteObject(font);
     }
 
     static LRESULT CALLBACK vga_window_proc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
