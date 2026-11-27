@@ -456,7 +456,11 @@ namespace
         // glyph shape, 8/9-dot width and cursor now come from VGA state.
         const unsigned start = (unsigned(vga.crtc[0x0C]) << 8) | vga.crtc[0x0D];
         unsigned pitch = unsigned(vga.crtc[0x13]) * 2;
-        const unsigned text_base = 0x8000;
+        // The bridge's bank-6 aperture contributes 0x8000 to the
+        // per-plane address. Trident's 64-KiB CPU bank register contributes
+        // another 16-KiB per-plane offset; the text scanout must follow the
+        // same effective VRAM location that guest writes reached.
+        const unsigned text_base = ((vga.write_bank >> 2) + 0x8000) & (vga.plane_size - 1);
         const unsigned char_width = (vga.seq[1] & 1) ? 8 : 9;
         const unsigned char_height = (vga.crtc[9] & 0x1F) + 1;
         unsigned columns = unsigned(vga.crtc[1]) + 1;
