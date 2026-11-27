@@ -312,6 +312,18 @@ namespace
             vga.vram[a+i]=accel_rop((unsigned char)(color>>(i*8)),vga.vram[a+i],vga.accel_regs[2]);
         return true;
     }
+    static bool accel_plot_clipped(int x, int y, unsigned color)
+    {
+        if (x < 0 || y < 0 || x >= (int)vga.vbe_xres || y >= (int)vga.vbe_yres)
+            return true;
+        return accel_pixel((unsigned)x, (unsigned)y, color);
+    }
+
+    static long long accel_edge(int ax, int ay, int bx, int by, int px, int py)
+    {
+        return (long long)(bx-ax)*(py-ay) - (long long)(by-ay)*(px-ax);
+    }
+
     static void execute_2d(unsigned cmd)
     {
         if(!vga.vbe_enabled || !vga.vbe_bpp) { vga.accel_regs[1]=0x81; return; }
@@ -343,42 +355,98 @@ namespace
                 }
             }
         } else if(cmd==3) {
+            // Clip each Bresenham sample against the active viewport. This
+            // preserves the original line rasterization for in-range lines.
             int x=(int)dx,y=(int)dy,x2=(int)accel16(0x20),y2=(int)accel16(0x22);
-            if (x<0 || y<0 || x2<0 || y2<0 ||
-                x>=(int)vga.vbe_xres || x2>=(int)vga.vbe_xres ||
-                y>=(int)vga.vbe_yres || y2>=(int)vga.vbe_yres ||
-                dp < vga.vbe_xres*b) return;
+            if (dp < vga.vbe_xres*b) return;
             int ax=abs(x2-x), sxdir=x<x2?1:-1, ay=-abs(y2-y), sydir=y<y2?1:-1, err=ax+ay;
             for(;;) {
-                if(!accel_pixel((unsigned)x,(unsigned)y,color)) return;
+                if(!accel_plot_clipped(x,y,color)) return;
                 if(x==x2&&y==y2) break;
                 int e2=2*err;
                 if(e2>=ay){err+=ay;x+=sxdir;}
                 if(e2<=ax){err+=ax;y+=sydir;}
             }
         } else if(cmd==4) {
-            // Horizontal Gradient Fill. Register 1Ch..1Fh is the start
-            // pixel and 20h..23h is the end pixel. Interpolate each
-            // stored pixel byte across the rectangle, then repeat per row.
             unsigned end_color=accel32(0x20);
             if (!accel_rect_valid(db,dp,dx,dy,w,h,b)) { vga.accel_regs[1]=0x82; return; }
             for(unsigned y=0;y<h;++y) {
                 for(unsigned x=0;x<w;++x) {
                     unsigned a;
-                    if(!accel_addr(db,dp,dx+x,dy+y,b,a)) { vga.accel_regs[1]=0x83; return; }
+                    if(!accel_addr(db,dp,dx+x,dy+y,b)) { vga.accel_regs[1]=0x83; return; }
                     for(unsigned k=0;k<b;++k) {
-                        unsigned c0=(color>>(k*8))&255;
-                        unsigned c1=(end_color>>(k*8))&255;
-                        unsigned value = w == 1 ? c0 :
-                            (c0*(w-1-x)+c1*x+(w-1)/2)/(w-1);
+                        unsigned c0=(color>>(k*8))&255, c1=(end_color>>(k*8))&255;
+                        unsigned value = w == 1 ? c0 : (c0*(w-1-x)+c1*x+(w-1)/2)/(w-1);
                         vga.vram[a+k]=accel_rop((unsigned char)value,vga.vram[a+k],vga.accel_regs[2]);
                     }
                 }
             }
+        } else if(cmd==5) {
+            // Midpoint circle: center=(DX,DY), radius=WIDTH.
+            int cx=(int)dx, cy=(int)dy, radius=(int)w;
+            int x=radius, y=0, err=1-radius;
+            if(dp < vga.vbe_xres*b) return;
+            while(x>=y) {
+                if(!accel_plot_clipped(cx+x,cy+y,color) || !accel_plot_clipped(cx+y,cy+x,color) ||
+                   !accel_plot_clipped(cx-y,cy+x,color) || !accel_plot_clipped(cx-x,cy+y,color) ||
+                   !accel_plot_clipped(cx-x,cy-y,color) || !accel_plot_clipped(cx-y,cy-x,color) ||
+                   !accel_plot_clipped(cx+y,cy-x,color) || !accel_plot_clipped(cx+x,cy-y,color)) return;
+                ++y;
+                if(err<0) err+=2*y+1;
+                else { --x; err+=2*(y-x)+1; }
+            }
+        } else if(cmd==6) {
+            // Filled ellipse using the integer midpoint algorithm.
+            int cx=(int)dx, cy=(int)dy, rx=(int)w, ry=(int)h;
+            long long rx2=(long long)rx*rx, ry2=(long long)ry*ry;
+            long long x=0, y=ry, px=0, py=2*rx2*y;
+            long long p=ry2-rx2*ry+rx2/4;
+            if(dp < vga.vbe_xres*b) return;
+            while(px<py) {
+                int left=cx-(int)x, right=cx+(int)x;
+                for(int yy=cy-(int)y; yy<=cy+(int)y; ++yy) {
+                    if(!accel_plot_clipped(left,yy,color) || !accel_plot_clipped(right,yy,color)) return;
+                }
+                ++x; px+=2*ry2;
+                if(p<0) p+=ry2+px;
+                else { --y; py-=2*rx2; p+=ry2+px-py; }
+            }
+            p=ry2*(x*x+x)+rx2*(y*y-2*y+1)-rx2*ry2;
+            while(y>=0) {
+                int left=cx-(int)x, right=cx+(int)x;
+                for(int yy=cy-(int)y; yy<=cy+(int)y; ++yy) {
+                    if(!accel_plot_clipped(left,yy,color) || !accel_plot_clipped(right,yy,color)) return;
+                }
+                --y; py-=2*rx2;
+                if(p>0) p+=rx2-py;
+                else { ++x; px+=2*ry2; p+=rx2-py+px; }
+            }
+        } else if(cmd==7) {
+            // Filled triangle. Vertices: (SX,SY), (DX,DY), (X2,Y2).
+            int x0=(int)sx,y0=(int)sy,x1=(int)dx,y1=(int)dy;
+            int x2=(int)accel16(0x20),y2=(int)accel16(0x22);
+            int minx=x0,maxx=x0,miny=y0,maxy=y0;
+            if(x1<minx)minx=x1; if(x2<minx)minx=x2;
+            if(x1>maxx)maxx=x1; if(x2>maxx)maxx=x2;
+            if(y1<miny)miny=y1; if(y2<miny)miny=y2;
+            if(y1>maxy)maxy=y1; if(y2>maxy)maxy=y2;
+            if(minx<0)minx=0; if(miny<0)miny=0;
+            if(maxx>=(int)vga.vbe_xres)maxx=(int)vga.vbe_xres-1;
+            if(maxy>=(int)vga.vbe_yres)maxy=(int)vga.vbe_yres-1;
+            if(dp < vga.vbe_xres*b) return;
+            long long area=accel_edge(x0,y0,x1,y1,x2,y2);
+            if(!area) { vga.accel_regs[1]=0x82; return; }
+            for(int yy=miny;yy<=maxy;++yy) for(int xx=minx;xx<=maxx;++xx) {
+                long long e0=accel_edge(x0,y0,x1,y1,xx,yy);
+                long long e1=accel_edge(x1,y1,x2,y2,xx,yy);
+                long long e2=accel_edge(x2,y2,x0,y0,xx,yy);
+                if((area>0 && e0>=0 && e1>=0 && e2>=0) ||
+                   (area<0 && e0<=0 && e1<=0 && e2<=0))
+                    if(!accel_plot_clipped(xx,yy,color)) return;
+            }
         } else { vga.accel_regs[1]=0x84; return; }
         vga.accel_regs[1]=1;
         vga.dirty=true;
-        // Presentation is deferred to the adapter's bounded-rate timer.
     }
     static void render_2d_cursor()
     {
