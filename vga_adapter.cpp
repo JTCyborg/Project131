@@ -373,7 +373,7 @@ namespace
             for(unsigned y=0;y<h;++y) {
                 for(unsigned x=0;x<w;++x) {
                     unsigned a;
-                    if(!accel_addr(db,dp,dx+x,dy+y,b)) { vga.accel_regs[1]=0x83; return; }
+                    if(!accel_addr(db,dp,dx+x,dy+y,b,a)) { vga.accel_regs[1]=0x83; return; }
                     for(unsigned k=0;k<b;++k) {
                         unsigned c0=(color>>(k*8))&255, c1=(end_color>>(k*8))&255;
                         unsigned value = w == 1 ? c0 : (c0*(w-1-x)+c1*x+(w-1)/2)/(w-1);
