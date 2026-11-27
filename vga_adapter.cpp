@@ -209,7 +209,7 @@ namespace
     }
     static void execute_2d(unsigned cmd)
     {
-        if(!vga.vbe_enabled || !vga.vbe_bpp) { vga.accel_regs[1]=0x80; return; }
+        if(!vga.vbe_enabled || !vga.vbe_bpp) { vga.accel_regs[1]=0x81; return; }
         unsigned b=(vga.vbe_bpp+7)>>3, sx=accel16(0x10), sy=accel16(0x12);
         unsigned dx=accel16(0x14), dy=accel16(0x16), w=accel16(0x18), h=accel16(0x1A);
         unsigned sp=accel16(0x0C), dp=accel16(0x0E), sb=accel32(4), db=accel32(8), color=accel32(0x1C);
@@ -256,20 +256,21 @@ namespace
             // pixel and 20h..23h is the end pixel. Interpolate each
             // stored pixel byte across the rectangle, then repeat per row.
             unsigned end_color=accel32(0x20);
-            if (!accel_rect_valid(db,dp,dx,dy,w,h,b)) return;
+            if (!accel_rect_valid(db,dp,dx,dy,w,h,b)) { vga.accel_regs[1]=0x82; return; }
             for(unsigned y=0;y<h;++y) {
                 for(unsigned x=0;x<w;++x) {
                     unsigned a;
-                    if(!accel_addr(db,dp,dx+x,dy+y,b,a)) return;
+                    if(!accel_addr(db,dp,dx+x,dy+y,b,a)) { vga.accel_regs[1]=0x83; return; }
                     for(unsigned k=0;k<b;++k) {
                         unsigned c0=(color>>(k*8))&255;
                         unsigned c1=(end_color>>(k*8))&255;
-                        unsigned value=(c0*(w-1-x)+c1*x+(w-1)/2)/(w-1 ? w-1 : 1);
+                        unsigned value = w == 1 ? c0 :
+                            (c0*(w-1-x)+c1*x+(w-1)/2)/(w-1);
                         vga.vram[a+k]=accel_rop((unsigned char)value,vga.vram[a+k],vga.accel_regs[2]);
                     }
                 }
             }
-        } else return;
+        } else { vga.accel_regs[1]=0x84; return; }
         vga.accel_regs[1]=1;
         vga.dirty=true;
         if(vga.window) InvalidateRect(vga.window,nullptr,FALSE);
