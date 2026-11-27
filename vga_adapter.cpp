@@ -456,7 +456,15 @@ namespace
         // VGA text rendering uses character/attribute planes plus the font
         // bitmap stored in plane 2. This deliberately avoids host fonts:
         // glyph shape, 8/9-dot width and cursor now come from VGA state.
-        const unsigned start = (unsigned(vga.crtc[0x0C]) << 8) | vga.crtc[0x0D];
+        // The Spectrum-side C000h bridge exposes one 16-KiB bank at a
+        // time. Text test/program data is stored through that bridge, so
+        // scanout must use the same bridge-bank base before applying the
+        // CRTC start address. ISA VGA aperture accesses remain independent.
+        const unsigned bridge_base =
+            (unsigned(vga.bank) * APERTURE_SIZE) & 0xFFFF;
+        const unsigned start = (bridge_base +
+            ((unsigned(vga.crtc[0x0C]) << 8) | vga.crtc[0x0D])) &
+            (vga.plane_size - 1);
         unsigned pitch = unsigned(vga.crtc[0x13]) * 2;
         // Display scanout is addressed by the CRTC start-address registers.
         // CPU aperture banking is independent and must not shift the displayed
