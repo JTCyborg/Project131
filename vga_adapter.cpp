@@ -25,7 +25,7 @@ namespace
         DWORD frame_epoch;
         bool interlace;
         unsigned char seq_index, gc_index, crtc_index, attr_index;
-        unsigned char attr_data, attr_flip;
+        unsigned char attr_data, attr_flip, attr_palette_enable;
         unsigned char misc_out, status, dac_status;
         unsigned char dac[256][3], dac_mask;
         unsigned char dac_read, dac_write, dac_component;
