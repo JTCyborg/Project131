@@ -735,11 +735,19 @@ namespace
         {
             if (!(vga.seq[2] & (1U << p)))
                 continue;
-            unsigned char src = (mode == 1) ? vga.latch[p] :
-                ((vga.gc[1] & (1U << p)) ? ((vga.gc[0] & (1U << p)) ? 0xFF : 0) : (unsigned char)rotated);
-            unsigned char mask = (unsigned char)bitmask;
+            // VGA write mode 1 is a direct latch transfer. It bypasses
+            // rotate, set/reset, logical-function and bit-mask processing.
             if (mode == 1)
-                mask = 0xFF;
+            {
+                vga.vram[p * vga.plane_size + offset] = vga.latch[p];
+                continue;
+            }
+
+            unsigned char src =
+                (vga.gc[1] & (1U << p))
+                    ? ((vga.gc[0] & (1U << p)) ? 0xFF : 0)
+                    : (unsigned char)rotated;
+            unsigned char mask = (unsigned char)bitmask;
             if (mode == 2)
                 src = (value & (1U << p)) ? 0xFF : 0;
             if (mode == 3)
