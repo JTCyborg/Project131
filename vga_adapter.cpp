@@ -613,6 +613,15 @@ namespace
                 wsprintfA(mode_text, "VGA  %u x %u  %u BPP", vga.width, vga.height, bpp);
             TextOutA(dc, 8, image_height + 4, mode_text, lstrlenA(mode_text));
             EndPaint(hwnd, &ps);
+            vga.dirty = false;
+            return 0;
+        }
+        if (msg == WM_TIMER && wp == 1)
+        {
+            // Guest VRAM writes only mark the frame dirty. Present at a
+            // bounded rate instead of scheduling WM_PAINT from the write path.
+            if (vga.dirty)
+                InvalidateRect(hwnd, nullptr, FALSE);
             return 0;
         }
         if (msg == WM_CLOSE)
@@ -644,7 +653,10 @@ namespace
             WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, 660, 440,
             nullptr, nullptr, wc.hInstance, nullptr);
         if (vga.window)
+        {
             ShowWindow(vga.window, SW_SHOWNORMAL);
+            SetTimer(vga.window, 1, 33, nullptr); // maximum ~30 framebuffer updates/sec
+        }
 
         vga.width = 320;
         vga.height = 200;
@@ -1088,11 +1100,7 @@ bool isa_vga_adapter_mem_write(unsigned address, unsigned char value)
             vga.vram[linear] = value;
             vga.write_buffer_pending = false;
             vga.dirty = true;
-            // Keep the standalone adapter window synchronized with VRAM.
-            // Windows coalesces invalidations while a large framebuffer is
-            // being uploaded; refresh at a modest interval, not per byte.
-            if ((address & 0x3F) == 1 && vga.window)
-                InvalidateRect(vga.window, nullptr, FALSE);
+            // Presentation is deferred to the 30-Hz window timer.
             return true;
         }
 
@@ -1111,11 +1119,8 @@ bool isa_vga_adapter_mem_write(unsigned address, unsigned char value)
         flush_write_buffer();
 
     vga_mem_write(address, value);
-    // Mode changes can happen before the guest has populated VRAM. A dirty
-    // flag alone does not schedule WM_PAINT, so periodically invalidate the
-    // adapter window as framebuffer/text data arrives.
-    if ((address & 0x3F) == 0 && vga.window)
-        InvalidateRect(vga.window, nullptr, FALSE);
+    // Do not invalidate from the guest memory-write path. The window timer
+    // observes vga.dirty and schedules a bounded-rate presentation.
     return true;
 }
 
