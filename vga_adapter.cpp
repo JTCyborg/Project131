@@ -415,10 +415,10 @@ namespace
 
         // Project137 uses the Z80 bridge's bank 6 as its text-memory window.
         // In the bridge mapping this is plane offset 8000h; the CRTC start
-        // address is a word address and the CRTC offset is in character words.
-        unsigned start = ((unsigned(vga.crtc[0x0C]) << 8) | vga.crtc[0x0D]) * 2;
+        // address and offset advance once per character cell in each plane.
+        unsigned start = (unsigned(vga.crtc[0x0C]) << 8) | vga.crtc[0x0D];
         unsigned pitch = unsigned(vga.crtc[0x13]) * 2;
-        if (!pitch) pitch = 160;
+        if (!pitch) pitch = 80;
         const unsigned text_base = 0x8000;
         const bool blink_enabled = (vga.attr[0x10] & 0x08) != 0;
         const bool blink_phase = ((GetTickCount() / 500) & 1) != 0;
@@ -433,7 +433,7 @@ namespace
         {
             for (unsigned x = 0; x < 80; ++x)
             {
-                const unsigned cell = (text_base + start + y * pitch + x * 2) & (vga.plane_size - 1);
+                const unsigned cell = (text_base + start + y * pitch + x) & (vga.plane_size - 1);
                 const unsigned char ch = vga.vram[cell];
                 const unsigned char at = vga.vram[vga.plane_size + cell];
                 const unsigned fg = at & 0x0F;
