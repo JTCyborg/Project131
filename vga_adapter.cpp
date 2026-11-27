@@ -870,9 +870,17 @@ namespace
         vga.dirty = true;
     }
 
-    // PCem's svga_read/svga_write address VGA planes as interleaved
-    // bytes in physical VRAM. This adapter stores four contiguous planes,
-    // so convert the ISA aperture address into a plane and plane offset.
+    // PCem stores VGA planes interleaved. Convert its physical byte
+    // address into this adapter's contiguous per-plane address space.
+    static unsigned chain4_plane_offset(unsigned address)
+    {
+        const unsigned physical =
+            ((address & 0xFFFCU) << 2) |
+            ((address & 0x30000U) >> 14) |
+            (address & ~0x3FFFFU);
+        return physical >> 2;
+    }
+
     static unsigned char isa_vga_mem_read(unsigned aperture_offset)
     {
         unsigned address = (aperture_offset & vga.banked_mask) + vga.read_bank;
@@ -882,15 +890,17 @@ namespace
 
         if (vga.chain4)
         {
-            read_offset = (address & ~3U) >> 2;
+            // PCem's chain-4 translation preserves the bank bits above
+            // 64 KiB and folds address bits 16-17 into the plane offset.
+            read_offset = chain4_plane_offset(address);
             plane = address & 3U;
             latch_offset = read_offset;
         }
         else if (vga.chain2_read)
         {
             plane = (plane & 2U) | (address & 1U);
-            // PCem fetches the four latches from the original byte address,
-            // but odd/even mode returns data from the preceding even address.
+            // Latches use the original address; the returned byte uses
+            // the even-address translation (PCem: (addr & ~1) << 2).
             read_offset = address & ~1U;
         }
 
@@ -930,7 +940,7 @@ namespace
         if (vga.chain4)
         {
             plane_mask = 1U << (address & 3U);
-            offset = (address & ~3U) >> 2;
+            offset = chain4_plane_offset(address);
         }
         else if (vga.chain2_write)
         {
