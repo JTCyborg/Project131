@@ -412,27 +412,43 @@ namespace
             RGB(85,85,85),RGB(85,85,255),RGB(85,255,85),RGB(85,255,255),
             RGB(255,85,85),RGB(255,85,255),RGB(255,255,85),RGB(255,255,255)
         };
-        HFONT font = CreateFontA(-16, 8, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE,
+
+        // Project137 uses the Z80 bridge's bank 6 as its text-memory window.
+        // In the bridge mapping this is plane offset 8000h; the CRTC start
+        // address is a word address and the CRTC offset is in character words.
+        unsigned start = ((unsigned(vga.crtc[0x0C]) << 8) | vga.crtc[0x0D]) * 2;
+        unsigned pitch = unsigned(vga.crtc[0x13]) * 2;
+        if (!pitch) pitch = 160;
+        const unsigned text_base = 0x8000;
+        const bool blink_enabled = (vga.attr[0x10] & 0x08) != 0;
+        const bool blink_phase = ((GetTickCount() / 500) & 1) != 0;
+
+        HFONT font = CreateFontW(-16, 8, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE,
             OEM_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, NONANTIALIASED_QUALITY,
-            FIXED_PITCH | FF_MODERN, "Terminal");
+            FIXED_PITCH | FF_MODERN, L"Terminal");
         HGDIOBJ old = SelectObject(dc, font);
         SetBkMode(dc, OPAQUE);
+
         for (unsigned y = 0; y < 25; ++y)
         {
             for (unsigned x = 0; x < 80; ++x)
             {
-                // Text memory is stored in the VGA character and attribute
-                // planes. The 16 KiB aperture bank 6 maps B8000-style text
-                // memory to plane offset 8000h in this adapter model.
-                unsigned a = 0x8000 + y * 80 + x;
-                unsigned char ch = vga.vram[a & (vga.plane_size - 1)];
-                unsigned char at = vga.vram[vga.plane_size + (a & (vga.plane_size - 1))];
-                SetTextColor(dc, colors[at & 15]);
-                SetBkColor(dc, colors[(at >> 4) & 15]);
-                char c = ch ? (char)ch : ' ';
-                TextOutA(dc, int(x * 9), int(y * 16), &c, 1);
+                const unsigned cell = (text_base + start + y * pitch + x * 2) & (vga.plane_size - 1);
+                const unsigned char ch = vga.vram[cell];
+                const unsigned char at = vga.vram[vga.plane_size + cell];
+                const unsigned fg = at & 0x0F;
+                const unsigned bg = blink_enabled ? ((at >> 4) & 7) : ((at >> 4) & 0x0F);
+                const bool hidden = blink_enabled && (at & 0x80) && blink_phase;
+                const unsigned char glyph = hidden ? ' ' : ch;
+                WCHAR wide = L' ';
+                if (glyph)
+                    MultiByteToWideChar(437, 0, reinterpret_cast<const char *>(&glyph), 1, &wide, 1);
+                SetTextColor(dc, colors[fg]);
+                SetBkColor(dc, colors[bg]);
+                TextOutW(dc, int(x * 9), int(y * 16), &wide, 1);
             }
         }
+
         SelectObject(dc, old);
         DeleteObject(font);
     }
