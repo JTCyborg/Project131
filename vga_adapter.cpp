@@ -753,8 +753,8 @@ bool isa_vga_adapter_port_write(unsigned port, unsigned char value)
     if (!card_present) return false;
     flush_write_buffer();
     port = normalize_port(port);
-    if (port == 0x3E2) { vga.accel_index=value&63; return true; }
-    if (port == 0x3E3) { unsigned i=vga.accel_index&63; vga.accel_regs[i]=value; if(i==0) execute_2d(value); if(i==0x34) { vga.dirty=true; if(vga.window) InvalidateRect(vga.window,nullptr,FALSE); } return true; }
+    if (port == 0x3E2) { ensure_window(); vga.accel_index=value&63; return true; }
+    if (port == 0x3E3) { ensure_window(); unsigned i=vga.accel_index&63; vga.accel_regs[i]=value; if(i==0) execute_2d(value); if(i==0x34) { vga.dirty=true; if(vga.window) InvalidateRect(vga.window,nullptr,FALSE); } return true; }
     if (port == 0x3E0) { vga.vbe_index = value; return true; }
     if (port == 0x3E1) { ensure_window(); switch (vga.vbe_index) { case 0:vga.vbe_regs[1]=(vga.vbe_regs[1]&0xFF00)|value;break; case 1:vga.vbe_regs[1]=(vga.vbe_regs[1]&0x00FF)|(unsigned(value)<<8);break; case 2:vga.vbe_regs[2]=(vga.vbe_regs[2]&0xFF00)|value;break; case 3:vga.vbe_regs[2]=(vga.vbe_regs[2]&0x00FF)|(unsigned(value)<<8);break; case 4:vga.vbe_regs[3]=value;break; case 5:vga.vbe_regs[4]=value; if(value&1) configure_vbe_mode(vga.vbe_regs[1],vga.vbe_regs[2],vga.vbe_regs[3]); else {vga.vbe_enabled=0;vga.rgb565_mode=0;decode_mode();} break; case 6:vga.bank=value&(APERTURE_BANKS-1);break; default:break;} vga.dirty=true;return true; }
     if (port < 0x3B0 || port > 0x3DF) return false;
