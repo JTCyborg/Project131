@@ -93,6 +93,10 @@ namespace
             vga.width = w;
             vga.height = h;
             vga.text_mode = text;
+            // Drop the old frame on every graphics/text transition. WM_PAINT
+            // will then redraw only the newly selected mode.
+            if (text)
+                ZeroMemory(vga.pixels, sizeof(vga.pixels));
             vga.dirty = true;
             // Keep the VGA output window at a stable size. Resolution changes
             // affect only the source framebuffer; WM_PAINT scales it to the
@@ -431,6 +435,17 @@ namespace
 
     static void render_text(HDC dc)
     {
+        // A mode switch must never leave the previous graphics framebuffer
+        // visible underneath an empty or partially populated text screen.
+        RECT client;
+        GetClipBox(dc, &client);
+        HBRUSH background = CreateSolidBrush(RGB(0, 0, 0));
+        if (background)
+        {
+            FillRect(dc, &client, background);
+            DeleteObject(background);
+        }
+
         // VGA text rendering uses character/attribute planes plus the font
         // bitmap stored in plane 2. This deliberately avoids host fonts:
         // glyph shape, 8/9-dot width and cursor now come from VGA state.
