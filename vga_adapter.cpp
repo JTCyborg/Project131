@@ -780,12 +780,12 @@ bool isa_vga_adapter_port_write(unsigned port, unsigned char value)
         vga.crtc[vga.crtc_index & 0x3F] = value & trident_crtc_mask(vga.crtc_index);
         if (vga.crtc_index == 0x1E)
             vga.display_mask = (value & 0x80) ? (VRAM_SIZE - 1) : 0x3FFFF;
-        vga.dirty = true; return true;
+        decode_mode(); vga.dirty = true; return true;
     case 0x3C6:
         if (vga.ramdac_state == 4) {
             vga.ramdac_state = 0; vga.ramdac_ctrl = value;
             switch (value >> 5) { case 0: case 1: case 2: case 3: vga.bpp=8; break; case 5:vga.bpp=15;break; case 6:vga.bpp=24;break; case 7:vga.bpp=16;break; }
-            vga.dirty = true; return true;
+            vga.dirty = true; decode_mode(); return true;
         }
         vga.dac_mask = value; return true;
     case 0x3C7: vga.ramdac_state=0; vga.dac_read = value; vga.dac_component = 0; return true;
@@ -813,7 +813,7 @@ bool isa_vga_adapter_port_write(unsigned port, unsigned char value)
         vga.misc_out = (vga.misc_out & ~0x0C) | ((value & 3) << 2);
         vga.newctrl2 = (vga.newctrl2 & ~1) | ((value & 4) >> 2);
         vga.oldctrl1 = (vga.oldctrl1 & ~0x10) | ((value & 8) << 1);
-        vga.dirty = true; return true;
+        decode_mode(); vga.dirty = true; return true;
     default: return false;
     }
 }
