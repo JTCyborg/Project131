@@ -194,4 +194,4 @@ For 8-bpp indexed mode, the values are palette indices, so a programmed DAC
 palette turns the interpolated indices into a colour gradient. For packed
 multi-byte modes, interpolation is performed independently for each stored
 pixel byte; use 8-bpp for indexed-palette gradients. A one-pixel-wide
-rectangle is filled with the start value.
+rectangle is filled with the start value. Diagnostic status values distinguish disabled VBE (81h), an invalid rectangle (82h), an invalid VRAM address (83h), and an unsupported command (84h).
