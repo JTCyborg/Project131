@@ -1186,14 +1186,23 @@ bool isa_vga_adapter_port_write(unsigned port, unsigned char value)
         switch (vga.gc_index & 0x0F)
         {
         case 0x06:
+        {
+            // PCem's generic SVGA mapping uses 64 KiB for A0000 and
+            // 0x7FFF for the two 32-KiB windows. TVGA8900D has one
+            // specific override: entering the 128-KiB A0000 aperture
+            // from either smaller mapping enables a linear 128-KiB mask.
+            const unsigned char old_gc6 = vga.gc[6];
             vga.gc[6] = value;
             switch (value & 0x0C)
             {
-            case 0x00: vga.banked_mask = 0x1FFFF; break;
+            case 0x00: vga.banked_mask = 0x0FFFF; break;
             case 0x04: vga.banked_mask = 0x0FFFF; break;
             default: vga.banked_mask = 0x07FFF; break;
             }
+            if ((old_gc6 & 0x0C) != 0 && (value & 0x0C) == 0)
+                vga.banked_mask = 0x1FFFF;
             break;
+        }
         case 0x0E:
             // Match PCem's TVGA8900D GDC bank register encoding.
             vga.gc[0x0E] = value ^ 2;
