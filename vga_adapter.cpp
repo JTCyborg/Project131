@@ -470,6 +470,44 @@ namespace
             ((vga.seq[3] & 0x10) >> 2)) * 0x2000;
         const unsigned map_b = (((vga.seq[3] >> 2) & 0x03) |
             ((vga.seq[3] & 0x20) >> 3)) * 0x2000;
+        // A VGA adapter without a BIOS has no font ROM upload phase.
+        // Detect an untouched plane-2 font map and use a deterministic host
+        // fixed-pitch fallback so text remains visible until software loads
+        // a real VGA font into plane 2.
+        bool font_loaded = false;
+        for (unsigned i = 0; i < 256 * 32; ++i)
+        {
+            if (vga.vram[2 * vga.plane_size +
+                ((map_a + i) & (vga.plane_size - 1))] != 0)
+            {
+                font_loaded = true;
+                break;
+            }
+        }
+        if (!font_loaded && map_b != map_a)
+        {
+            for (unsigned i = 0; i < 256 * 32; ++i)
+            {
+                if (vga.vram[2 * vga.plane_size +
+                    ((map_b + i) & (vga.plane_size - 1))] != 0)
+                {
+                    font_loaded = true;
+                    break;
+                }
+            }
+        }
+        HFONT fallback_font = nullptr;
+        HGDIOBJ old_font = nullptr;
+        if (!font_loaded)
+        {
+            fallback_font = CreateFontA(-int(char_height), int(char_width), 0, 0,
+                FW_NORMAL, FALSE, FALSE, FALSE, OEM_CHARSET,
+                OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, NONANTIALIASED_QUALITY,
+                FIXED_PITCH | FF_MODERN, "Terminal");
+            if (fallback_font)
+                old_font = SelectObject(dc, fallback_font);
+        }
+
         const bool blink_enabled = (vga.attr[0x10] & 0x08) != 0;
         const bool blink_phase = ((GetTickCount() / 500) & 1) != 0;
         const unsigned cursor_address = (unsigned(vga.crtc[0x0E]) << 8) | vga.crtc[0x0F];
@@ -494,6 +532,15 @@ namespace
                     (((start + y * pitch + x) & 0xFFFF) == cursor_address);
                 const DWORD fg_color = palette_color(fg, true);
                 const DWORD bg_color = palette_color(bg, true);
+                if (!font_loaded && fallback_font)
+                {
+                    char text_char = hidden ? ' ' : (ch ? char(ch) : ' ');
+                    SetTextColor(dc, fg_color);
+                    SetBkColor(dc, bg_color);
+                    TextOutA(dc, int(x * char_width), int(y * char_height),
+                        &text_char, 1);
+                    continue;
+                }
                 for (unsigned sy = 0; sy < char_height; ++sy)
                 {
                     const unsigned py = y * char_height + sy;
@@ -519,6 +566,10 @@ namespace
                 }
             }
         }
+        if (old_font)
+            SelectObject(dc, old_font);
+        if (fallback_font)
+            DeleteObject(fallback_font);
     }
 
     static LRESULT CALLBACK vga_window_proc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
