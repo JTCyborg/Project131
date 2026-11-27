@@ -2,6 +2,11 @@
 #include <new>
 #include "i486.h"
 
+// The i486 ISA I/O bus is wired to the Trident adapter. Keep the adapter
+// interface narrow: non-VGA ports remain unclaimed by this device.
+extern bool isa_vga_adapter_port_read(unsigned port, unsigned char &value);
+extern bool isa_vga_adapter_port_write(unsigned port, unsigned char value);
+
 namespace i486
 {
     static unsigned char *ram = 0;
@@ -211,7 +216,9 @@ namespace i486
 
     unsigned char in8(unsigned short port)
     {
-        (void)port;
+        unsigned char value = 0xFF;
+        if (isa_vga_adapter_port_read((unsigned)port, value))
+            return value;
         return 0xFF;
     }
 
@@ -229,8 +236,9 @@ namespace i486
 
     void out8(unsigned short port, unsigned char value)
     {
-        (void)port;
-        (void)value;
+        // VGA/Trident register writes are dispatched to the emulated adapter.
+        // Unhandled ISA ports are intentionally left for other devices.
+        isa_vga_adapter_port_write((unsigned)port, value);
     }
 
     void out16(unsigned short port, unsigned short value)
