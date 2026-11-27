@@ -1,7 +1,8 @@
 #pragma once
 
-// Software ISA VGA/SVGA adapter.
-// Physical VRAM: 1 MiB. Z80 aperture: C000-FFFF (16 KiB), 64 banks.
+// Trident TVGA8900D-compatible VGA/SVGA adapter core.
+// Physical VRAM: 1 MiB. The emulator exposes a separate Z80 bridge at C000-FFFF
+// (16 KiB window, 64 banks); this bridge is not a Trident ISA register.
 // 3DEh: bit 0 software mode, bit 1 aperture enable, bits 2..5 low bank bits,
 //       bit 6 legacy 640x480 RGB565 shortcut.
 // 3DFh: full aperture bank selector, 0..63.
