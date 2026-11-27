@@ -36,6 +36,8 @@ namespace
         unsigned char vbe_enabled, vbe_bpp;
         unsigned short vbe_xres, vbe_yres, vbe_pitch;
         unsigned char latch[4];
+        unsigned char readplane;
+        bool chain4, chain2_write, chain2_read;
         bool write_buffer_pending;
         unsigned write_buffer_address;
         unsigned char write_buffer_low;
@@ -874,6 +876,99 @@ namespace
         vga.dirty = true;
     }
 
+    // PCem's svga_read/svga_write address VGA planes as interleaved
+    // bytes in physical VRAM. This adapter stores four contiguous planes,
+    // so convert the ISA aperture address into a plane and plane offset.
+    static unsigned char isa_vga_mem_read(unsigned aperture_offset)
+    {
+        unsigned address = (aperture_offset & vga.banked_mask) + vga.read_bank;
+        unsigned offset = address;
+        unsigned plane = vga.readplane & 3;
+
+        if (vga.chain4)
+        {
+            offset = (address & ~3U) >> 2;
+            plane = address & 3U;
+        }
+        else if (vga.chain2_read)
+        {
+            plane = (plane & 2U) | (address & 1U);
+            offset = address & ~1U;
+        }
+
+        offset &= vga.plane_size - 1;
+        for (unsigned p = 0; p < 4; ++p)
+            vga.latch[p] = vga.vram[p * vga.plane_size + offset];
+
+        if (vga.gc[5] & 0x08)
+        {
+            unsigned result = 0xFF;
+            for (unsigned p = 0; p < 4; ++p)
+                if (vga.gc[7] & (1U << p))
+                {
+                    const unsigned compare = (vga.gc[2] & (1U << p)) ? 0xFF : 0;
+                    result &= ~(unsigned(vga.latch[p]) ^ compare);
+                }
+            return (unsigned char)result;
+        }
+        return vga.latch[plane];
+    }
+
+    static void isa_vga_mem_write(unsigned aperture_offset, unsigned char value)
+    {
+        unsigned address = (aperture_offset & vga.banked_mask) + vga.write_bank;
+        unsigned offset = address;
+        unsigned plane_mask = vga.seq[2] & 0x0F;
+
+        if (vga.chain4)
+        {
+            plane_mask = 1U << (address & 3U);
+            offset = (address & ~3U) >> 2;
+        }
+        else if (vga.chain2_write)
+        {
+            plane_mask &= 0x05;
+            if (address & 1U) plane_mask <<= 1;
+            offset = address & ~1U;
+        }
+
+        offset &= vga.plane_size - 1;
+        const unsigned mode = vga.gc[5] & 3;
+        const unsigned logical = (vga.gc[3] >> 3) & 3;
+        const unsigned rotated = rotate_right(value, vga.gc[3] & 7);
+        const unsigned bitmask = vga.gc[8];
+
+        for (unsigned p = 0; p < 4; ++p)
+        {
+            if (!(plane_mask & (1U << p))) continue;
+            unsigned char &dst = vga.vram[p * vga.plane_size + offset];
+            const unsigned char old = vga.latch[p];
+            if (mode == 1)
+            {
+                dst = old;
+                continue;
+            }
+
+            unsigned char source = (vga.gc[1] & (1U << p))
+                ? ((vga.gc[0] & (1U << p)) ? 0xFF : 0)
+                : (unsigned char)rotated;
+            unsigned char mask = (unsigned char)bitmask;
+            if (mode == 2)
+                source = (value & (1U << p)) ? 0xFF : 0;
+            else if (mode == 3)
+            {
+                source = (vga.gc[0] & (1U << p)) ? 0xFF : 0;
+                mask = (unsigned char)(rotated & bitmask);
+            }
+
+            if (logical == 1) source &= old;
+            else if (logical == 2) source |= old;
+            else if (logical == 3) source ^= old;
+            dst = (unsigned char)((source & mask) | (old & ~mask));
+        }
+        vga.dirty = true;
+    }
+
     // Z80 writes are 8-bit, while packed 15/16-bpp pixels are 16-bit.
     // Hold an aligned low byte and combine the immediately following high
     // byte into one adapter-side 16-bit VRAM commit.
@@ -1020,7 +1115,11 @@ bool isa_vga_adapter_port_write(unsigned port, unsigned char value)
         case 0x01: vga.seq[1] = value; break;
         case 0x02: vga.seq[2] = value & 0x0F; break;
         case 0x03: vga.seq[3] = value; break;
-        case 0x04: vga.seq[4] = value & 0x0F; break;
+        case 0x04:
+            vga.seq[4] = value & 0x0F;
+            vga.chain2_write = (value & 0x04) == 0;
+            vga.chain4 = (value & 0x08) != 0;
+            break;
         default: vga.seq[vga.seq_index & 0x0F] = value; break;
         }
         decode_mode(); vga.dirty = true; return true;
@@ -1029,8 +1128,13 @@ bool isa_vga_adapter_port_write(unsigned port, unsigned char value)
         switch (vga.gc_index & 0x0F)
         {
         case 0x06:
-            { unsigned char old = vga.gc[6]; vga.gc[6] = value;
-              if ((old & 0x0C) && !(value & 0x0C)) vga.banked_mask = 0x1FFFF; }
+            vga.gc[6] = value;
+            switch (value & 0x0C)
+            {
+            case 0x00: vga.banked_mask = 0x1FFFF; break;
+            case 0x04: vga.banked_mask = 0x0FFFF; break;
+            default: vga.banked_mask = 0x07FFF; break;
+            }
             break;
         case 0x0E:
             // Match PCem's TVGA8900D GDC bank register encoding.
@@ -1040,8 +1144,11 @@ bool isa_vga_adapter_port_write(unsigned port, unsigned char value)
             break;
         case 0x0F: vga.gc[0x0F] = value; trident_recalc_banking(); trident_recalc_timings(); break;
         case 0x02: vga.gc[2] = value; break;
-        case 0x04: vga.gc[4] = value & 3; break;
-        case 0x05: vga.gc[5] = value; break;
+        case 0x04: vga.gc[4] = value & 3; vga.readplane = value & 3; break;
+        case 0x05:
+            vga.gc[5] = value;
+            vga.chain2_read = (value & 0x10) != 0;
+            break;
         case 0x07: vga.gc[7] = value; break;
         case 0x08: vga.gc[8] = value; break;
         default: vga.gc[vga.gc_index & 0x0F] = value; break;
@@ -1115,7 +1222,7 @@ bool isa_vga_adapter_isa_mem_read(unsigned address, unsigned char &value)
     unsigned offset = 0;
     if (!decode_isa_vga_aperture(address, offset)) return false;
     flush_write_buffer();
-    value = vga_mem_read(offset, false);
+    value = isa_vga_mem_read(offset);
     return true;
 }
 
@@ -1125,7 +1232,7 @@ bool isa_vga_adapter_isa_mem_write(unsigned address, unsigned char value)
     unsigned offset = 0;
     if (!decode_isa_vga_aperture(address, offset)) return false;
     flush_write_buffer();
-    vga_mem_write(offset, value, false);
+    isa_vga_mem_write(offset, value);
     return true;
 }
 
