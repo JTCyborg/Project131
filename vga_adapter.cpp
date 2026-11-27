@@ -119,8 +119,9 @@ namespace
             vga.width = w;
             vga.height = h;
             vga.text_mode = text;
-            // A previous graphics frame may leave arbitrary bytes in plane 2.
-            // Only font data written after entering text mode is a valid text font.
+            // Project137 enters text mode directly without running the VGA BIOS.
+            // Seed plane 2 from the TVGA C4.3 character-generator ROM so text
+            // rendering never depends on a host operating-system font.
             if (text)
                 load_tvga_c43_font();
             // Drop the old frame on every graphics/text transition. WM_PAINT
