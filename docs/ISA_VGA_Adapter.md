@@ -159,7 +159,7 @@ and 3E3h (register data). It operates on the active packed-pixel framebuffer.
 
 | Register | Meaning |
 |---:|---|
-| 00h | Command: 1 solid rectangle, 2 BitBLT, 3 Bresenham line |
+| 00h | Command: 1 solid rectangle, 2 BitBLT, 3 Bresenham line, 4 horizontal gradient fill |
 | 01h | Status: 1 complete, 80h error |
 | 02h | ROP: 0 COPY, 1 XOR, 2 OR, 3 AND, 4 NOT source, 5 SET, 6 CLEAR |
 | 04h..07h | Source base address |
@@ -179,3 +179,19 @@ and 3E3h (register data). It operates on the active packed-pixel framebuffer.
 Multi-byte registers are little-endian. Coordinates are clipped to the active
 mode. The cursor bitmap uses 32 bytes; zero bits are transparent. Commands
 complete immediately in the emulator and update status synchronously.
+
+### Horizontal gradient fill (command 4)
+
+Command 4 fills the destination rectangle with a horizontal linear gradient.
+The start pixel is read from registers 1Ch..1Fh; the end pixel is read from
+20h..23h. The first column receives the exact start value and the final
+column receives the exact end value. Intermediate columns are linearly
+interpolated with integer rounding. The same horizontal gradient is repeated
+on every row. The command uses the selected ROP and validates the complete
+rectangle against the active framebuffer and VRAM bounds before writing.
+
+For 8-bpp indexed mode, the values are palette indices, so a programmed DAC
+palette turns the interpolated indices into a colour gradient. For packed
+multi-byte modes, interpolation is performed independently for each stored
+pixel byte; use 8-bpp for indexed-palette gradients. A one-pixel-wide
+rectangle is filled with the start value.
