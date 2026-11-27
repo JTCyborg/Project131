@@ -26,7 +26,7 @@ namespace
         bool interlace;
         unsigned char seq_index, gc_index, crtc_index, attr_index;
         unsigned char attr_data, attr_flip;
-        unsigned char misc_out, status;
+        unsigned char misc_out, status, dac_status;
         unsigned char dac[256][3], dac_mask;
         unsigned char dac_read, dac_write, dac_component;
         unsigned char bank;
@@ -712,11 +712,10 @@ namespace
             unsigned char src = (mode == 1) ? vga.latch[p] :
                 ((vga.gc[1] & (1U << p)) ? ((vga.gc[0] & (1U << p)) ? 0xFF : 0) : (unsigned char)rotated);
             unsigned char mask = (unsigned char)bitmask;
-            if (mode == 2)
-            {
-                src = (value & (1U << p)) ? 0xFF : 0;
+            if (mode == 1)
                 mask = 0xFF;
-            }
+            if (mode == 2)
+                src = (value & (1U << p)) ? 0xFF : 0;
             if (mode == 3)
             {
                 src = (vga.gc[0] & (1U << p)) ? 0xFF : 0;
@@ -767,8 +766,12 @@ bool isa_vga_adapter_port_read(unsigned port, unsigned char &value)
     port = normalize_crtc(port);
     switch (port)
     {
+    case 0x3C0: value = (vga.attr_index & 0x1F) | (vga.attr_palette_enable ? 0x20 : 0); return true;
     case 0x3C1: value = vga.attr[vga.attr_index & 0x1F]; return true;
-    case 0x3C2: value = vga.status; return true;
+    case 0x3C2:
+        value = ((unsigned(vga.dac[0][0]) + vga.dac[0][1] + vga.dac[0][2]) >= 0x50) ? 0x00 : 0x10;
+        return true;
+    case 0x3C4: value = vga.seq_index; return true;
     case 0x3C5:
         if ((vga.seq_index & 0x0F) == 0x0B) { vga.oldmode = 0; value = 0x33; return true; }
         if ((vga.seq_index & 0x0F) == 0x0C) { value = vga.seq[0x0C]; return true; }
@@ -776,6 +779,7 @@ bool isa_vga_adapter_port_read(unsigned port, unsigned char &value)
         if ((vga.seq_index & 0x0F) == 0x0E && vga.oldmode) { value = vga.oldctrl1; return true; }
         value = vga.seq[vga.seq_index & 0x0F]; return true;
     case 0x3CC: value = vga.misc_out; return true;
+    case 0x3CE: value = vga.gc_index; return true;
     case 0x3CF:
         if ((vga.gc_index & 0x0F) == 0x0E) { value = vga.gc[0x0E]; return true; }
         if ((vga.gc_index & 0x0F) == 0x0F) { value = vga.gc[0x0F]; return true; }
@@ -785,9 +789,10 @@ bool isa_vga_adapter_port_read(unsigned port, unsigned char &value)
     case 0x3C6:
         if (vga.ramdac_state == 4) { value = vga.ramdac_ctrl; return true; }
         ++vga.ramdac_state; value = vga.dac_mask; return true;
-    case 0x3C7: value = 0; return true;
+    case 0x3C7: value = vga.dac_status; return true;
     case 0x3C8: value = vga.dac_write; return true;
     case 0x3C9:
+        vga.dac_status = 3;
         value = vga.dac[vga.dac_read][vga.dac_component++] & 63;
         if (vga.dac_component == 3) { vga.dac_component = 0; ++vga.dac_read; }
         return true;
@@ -828,7 +833,10 @@ bool isa_vga_adapter_port_write(unsigned port, unsigned char value)
     switch (port)
     {
     case 0x3C0:
-        if (!vga.attr_flip) vga.attr_index = value & 0x1F;
+        if (!vga.attr_flip) {
+            vga.attr_index = value & 0x1F;
+            vga.attr_palette_enable = (value & 0x20) != 0;
+        }
         else vga.attr[vga.attr_index & 0x1F] = value;
         vga.attr_flip ^= 1;
         decode_mode();
@@ -851,6 +859,10 @@ bool isa_vga_adapter_port_write(unsigned port, unsigned char value)
             else { vga.seq[0x0E] = value ^ 2; vga.tvga_3d8 = vga.seq[0x0E] & 0x0F; trident_recalc_banking(); }
             trident_recalc_timings();
             break;
+        case 0x01: vga.seq[1] = value; break;
+        case 0x02: vga.seq[2] = value & 0x0F; break;
+        case 0x03: vga.seq[3] = value; break;
+        case 0x04: vga.seq[4] = value & 0x0F; break;
         default: vga.seq[vga.seq_index & 0x0F] = value; break;
         }
         decode_mode(); vga.dirty = true; return true;
@@ -864,6 +876,11 @@ bool isa_vga_adapter_port_write(unsigned port, unsigned char value)
             break;
         case 0x0E: vga.gc[0x0E] = value ^ 2; vga.tvga_3d9 = vga.gc[0x0E] & 0x0F; trident_recalc_banking(); break;
         case 0x0F: vga.gc[0x0F] = value; trident_recalc_banking(); trident_recalc_timings(); break;
+        case 0x02: vga.gc[2] = value; break;
+        case 0x04: vga.gc[4] = value & 3; break;
+        case 0x05: vga.gc[5] = value; break;
+        case 0x07: vga.gc[7] = value; break;
+        case 0x08: vga.gc[8] = value; break;
         default: vga.gc[vga.gc_index & 0x0F] = value; break;
         }
         decode_mode(); vga.dirty = true; return true;
@@ -883,12 +900,13 @@ bool isa_vga_adapter_port_write(unsigned port, unsigned char value)
             vga.dirty = true; trident_recalc_timings(); decode_mode(); return true;
         }
         vga.dac_mask = value; return true;
-    case 0x3C7: vga.ramdac_state=0; vga.dac_read = value; vga.dac_component = 0; return true;
-    case 0x3C8: vga.ramdac_state=0; vga.dac_write = value; vga.dac_component = 0; return true;
+    case 0x3C7: vga.ramdac_state=0; vga.dac_read = value; vga.dac_component = 0; vga.dac_status = 3; return true;
+    case 0x3C8: vga.ramdac_state=0; vga.dac_write = value; vga.dac_read = (value - 1) & 255; vga.dac_component = 0; vga.dac_status = 0; return true;
     case 0x3C9:
         vga.ramdac_state=0;
+        vga.dac_status = 0;
         vga.dac[vga.dac_write][vga.dac_component++] = value & 63;
-        if (vga.dac_component == 3) { vga.dac_component = 0; ++vga.dac_write; }
+        if (vga.dac_component == 3) { vga.dac_component = 0; vga.dac_write = (vga.dac_write + 1) & 255; }
         vga.dirty = true;
         return true;
     case 0x3DE:
