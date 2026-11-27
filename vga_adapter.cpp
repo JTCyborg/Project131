@@ -990,16 +990,28 @@ bool isa_vga_adapter_port_write(unsigned port, unsigned char value)
         switch (vga.seq_index & 0x0F)
         {
         case 0x0B: vga.oldmode = 1; return true;
-        case 0x0C: if (vga.seq[0x0C] & 0x80) vga.seq[0x0C] = value; return true;
+        // PCem: Sequencer register 0Ch is writable only when bit 7
+        // of Trident register 0Eh enables its extended register bank.
+        case 0x0C: if (vga.seq[0x0E] & 0x80) vga.seq[0x0C] = value; return true;
         case 0x0D:
             if (vga.oldmode) vga.oldctrl2 = value;
             else vga.newctrl2 = value;
             trident_recalc_timings();
             break;
         case 0x0E:
-            if (vga.oldmode) vga.oldctrl1 = value;
-            else { vga.seq[0x0E] = value ^ 2; vga.tvga_3d8 = vga.seq[0x0E] & 0x0F; trident_recalc_banking(); }
-            trident_recalc_timings();
+            if (vga.oldmode)
+            {
+                vga.oldctrl1 = value;
+                trident_recalc_timings();
+            }
+            else
+            {
+                // In new mode PCem stores the Trident-specific bit-swizzled
+                // value, then derives the sequencer-controlled bank from it.
+                vga.seq[0x0E] = value ^ 2;
+                vga.tvga_3d8 = vga.seq[0x0E] & 0x0F;
+                trident_recalc_banking();
+            }
             break;
         case 0x01: vga.seq[1] = value; break;
         case 0x02: vga.seq[2] = value & 0x0F; break;
@@ -1016,7 +1028,12 @@ bool isa_vga_adapter_port_write(unsigned port, unsigned char value)
             { unsigned char old = vga.gc[6]; vga.gc[6] = value;
               if ((old & 0x0C) && !(value & 0x0C)) vga.banked_mask = 0x1FFFF; }
             break;
-        case 0x0E: vga.gc[0x0E] = value ^ 2; vga.tvga_3d9 = vga.gc[0x0E] & 0x0F; trident_recalc_banking(); break;
+        case 0x0E:
+            // Match PCem's TVGA8900D GDC bank register encoding.
+            vga.gc[0x0E] = value ^ 2;
+            vga.tvga_3d9 = vga.gc[0x0E] & 0x0F;
+            trident_recalc_banking();
+            break;
         case 0x0F: vga.gc[0x0F] = value; trident_recalc_banking(); trident_recalc_timings(); break;
         case 0x02: vga.gc[2] = value; break;
         case 0x04: vga.gc[4] = value & 3; break;
