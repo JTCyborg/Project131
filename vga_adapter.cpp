@@ -464,60 +464,22 @@ namespace
         vga.dirty = true;
     }
 
-    static void render_text(HDC dc)
+    static void render_text()
     {
-        // A mode switch must never leave the previous graphics framebuffer
-        // visible underneath an empty or partially populated text screen.
-        RECT client;
-        GetClipBox(dc, &client);
-        HBRUSH background = CreateSolidBrush(RGB(0, 0, 0));
-        if (background)
-        {
-            FillRect(dc, &client, background);
-            DeleteObject(background);
-        }
+        // Render into the adapter's 32-bit framebuffer. Calling SetPixelV for
+        // every VGA dot made a full 720x400 text refresh perform hundreds of
+        // thousands of GDI calls; one DIB blit below presents the whole frame.
+        const unsigned width = vga.width;
+        const unsigned height = vga.height;
+        if (!width || !height || width * height > MAX_PIXELS)
+            return;
+        for (unsigned i = 0; i < width * height; ++i)
+            vga.pixels[i] = rgb(0, 0, 0);
 
-        // VGA text rendering uses character/attribute planes plus the font
-        // bitmap stored in plane 2. This deliberately avoids host fonts:
-        // glyph shape, 8/9-dot width and cursor now come from VGA state.
-        // Text scanout uses the CRTC memory address directly. The Z80
-        // bridge bank is only a CPU aperture selector: the guest already
-        // programs CRTC start address 8000h for data written through bank 6.
-        // Adding the bridge bank again would shift scanout to 10000h and
-        // display an empty blue-background screen.
         const unsigned start =
             ((unsigned(vga.crtc[0x0C]) << 8) | vga.crtc[0x0D]) &
             (vga.plane_size - 1);
-        // Temporary scanout diagnostics: expose the exact CRTC address and
-        // the first character/attribute bytes currently visible to the renderer.
-        // This distinguishes a VRAM write/addressing fault from a glyph/palette fault.
-        if (vga.window)
-        {
-            char diagnostic[192];
-            const unsigned first_attr = vga.vram[vga.plane_size + start];
-            const unsigned color_select = vga.attr[0x14] & 0x0F;
-            unsigned fg_index = vga.attr[first_attr & 0x0F] & 0x3F;
-            unsigned bg_index = vga.attr[(first_attr >> 4) & 0x0F] & 0x3F;
-            if (vga.attr[0x10] & 0x80) {
-                fg_index = (fg_index & 0x0F) | (color_select << 4);
-                bg_index = (bg_index & 0x0F) | (color_select << 4);
-            } else {
-                fg_index = (fg_index & 0x3F) | ((color_select & 0x0C) << 4);
-                bg_index = (bg_index & 0x3F) | ((color_select & 0x0C) << 4);
-            }
-            wsprintfA(diagnostic,
-                "Trident TVGA8900D MA=%04X C=%02X A=%02X AT10=%02X AT14=%02X "
-                "FG=%02X BG=%02X D0=%02X%02X%02X D1=%02X%02X%02X",
-                start & 0xFFFF, vga.vram[start], first_attr,
-                vga.attr[0x10], vga.attr[0x14], fg_index, bg_index,
-                vga.dac[0][0], vga.dac[0][1], vga.dac[0][2],
-                vga.dac[1][0], vga.dac[1][1], vga.dac[1][2]);
-            SetWindowTextA(vga.window, diagnostic);
-        }
         unsigned pitch = unsigned(vga.crtc[0x13]) * 2;
-        // Display scanout is addressed by the CRTC start-address registers.
-        // CPU aperture banking is independent and must not shift the displayed
-        // image; the guest selects a non-zero CRTC start address when needed.
         const unsigned char_width = (vga.seq[1] & 1) ? 8 : 9;
         const unsigned char_height = (vga.crtc[9] & 0x1F) + 1;
         unsigned columns = unsigned(vga.crtc[1]) + 1;
@@ -530,38 +492,10 @@ namespace
         if (!rows || rows > 100) rows = 25;
         if (pitch < columns) pitch = columns;
 
-        // VGA Sequencer Character Map Select: two independently selectable
-        // 8-KiB font maps. The selected map is addressed in plane 2.
-        // PCem svga.c: charseta/charsetb are byte addresses in the
-        // interleaved four-plane VRAM. Convert those addresses to plane-2
-        // offsets: each 64-KiB map selector advances 16 KiB in one plane,
-        // while the A16/B16 selector bit advances 8 KiB.
         const unsigned map_a = ((vga.seq[3] & 0x03) << 14) |
             ((vga.seq[3] & 0x10) ? 0x2000 : 0);
         const unsigned map_b = (((vga.seq[3] >> 2) & 0x03) << 14) |
             ((vga.seq[3] & 0x20) ? 0x2000 : 0);
-        // Never infer font validity from the contents of VRAM: a previous
-        // packed-pixel frame can leave non-zero garbage in plane 2. A font is
-        // considered present only after the guest writes plane 2 in text mode.
-        const bool font_loaded = vga.text_font_written;
-        HFONT fallback_font = nullptr;
-        HGDIOBJ old_font = nullptr;
-        if (!font_loaded)
-        {
-            fallback_font = CreateFontA(-int(char_height), int(char_width), 0, 0,
-                FW_NORMAL, FALSE, FALSE, FALSE, OEM_CHARSET,
-                OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, NONANTIALIASED_QUALITY,
-                FIXED_PITCH | FF_MODERN, "Terminal");
-            if (fallback_font)
-                old_font = SelectObject(dc, fallback_font);
-            else
-            {
-                fallback_font = (HFONT)GetStockObject(ANSI_FIXED_FONT);
-                if (fallback_font)
-                    old_font = SelectObject(dc, fallback_font);
-            }
-        }
-
         const bool blink_enabled = (vga.attr[0x10] & 0x08) != 0;
         const bool blink_phase = ((GetTickCount() / 500) & 1) != 0;
         const unsigned cursor_address = (unsigned(vga.crtc[0x0E]) << 8) | vga.crtc[0x0F];
@@ -586,39 +520,13 @@ namespace
                     (((start + y * pitch + x) & 0xFFFF) == cursor_address);
                 const DWORD fg_color = palette_color(fg, true);
                 const DWORD bg_color = palette_color(bg, true);
-                if (!font_loaded && fallback_font)
-                {
-                    // Until the guest uploads a VGA character generator into
-                    // plane 2, use the host's fixed OEM font as a diagnostic
-                    // fallback. Do not route these fallback colours through
-                    // the still-being-initialized VGA attribute/DAC palette:
-                    // a reset or partially programmed DAC can turn the whole
-                    // text screen blue and make otherwise valid text unreadable.
-                    char text_char = hidden ? ' ' : (ch ? char(ch) : ' ');
-                    // The fallback glyph source must still honour VGA text
-                    // attributes. Without a guest-loaded plane-2 font, use
-                    // the host glyph shape but keep VGA foreground/background.
-                    SetTextColor(dc, gdi_color(hidden ? bg_color : fg_color));
-                    SetBkColor(dc, gdi_color(bg_color));
-                    // ETO_OPAQUE paints the complete VGA character cell,
-                    // while ETO_CLIPPED prevents a host-font glyph whose
-                    // metrics differ from 8/9-dot VGA cells from bleeding
-                    // into the next character or beyond column 79.
-                    RECT cell_rect = {
-                        LONG(x * char_width),
-                        LONG(y * char_height),
-                        LONG((x + 1) * char_width),
-                        LONG((y + 1) * char_height)
-                    };
-                    ExtTextOutA(dc, cell_rect.left, cell_rect.top,
-                        ETO_OPAQUE | ETO_CLIPPED, &cell_rect, &text_char, 1, nullptr);
-                    continue;
-                }
+
                 for (unsigned sy = 0; sy < char_height; ++sy)
                 {
                     const unsigned py = y * char_height + sy;
+                    if (py >= height) break;
                     const unsigned font_row = sy & 31;
-                    unsigned char bits = hidden ? 0 :
+                    const unsigned char bits = hidden ? 0 :
                         vga.vram[2 * vga.plane_size + ((glyph_base + font_row) & (vga.plane_size - 1))];
                     const bool cursor_line = cursor_here &&
                         (cursor_start <= cursor_end ?
@@ -626,23 +534,19 @@ namespace
                             (sy >= cursor_start || sy <= cursor_end));
                     for (unsigned sx = 0; sx < char_width; ++sx)
                     {
+                        const unsigned px = x * char_width + sx;
+                        if (px >= width) break;
                         bool on = sx < 8 && ((bits >> (7 - sx)) & 1);
-                        // VGA's ninth dot repeats bit 0 for line-drawing
-                        // characters C0h-DFh when line-graphics is enabled.
                         if (sx == 8 && (vga.attr[0x10] & 0x04) &&
                             ch >= 0xC0 && ch <= 0xDF)
                             on = (bits & 1) != 0;
                         if (cursor_line) on = !on;
-                        SetPixelV(dc, int(x * char_width + sx), int(py),
-                            gdi_color(on ? fg_color : bg_color));
+                        vga.pixels[py * width + px] = on ? fg_color : bg_color;
                     }
                 }
             }
         }
-        if (old_font)
-            SelectObject(dc, old_font);
-        if (fallback_font)
-            DeleteObject(fallback_font);
+        vga.dirty = false;
     }
 
     static LRESULT CALLBACK vga_window_proc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
@@ -656,26 +560,20 @@ namespace
             const int status_height = 24;
             const int image_height = rc.bottom > status_height ? rc.bottom - status_height : rc.bottom;
             if (vga.text_mode)
-            {
-                // Preserve the legacy text renderer while reserving a status strip.
-                SaveDC(dc);
-                IntersectClipRect(dc, 0, 0, rc.right, image_height);
-                render_text(dc);
-                RestoreDC(dc, -1);
-            }
+                render_text();
             else
-            {
                 render_pixels();
-                BITMAPINFO bmi = {};
-                bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
-                bmi.bmiHeader.biWidth = LONG(vga.width);
-                bmi.bmiHeader.biHeight = -LONG(vga.height);
-                bmi.bmiHeader.biPlanes = 1;
-                bmi.bmiHeader.biBitCount = 32;
-                bmi.bmiHeader.biCompression = BI_RGB;
-                StretchDIBits(dc, 0, 0, rc.right, image_height, 0, 0, vga.width, vga.height,
-                    vga.pixels, &bmi, DIB_RGB_COLORS, SRCCOPY);
-            }
+
+            // Both text and graphics use the same fast 32-bit DIB presentation.
+            BITMAPINFO bmi = {};
+            bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+            bmi.bmiHeader.biWidth = LONG(vga.width);
+            bmi.bmiHeader.biHeight = -LONG(vga.height);
+            bmi.bmiHeader.biPlanes = 1;
+            bmi.bmiHeader.biBitCount = 32;
+            bmi.bmiHeader.biCompression = BI_RGB;
+            StretchDIBits(dc, 0, 0, rc.right, image_height, 0, 0, vga.width, vga.height,
+                vga.pixels, &bmi, DIB_RGB_COLORS, SRCCOPY);
 
             // Persistent mode information, independent of framebuffer size.
             RECT status = { 0, image_height, rc.right, rc.bottom };
