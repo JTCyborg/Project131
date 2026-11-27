@@ -439,25 +439,35 @@ namespace
             RGB(255,85,85),RGB(255,85,255),RGB(255,255,85),RGB(255,255,255)
         };
 
-        // Project137 uses the Z80 bridge's bank 6 as its text-memory window.
-        // In the bridge mapping this is plane offset 8000h; the CRTC start
-        // address and offset advance once per character cell in each plane.
-        unsigned start = (unsigned(vga.crtc[0x0C]) << 8) | vga.crtc[0x0D];
+        // The text page is exposed to Project137 through bridge bank 6,
+        // but the visible geometry and page stride are VGA CRTC-controlled.
+        const unsigned start = (unsigned(vga.crtc[0x0C]) << 8) | vga.crtc[0x0D];
         unsigned pitch = unsigned(vga.crtc[0x13]) * 2;
-        if (!pitch) pitch = 80;
         const unsigned text_base = 0x8000;
+        const unsigned char_width = (vga.seq[1] & 1) ? 8 : 9;
+        const unsigned char_height = (vga.crtc[9] & 0x1F) + 1;
+        unsigned columns = unsigned(vga.crtc[1]) + 1;
+        unsigned vertical = unsigned(vga.crtc[0x12]) |
+            (unsigned(vga.crtc[7] & 0x02) << 7) |
+            (unsigned(vga.crtc[7] & 0x40) << 3);
+        unsigned rows = (vertical + 1) / char_height;
+        if (!pitch) pitch = columns;
+        if (!columns || columns > 160) columns = 80;
+        if (!rows || rows > 100) rows = 25;
+        if (pitch < columns) pitch = columns;
+
         const bool blink_enabled = (vga.attr[0x10] & 0x08) != 0;
         const bool blink_phase = ((GetTickCount() / 500) & 1) != 0;
-
-        HFONT font = CreateFontW(-16, 8, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE,
-            OEM_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, NONANTIALIASED_QUALITY,
-            FIXED_PITCH | FF_MODERN, L"Terminal");
+        HFONT font = CreateFontW(-int(char_height), int(char_width), 0, 0,
+            FW_NORMAL, FALSE, FALSE, FALSE, OEM_CHARSET, OUT_DEFAULT_PRECIS,
+            CLIP_DEFAULT_PRECIS, NONANTIALIASED_QUALITY, FIXED_PITCH | FF_MODERN,
+            L"Terminal");
         HGDIOBJ old = SelectObject(dc, font);
         SetBkMode(dc, OPAQUE);
 
-        for (unsigned y = 0; y < 25; ++y)
+        for (unsigned y = 0; y < rows; ++y)
         {
-            for (unsigned x = 0; x < 80; ++x)
+            for (unsigned x = 0; x < columns; ++x)
             {
                 const unsigned cell = (text_base + start + y * pitch + x) & (vga.plane_size - 1);
                 const unsigned char ch = vga.vram[cell];
@@ -471,7 +481,7 @@ namespace
                     MultiByteToWideChar(437, 0, reinterpret_cast<const char *>(&glyph), 1, &wide, 1);
                 SetTextColor(dc, colors[fg]);
                 SetBkColor(dc, colors[bg]);
-                TextOutW(dc, int(x * 9), int(y * 16), &wide, 1);
+                TextOutW(dc, int(x * char_width), int(y * char_height), &wide, 1);
             }
         }
 
@@ -520,9 +530,9 @@ namespace
             SetTextColor(dc, RGB(240, 240, 240));
             char mode_text[96];
             unsigned bpp = vga.vbe_enabled ? vga.vbe_bpp :
-                (vga.text_mode ? 4 : ((vga.seq[4] & 8) ? 8 : 4));
+                (vga.bpp ? vga.bpp : ((vga.seq[4] & 8) ? 8 : 4));
             if (vga.text_mode)
-                wsprintfA(mode_text, "VGA TEXT  %u x %u  %u BPP", vga.width, vga.height, bpp);
+                wsprintfA(mode_text, "VGA TEXT  %u x %u  CRTC", vga.width, vga.height);
             else
                 wsprintfA(mode_text, "VGA  %u x %u  %u BPP", vga.width, vga.height, bpp);
             TextOutA(dc, 8, image_height + 4, mode_text, lstrlenA(mode_text));
@@ -885,7 +895,7 @@ bool isa_vga_adapter_port_write(unsigned port, unsigned char value)
         switch (vga.seq_index & 0x0F)
         {
         case 0x0B: vga.oldmode = 1; return true;
-        case 0x0C: if (vga.seq[0x0E] & 0x80) vga.seq[0x0C] = value; return true;
+        case 0x0C: if (vga.seq[0x0C] & 0x80) vga.seq[0x0C] = value; return true;
         case 0x0D:
             if (vga.oldmode) vga.oldctrl2 = value;
             else vga.newctrl2 = value;
