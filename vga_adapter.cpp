@@ -49,6 +49,7 @@ namespace
         bool dirty;
         bool text_mode;
         bool text_font_written;
+        DWORD blink_tick;
         unsigned char accel_regs[64];
         unsigned char accel_index;
     };
@@ -377,7 +378,7 @@ namespace
         } else { vga.accel_regs[1]=0x84; return; }
         vga.accel_regs[1]=1;
         vga.dirty=true;
-        if(vga.window) InvalidateRect(vga.window,nullptr,FALSE);
+        // Presentation is deferred to the adapter's bounded-rate timer.
     }
     static void render_2d_cursor()
     {
@@ -559,10 +560,16 @@ namespace
             GetClientRect(hwnd, &rc);
             const int status_height = 24;
             const int image_height = rc.bottom > status_height ? rc.bottom - status_height : rc.bottom;
-            if (vga.text_mode)
-                render_text();
-            else
-                render_pixels();
+            // WM_PAINT can also be caused by exposure or resizing. Rebuild
+            // the framebuffer only after guest-visible state has changed;
+            // otherwise present the cached DIB without scanning all VRAM.
+            if (vga.dirty)
+            {
+                if (vga.text_mode)
+                    render_text();
+                else
+                    render_pixels();
+            }
 
             // Both text and graphics use the same fast 32-bit DIB presentation.
             BITMAPINFO bmi = {};
@@ -596,8 +603,17 @@ namespace
         }
         if (msg == WM_TIMER && wp == 1)
         {
-            // Guest VRAM writes only mark the frame dirty. Present at a
-            // bounded rate instead of scheduling WM_PAINT from the write path.
+            // Text blink and the hardware cursor change without VRAM writes.
+            // Schedule those changes at 2 Hz, not on every 30-Hz frame tick.
+            const DWORD now = GetTickCount();
+            if (vga.text_mode && now - vga.blink_tick >= 500)
+            {
+                vga.blink_tick = now;
+                if ((vga.attr[0x10] & 0x08) || !(vga.crtc[0x0A] & 0x20))
+                    vga.dirty = true;
+            }
+            // Guest writes only mark the frame dirty. Present at a bounded
+            // rate instead of scheduling WM_PAINT from the write path.
             if (vga.dirty)
                 InvalidateRect(hwnd, nullptr, FALSE);
             return 0;
@@ -659,6 +675,7 @@ namespace
         vga.ma_latch = 0;
         vga.clock_hz = 36000000;
         vga.ramdac_ctrl = 0;
+        vga.blink_tick = GetTickCount();
         trident_recalc_timings();
         trident_recalc_banking();
     }
@@ -1048,7 +1065,7 @@ bool isa_vga_adapter_port_write(unsigned port, unsigned char value)
     flush_write_buffer();
     port = normalize_port(port);
     if (port == 0x3E2) { ensure_window(); vga.accel_index=value&63; return true; }
-    if (port == 0x3E3) { ensure_window(); unsigned i=vga.accel_index&63; vga.accel_regs[i]=value; if(i==0) execute_2d(value); if(i==0x34) { vga.dirty=true; if(vga.window) InvalidateRect(vga.window,nullptr,FALSE); } return true; }
+    if (port == 0x3E3) { ensure_window(); unsigned i=vga.accel_index&63; vga.accel_regs[i]=value; if(i==0) execute_2d(value); if(i==0x34) vga.dirty=true; return true; }
     if (port == 0x3E0) { vga.vbe_index = value; return true; }
     if (port == 0x3E1) { ensure_window(); switch (vga.vbe_index) { case 0:vga.vbe_regs[1]=(vga.vbe_regs[1]&0xFF00)|value;break; case 1:vga.vbe_regs[1]=(vga.vbe_regs[1]&0x00FF)|(unsigned(value)<<8);break; case 2:vga.vbe_regs[2]=(vga.vbe_regs[2]&0xFF00)|value;break; case 3:vga.vbe_regs[2]=(vga.vbe_regs[2]&0x00FF)|(unsigned(value)<<8);break; case 4:vga.vbe_regs[3]=value;break; case 5:vga.vbe_regs[4]=value; if(value&1) configure_vbe_mode(vga.vbe_regs[1],vga.vbe_regs[2],vga.vbe_regs[3]); else {vga.vbe_enabled=0;vga.rgb565_mode=0;decode_mode();} break; case 6:vga.bank=value&(APERTURE_BANKS-1);break; default:break;} vga.dirty=true;return true; }
     if (port < 0x3B0 || port > 0x3DF) return false;
@@ -1291,8 +1308,8 @@ void isa_vga_adapter_capture_frame(const unsigned char *source, unsigned width, 
     ensure_window();
     if (!vga.software_mode)
         render_transparent(source, width, height, stride, bits_per_pixel, yuy2);
-    if (vga.window && vga.dirty)
-        InvalidateRect(vga.window, nullptr, FALSE);
+    // The adapter timer presents captured frames at a bounded rate; do not
+    // bypass it when the host renderer supplies a new source frame.
 }
 
 void isa_vga_adapter_done()
