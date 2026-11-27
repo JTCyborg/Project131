@@ -357,7 +357,7 @@ namespace
         } else if(cmd==3) {
             // Clip each Bresenham sample against the active viewport. This
             // preserves the original line rasterization for in-range lines.
-            int x=(int)dx,y=(int)dy,x2=(int)accel16(0x20),y2=(int)accel16(0x22);
+            int x=(short)dx,y=(short)dy,x2=(short)accel16(0x20),y2=(short)accel16(0x22);
             if (dp < vga.vbe_xres*b) return;
             int ax=abs(x2-x), sxdir=x<x2?1:-1, ay=-abs(y2-y), sydir=y<y2?1:-1, err=ax+ay;
             for(;;) {
