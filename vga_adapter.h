@@ -1,7 +1,7 @@
 #pragma once
 
 // Trident TVGA8900D-compatible VGA/SVGA adapter core.
-// Physical VRAM: 1 MiB. The emulator exposes a separate Z80 bridge at C000-FFFF
+// Physical VRAM: 256/512/1024 KiB (default 1024). The emulator exposes a separate Z80 bridge at C000-FFFF
 // (16 KiB window, 64 banks); this bridge is not a Trident ISA register.
 // 3DEh: bit 0 software mode, bit 1 aperture enable, bits 2..5 low bank bits,
 //       bit 6 legacy 640x480 RGB565 shortcut.
