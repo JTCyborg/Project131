@@ -772,6 +772,8 @@ namespace
         return vga.status;
     }
 
+    static unsigned chain4_plane_offset(unsigned address);
+
     static unsigned char vga_mem_read(unsigned address, bool spectrum_bridge = true)
     {
         // The Spectrum bridge contributes its own 16-KiB window bank.
