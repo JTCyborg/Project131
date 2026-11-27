@@ -106,6 +106,8 @@ namespace
             return;
         if (vga.rgb565_mode)
             set_mode(640, 480, false);           // 640x480 RGB565 direct colour
+        else if (vga.bpp > 8 || (vga.oldctrl2 & 0x10))
+            set_mode(640, 480, false);             // Trident packed-pixel/high-resolution mode
         else if (vga.seq[4] & 8)
             set_mode(320, 200, false);             // VGA mode 13h, chain-4
         else if (vga.gc[6] & 1)
@@ -137,6 +139,27 @@ namespace
                     if (vga.vbe_bpp == 15) { unsigned q=p[0]|(unsigned(p[1])<<8); r=((q>>10)&31)*255/31; g=((q>>5)&31)*255/31; b=(q&31)*255/31; }
                     else if (vga.vbe_bpp == 16) { unsigned q=p[0]|(unsigned(p[1])<<8); r=((q>>11)&31)*255/31; g=((q>>5)&63)*255/63; b=(q&31)*255/31; }
                     else { b=p[0]; g=p[1]; r=p[2]; }
+                    dst[x] = rgb(r,g,b);
+                }
+            }
+        }
+        else if (vga.bpp > 8 || (vga.oldctrl2 & 0x10))
+        {
+            unsigned bytes = (vga.bpp + 7) >> 3;
+            unsigned pitch = vga.crtc[0x13] ? unsigned(vga.crtc[0x13]) * 8U : vga.width * bytes;
+            unsigned start = (unsigned(vga.crtc[0x0C]) << 8) | vga.crtc[0x0D];
+            for (unsigned y = 0; y < vga.height; ++y)
+            {
+                DWORD *dst = vga.pixels + y * vga.width;
+                const unsigned char *src = vga.vram + ((start + y * pitch) & vga.vram_mask);
+                for (unsigned x = 0; x < vga.width; ++x)
+                {
+                    const unsigned char *p = src + x * bytes;
+                    unsigned r = 0, g = 0, b = 0;
+                    if (vga.bpp == 8) { dst[x] = palette_color(p[0]); continue; }
+                    if (vga.bpp == 15) { unsigned q=p[0] | (unsigned(p[1]) << 8); r=((q>>10)&31)*255/31; g=((q>>5)&31)*255/31; b=(q&31)*255/31; }
+                    else if (vga.bpp == 16) { unsigned q=p[0] | (unsigned(p[1]) << 8); r=((q>>11)&31)*255/31; g=((q>>5)&63)*255/63; b=(q&31)*255/31; }
+                    else if (vga.bpp == 24) { b=p[0]; g=p[1]; r=p[2]; }
                     dst[x] = rgb(r,g,b);
                 }
             }
@@ -533,7 +556,7 @@ namespace
     {
         unsigned linear = (vga.read_bank + unsigned(vga.bank) * APERTURE_SIZE +
             (address & 0x3FFF)) & vga.vram_mask;
-        if (vga.vbe_enabled) return vga.vram[linear];
+        if (vga.vbe_enabled || vga.bpp > 8 || (vga.oldctrl2 & 0x10)) return vga.vram[linear];
         if (vga.rgb565_mode)
             return vga.vram[linear];
         if (vga.seq[4] & 8)
@@ -564,7 +587,7 @@ namespace
     {
         unsigned linear = (vga.write_bank + unsigned(vga.bank) * APERTURE_SIZE +
             (address & 0x3FFF)) & vga.vram_mask;
-        if (vga.vbe_enabled) { vga.vram[linear] = value; vga.dirty = true; return; }
+        if (vga.vbe_enabled || vga.bpp > 8 || (vga.oldctrl2 & 0x10)) { vga.vram[linear] = value; vga.dirty = true; return; }
         if (vga.rgb565_mode)
         {
             vga.vram[linear] = value;
@@ -811,11 +834,12 @@ bool isa_vga_adapter_mem_write(unsigned address, unsigned char value)
     if (!card_present || !vga.initialized || !vga.software_mode || !vga.aperture || (address & 0xC000) != 0xC000)
         return false;
 
-    const bool packed16 = vga.vbe_enabled &&
-        (vga.vbe_bpp == 15 || vga.vbe_bpp == 16);
+    const bool packed16 = (vga.vbe_enabled && (vga.vbe_bpp == 15 || vga.vbe_bpp == 16)) ||
+        (!vga.vbe_enabled && (vga.bpp == 15 || vga.bpp == 16));
     if (packed16)
     {
-        unsigned linear = unsigned(vga.bank) * APERTURE_SIZE + (address & 0x3FFF);
+        unsigned linear = (vga.write_bank + unsigned(vga.bank) * APERTURE_SIZE +
+            (address & 0x3FFF)) & vga.vram_mask;
         if (vga.write_buffer_pending &&
             linear == vga.write_buffer_address + 1)
         {
