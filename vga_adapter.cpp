@@ -518,8 +518,13 @@ namespace
             vga.pixels[i] = rgb(0, 0, 0);
 
         const unsigned start =
-            ((unsigned(vga.crtc[0x0C]) << 8) | vga.crtc[0x0D]) &
-            (vga.plane_size - 1);
+            (unsigned(vga.crtc[0x0C]) << 8) | vga.crtc[0x0D];
+        // Trident extended CRTC MA bits are added before the VGA's
+        // four-byte interleaved address conversion (PCem tvga_recalctimings).
+        const unsigned display_start = start +
+            (((vga.crtc[0x1E] & 0xA0) == 0xA0) ? 0x10000U : 0U) +
+            ((vga.crtc[0x27] & 0x01) ? 0x20000U : 0U) +
+            ((vga.crtc[0x27] & 0x02) ? 0x40000U : 0U);
         unsigned pitch = unsigned(vga.crtc[0x13]) * 2;
         const unsigned char_width = (vga.seq[1] & 1) ? 8 : 9;
         const unsigned char_height = (vga.crtc[9] & 0x1F) + 1;
@@ -553,7 +558,8 @@ namespace
                 // interleaved bytes per character and rowoffset << 3 per
                 // character row. The remapped physical byte address selects
                 // plane 0 for the character and plane 1 for its attribute.
-                const unsigned ma = ((start << 2) + (y * unsigned(vga.crtc[0x13]) << 3) + (x << 2));
+                const unsigned ma = ((display_start << 2) +
+                    (y * unsigned(vga.crtc[0x13]) << 3) + (x << 2));
                 const unsigned physical = text_display_address(ma, 0);
                 const unsigned cell = (physical >> 2) & (vga.plane_size - 1);
                 const unsigned char ch = vga.vram[cell];
