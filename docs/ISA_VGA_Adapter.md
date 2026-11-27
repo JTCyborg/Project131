@@ -33,6 +33,25 @@ There are two independent paths:
 
 The legacy path is a simplified VGA register model. It is not a complete IBM VGA clone and does not include an INT 10h BIOS implementation.
 
+### VGA text memory
+
+The 80×25 text renderer reads character and attribute data from separate VGA
+planes through aperture bank 6:
+
+- Select aperture bank 6 at port 3DFh.
+- The visible 80×25 page starts at aperture address C000h.
+- Character bytes are stored in VGA plane 0; attribute bytes are stored at
+  the same cell offsets in plane 1.
+- Select sequencer register 2 (map mask) at ports 3C4h/3C5h: value 01h
+  enables character-plane writes; value 02h enables attribute-plane writes.
+- Select graphics-controller register 4 (read map select) at ports 3CEh/3CFh:
+  value 00h reads characters; value 01h reads attributes.
+- Text attributes use the low nibble for foreground and the high nibble for
+  background, using the 16-colour EGA palette.
+
+The model implements text-cell storage and rendering, but does not provide
+BIOS teletype services, cursor control, or a full VGA CRTC timing model.
+
 ## Packed-pixel SVGA modes
 
 The indexed extension at ports 3E0h/3E1h selects these formats. The mode is accepted only when the complete visible framebuffer fits in 1 MiB.
