@@ -45,6 +45,7 @@ namespace
         bool initialized;
         bool dirty;
         bool text_mode;
+        bool text_font_written;
         unsigned char accel_regs[64];
         unsigned char accel_index;
     };
@@ -93,6 +94,10 @@ namespace
             vga.width = w;
             vga.height = h;
             vga.text_mode = text;
+            // A previous graphics frame may leave arbitrary bytes in plane 2.
+            // Only font data written after entering text mode is a valid text font.
+            if (text)
+                vga.text_font_written = false;
             // Drop the old frame on every graphics/text transition. WM_PAINT
             // will then redraw only the newly selected mode.
             if (text)
@@ -470,32 +475,10 @@ namespace
             ((vga.seq[3] & 0x10) >> 2)) * 0x2000;
         const unsigned map_b = (((vga.seq[3] >> 2) & 0x03) |
             ((vga.seq[3] & 0x20) >> 3)) * 0x2000;
-        // A VGA adapter without a BIOS has no font ROM upload phase.
-        // Detect an untouched plane-2 font map and use a deterministic host
-        // fixed-pitch fallback so text remains visible until software loads
-        // a real VGA font into plane 2.
-        bool font_loaded = false;
-        for (unsigned i = 0; i < 256 * 32; ++i)
-        {
-            if (vga.vram[2 * vga.plane_size +
-                ((map_a + i) & (vga.plane_size - 1))] != 0)
-            {
-                font_loaded = true;
-                break;
-            }
-        }
-        if (!font_loaded && map_b != map_a)
-        {
-            for (unsigned i = 0; i < 256 * 32; ++i)
-            {
-                if (vga.vram[2 * vga.plane_size +
-                    ((map_b + i) & (vga.plane_size - 1))] != 0)
-                {
-                    font_loaded = true;
-                    break;
-                }
-            }
-        }
+        // Never infer font validity from the contents of VRAM: a previous
+        // packed-pixel frame can leave non-zero garbage in plane 2. A font is
+        // considered present only after the guest writes plane 2 in text mode.
+        const bool font_loaded = vga.text_font_written;
         HFONT fallback_font = nullptr;
         HGDIOBJ old_font = nullptr;
         if (!font_loaded)
@@ -506,6 +489,12 @@ namespace
                 FIXED_PITCH | FF_MODERN, "Terminal");
             if (fallback_font)
                 old_font = SelectObject(dc, fallback_font);
+            else
+            {
+                fallback_font = (HFONT)GetStockObject(ANSI_FIXED_FONT);
+                if (fallback_font)
+                    old_font = SelectObject(dc, fallback_font);
+            }
         }
 
         const bool blink_enabled = (vga.attr[0x10] & 0x08) != 0;
@@ -828,6 +817,8 @@ namespace
         {
             if (!(vga.seq[2] & (1U << p)))
                 continue;
+            if (vga.text_mode && p == 2)
+                vga.text_font_written = true;
             // VGA write mode 1 is a direct latch transfer. It bypasses
             // rotate, set/reset, logical-function and bit-mask processing.
             if (mode == 1)
