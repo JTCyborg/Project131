@@ -774,98 +774,132 @@ namespace
 
     static unsigned char vga_mem_read(unsigned address, bool spectrum_bridge = true)
     {
-        unsigned bridge_linear = spectrum_bridge
-            ? unsigned(vga.bank) * APERTURE_SIZE + (address & 0x3FFF)
+        // The Spectrum bridge contributes its own 16-KiB window bank.
+        // From this point onward, address decoding follows the TVGA8900D
+        // SVGA memory rules used by the ISA aperture.
+        const unsigned bridge_address = spectrum_bridge
+            ? unsigned(vga.bank) * APERTURE_SIZE + (address & 0x3FFFU)
             : address;
-        unsigned linear = (vga.read_bank + bridge_linear) & vga.vram_mask;
-        // Text mode is selected by VGA GC/Attribute Controller state. A previous
-        // packed-pixel/2D mode may leave the RAMDAC bpp at 16 or 24, but that
-        // must not bypass the four VGA planes while the CRTC is scanning text.
-        if (!vga.text_mode && (vga.vbe_enabled || vga.bpp > 8 || (vga.oldctrl2 & 0x10) || vga.rgb565_mode))
-            return vga.vram[linear];
-        if (vga.seq[4] & 8)
+        const unsigned decoded = bridge_address + vga.read_bank;
+
+        // Packed/VBE memory is byte-addressed, not planar. Keep the Spectrum
+        // window and Trident bank offsets, but do not apply VGA plane logic.
+        if (!vga.text_mode && (vga.vbe_enabled || vga.bpp > 8 ||
+            (vga.oldctrl2 & 0x10) || vga.rgb565_mode))
         {
-            unsigned plane = linear & 3;
-            unsigned offset = (linear >> 2) & (vga.plane_size - 1);
-            return vga.vram[plane * vga.plane_size + offset];
+            if (decoded >= vga.vram_size) return 0xFF;
+            return vga.vram[decoded];
         }
 
-        // In planar modes the Trident 64-KiB bank selector advances the
-        // per-plane address by 16 KiB; the Z80 bridge bank remains a planar
-        // byte offset to preserve the emulator's 16-KiB window semantics.
-        unsigned offset = ((vga.read_bank >> 2) + (bridge_linear & 0xFFFF)) & (vga.plane_size - 1);
+        unsigned latch_offset = decoded;
+        unsigned read_offset = decoded;
+        unsigned plane = vga.readplane & 3U;
+
+        if (vga.chain4)
+        {
+            read_offset = chain4_plane_offset(decoded);
+            latch_offset = read_offset;
+            plane = decoded & 3U;
+        }
+        else if (vga.chain2_read)
+        {
+            plane = (plane & 2U) | (decoded & 1U);
+            read_offset = decoded & ~1U;
+        }
+
+        if (latch_offset >= vga.plane_size || read_offset >= vga.plane_size)
+            return 0xFF;
         for (unsigned p = 0; p < 4; ++p)
-            vga.latch[p] = vga.vram[p * vga.plane_size + offset];
-        if (vga.gc[5] & 8)
+            vga.latch[p] = vga.vram[p * vga.plane_size + latch_offset];
+
+        if (vga.chain4)
+            return vga.latch[plane];
+
+        if (vga.gc[5] & 0x08)
         {
             unsigned result = 0xFF;
             for (unsigned p = 0; p < 4; ++p)
                 if (vga.gc[7] & (1U << p))
                 {
-                    unsigned mask = (vga.gc[2] & (1U << p)) ? 0xFF : 0;
-                    result &= ~(vga.latch[p] ^ mask);
+                    const unsigned compare = (vga.gc[2] & (1U << p)) ? 0xFF : 0;
+                    result &= ~(unsigned(vga.latch[p]) ^ compare);
                 }
             return (unsigned char)result;
         }
-        return vga.latch[vga.gc[4] & 3];
+        return vga.chain2_read
+            ? vga.vram[plane * vga.plane_size + read_offset]
+            : vga.latch[plane];
     }
 
     static void vga_mem_write(unsigned address, unsigned char value, bool spectrum_bridge = true)
     {
-        unsigned bridge_linear = spectrum_bridge
-            ? unsigned(vga.bank) * APERTURE_SIZE + (address & 0x3FFF)
+        const unsigned bridge_address = spectrum_bridge
+            ? unsigned(vga.bank) * APERTURE_SIZE + (address & 0x3FFFU)
             : address;
-        unsigned linear = (vga.write_bank + bridge_linear) & vga.vram_mask;
-        // Text mode always uses VGA planar memory, regardless of a stale
-        // packed-pixel RAMDAC depth left by the preceding accelerator test.
-        if (!vga.text_mode && (vga.vbe_enabled || vga.bpp > 8 || (vga.oldctrl2 & 0x10) || vga.rgb565_mode)) { vga.vram[linear] = value; vga.dirty = true; return; }
-        if (vga.seq[4] & 8)
+        const unsigned decoded = bridge_address + vga.write_bank;
+
+        if (!vga.text_mode && (vga.vbe_enabled || vga.bpp > 8 ||
+            (vga.oldctrl2 & 0x10) || vga.rgb565_mode))
         {
-            unsigned plane = linear & 3;
-            unsigned offset = (linear >> 2) & 0xFFFF;
-            if (vga.seq[2] & (1U << plane))
-                vga.vram[plane * vga.plane_size + offset] = value;
+            if (decoded < vga.vram_size)
+                vga.vram[decoded] = value;
             vga.dirty = true;
             return;
         }
 
-        unsigned offset = ((vga.write_bank >> 2) + (bridge_linear & 0xFFFF)) & (vga.plane_size - 1);
-        unsigned rotated = rotate_right(value, vga.gc[3] & 7);
-        unsigned mode = vga.gc[5] & 3;
-        unsigned logical = (vga.gc[3] >> 3) & 3;
-        unsigned bitmask = vga.gc[8];
+        unsigned offset = decoded;
+        unsigned plane_mask = vga.seq[2] & 0x0F;
+        if (vga.chain4)
+        {
+            plane_mask = 1U << (decoded & 3U);
+            offset = chain4_plane_offset(decoded);
+        }
+        else if (vga.chain2_write)
+        {
+            plane_mask &= 0x05;
+            if (decoded & 1U) plane_mask <<= 1;
+            offset = decoded & ~1U;
+        }
+
+        if (offset >= vga.plane_size)
+            return;
+
+        const unsigned mode = vga.gc[5] & 3U;
+        const unsigned logical = (vga.gc[3] >> 3) & 3U;
+        const unsigned rotated = rotate_right(value, vga.gc[3] & 7U);
+        const unsigned bitmask = vga.gc[8];
+
         for (unsigned p = 0; p < 4; ++p)
         {
-            if (!(vga.seq[2] & (1U << p)))
-                continue;
+            if (!(plane_mask & (1U << p))) continue;
+            unsigned char &dst = vga.vram[p * vga.plane_size + offset];
+            const unsigned char old = vga.latch[p];
             if (vga.text_mode && p == 2)
                 vga.text_font_written = true;
-            // VGA write mode 1 is a direct latch transfer. It bypasses
-            // rotate, set/reset, logical-function and bit-mask processing.
+
+            // VGA write mode 1 copies the previously loaded latches verbatim.
             if (mode == 1)
             {
-                vga.vram[p * vga.plane_size + offset] = vga.latch[p];
+                dst = old;
                 continue;
             }
 
-            unsigned char src =
-                (vga.gc[1] & (1U << p))
-                    ? ((vga.gc[0] & (1U << p)) ? 0xFF : 0)
-                    : (unsigned char)rotated;
+            unsigned char source = (vga.gc[1] & (1U << p))
+                ? ((vga.gc[0] & (1U << p)) ? 0xFF : 0)
+                : (unsigned char)rotated;
             unsigned char mask = (unsigned char)bitmask;
             if (mode == 2)
-                src = (value & (1U << p)) ? 0xFF : 0;
-            if (mode == 3)
+                source = (value & (1U << p)) ? 0xFF : 0;
+            else if (mode == 3)
             {
-                src = (vga.gc[0] & (1U << p)) ? 0xFF : 0;
+                source = (vga.gc[0] & (1U << p)) ? 0xFF : 0;
                 mask = (unsigned char)(rotated & bitmask);
             }
-            unsigned char old = vga.latch[p];
-            unsigned char data = src;
-            if (logical == 1) data &= old;
-            else if (logical == 2) data |= old;
-            else if (logical == 3) data ^= old;
-            vga.vram[p * vga.plane_size + offset] = (unsigned char)((data & mask) | (old & ~mask));
+
+            if (logical == 1) source &= old;
+            else if (logical == 2) source |= old;
+            else if (logical == 3) source ^= old;
+            dst = (unsigned char)((source & mask) | (old & ~mask));
         }
         vga.dirty = true;
     }
