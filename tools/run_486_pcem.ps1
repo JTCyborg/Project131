@@ -6,24 +6,31 @@ param(
 $ErrorActionPreference = "Stop"
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $buildPath = Join-Path $repoRoot $BuildDirectory
-$exe = Join-Path $buildPath "src/pcem.exe"
-if (-not (Test-Path $exe)) {
-    $exe = Join-Path $buildPath "src/pcem"
-}
-if (-not (Test-Path $exe)) {
+$exeCandidates = @(
+    (Join-Path $buildPath "src/pcem.exe"),
+    (Join-Path $buildPath "src/Release/pcem.exe"),
+    (Join-Path $buildPath "src/pcem"),
+    (Join-Path $buildPath "src/Release/pcem")
+)
+$exe = $exeCandidates | Where-Object { Test-Path $_ } | Select-Object -First 1
+
+if (-not $exe) {
     & (Join-Path $PSScriptRoot "build_486_pcem.ps1") -BuildDirectory $BuildDirectory
-    if ($LASTEXITCODE -ne 0) {
+    if (-not $?) {
         throw "PCem build script failed."
     }
-    $exe = Join-Path $buildPath "src/pcem.exe"
-    if (-not (Test-Path $exe)) {
-        $exe = Join-Path $buildPath "src/pcem"
-    }
+    $exe = $exeCandidates | Where-Object { Test-Path $_ } | Select-Object -First 1
 }
-if (-not (Test-Path $exe)) {
+if (-not $exe) {
     throw "PCem executable was not produced. See build output above."
 }
 
-# PCem opens its machine/configuration UI. Select the Award SiS 496/497
-# 486 machine profile documented in docs/atm-486-module/PCEM_MACHINE_PROFILE.md.
-Start-Process -FilePath $exe -WorkingDirectory $repoRoot
+$configPath = Join-Path $buildPath "pcem_486.cfg"
+if (-not (Test-Path $configPath)) {
+    throw "Missing generated machine profile: $configPath. Run build_486_pcem.ps1."
+}
+
+# ROMs are intentionally not bundled. PCem will report missing ROMs until
+# legally obtained files are placed in the portable .pcem/roms directory.
+$exeDirectory = Split-Path $exe -Parent
+Start-Process -FilePath $exe -WorkingDirectory $exeDirectory -ArgumentList @("--config", "`"$configPath`"")

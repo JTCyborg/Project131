@@ -1,52 +1,48 @@
 # Standalone 486 PCem machine profile
 
-This is the Stage 1 reference configuration for the 486 expansion computer.
-It deliberately uses PCem's complete machine implementation rather than the
-preliminary Project131 board stubs.
+The reference machine is a complete independent PC using PCem's machine,
+CPU, chipset, bus, storage and video implementations.
 
-## Machine
+## Selected hardware
 
 | Setting | Selection |
 |---|---|
 | Motherboard | Award SiS 496/497 |
-| CPU | Intel 486DX2/66 (or the closest Intel 486DX2 option exposed by this PCem revision) |
+| CPU | Intel i486DX2/66 |
 | RAM | 16 MiB |
 | Primary VGA | Diamond Stealth 3D 2000, S3 ViRGE/325 |
-| Optional 3D add-on | 3DFX Voodoo Graphics |
-| Storage | Standard IDE |
-| Sound | Sound Blaster 16 (optional for initial POST) |
+| 3D add-on | 3DFX Voodoo Graphics |
+| Storage | Disabled for first POST |
 
-The S3 ViRGE is the PC's own VGA adapter. The Trident TVGA8900D remains
-exclusively on the Spectrum/ATM side and is not visible to this PC.
+The S3 ViRGE is the PC's own PCI VGA adapter. The Trident TVGA8900D remains
+exclusively on the Spectrum/ATM side.
 
-## ROM images
+## ROM images required
 
-PCem does not distribute copyrighted motherboard or adapter ROMs. Supply
-legally obtained ROM images through PCem's normal ROM/configuration UI.
+PCem does not distribute copyrighted ROM images. Obtain ROMs legally and place
+them in the portable data directory created beside the PCem executable:
 
-The Award SiS 496/497 motherboard ROM set is documented by upstream PCem as
-`sis496/sis496-1.awa`. The S3 ViRGE adapter and optional Voodoo each need
-their own appropriate Option ROM where required by PCem. Do not reuse the
-Spectrum Trident `BIOS.BIN` as a motherboard or S3 BIOS.
+- `.pcem/roms/sis496/sis496-1.awa` — Award SiS 496/497 motherboard BIOS
+- `.pcem/roms/s3virge.bin` — S3 ViRGE Option ROM
+
+Do not use the Spectrum Trident `BIOS.BIN` for either image. Voodoo Graphics
+is enabled as a separate 3D accelerator; it does not replace the S3 VGA card.
 
 ## Build and launch
 
-From a PowerShell prompt in the Project131 checkout:
+From the Project131 checkout:
 
 ```powershell
-.	oolsuild_486_pcem.ps1
-.	oolsun_486_pcem.ps1
+.\tools\build_486_pcem.ps1
+.\tools\run_486_pcem.ps1
 ```
 
-The build script initializes the pinned `third_party/pcem-full` source and
-builds PCem with its SDL display frontend. PCem opens its own machine UI; select
-the configuration above and attach the required ROM images there.
+The launcher passes `i486/pcem_486.cfg` to PCem, selecting the machine above.
+The build script creates the ROM directories but does not download copyrighted
+ROMs. If required images are missing, PCem cannot complete BIOS startup.
 
 ## Integration boundary
 
-This Stage 1 launcher runs PCem as an independent process. It proves the
-standalone PC baseline using the full upstream machine implementation; it is
-not yet an in-process 486 device inside Project131. Stage 2 will replace the
-process boundary with the ZXBus controller endpoints and explicit shared
-memory/register/interrupt transport. Spectrum Z80 and PC 486 will retain
-separate CPU and device address spaces.
+This is the standalone Stage 1 PCem process. It is not yet an in-process 486
+device inside Project131. Stage 2 will replace the process boundary with
+explicit ZXBus controller endpoints and memory/register/interrupt transport.

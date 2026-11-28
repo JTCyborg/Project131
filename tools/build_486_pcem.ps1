@@ -54,11 +54,26 @@ Invoke-Checked "cmake" $cmakeArgs
 Write-Host "[486/PCem] Build PCem"
 Invoke-Checked "cmake" @("--build", $buildPath, "--config", "Release", "--parallel")
 
-$exe = Join-Path $buildPath "src/pcem.exe"
-if (-not (Test-Path $exe)) {
-    $exe = Join-Path $buildPath "src/pcem"
-}
-if (-not (Test-Path $exe)) {
+$exeCandidates = @(
+    (Join-Path $buildPath "src/pcem.exe"),
+    (Join-Path $buildPath "src/Release/pcem.exe"),
+    (Join-Path $buildPath "src/pcem"),
+    (Join-Path $buildPath "src/Release/pcem")
+)
+$exe = $exeCandidates | Where-Object { Test-Path $_ } | Select-Object -First 1
+if (-not $exe) {
     throw "Build finished but the PCem executable was not found under $buildPath/src."
 }
+
+$configSource = Join-Path $repoRoot "i486/pcem_486.cfg"
+if (-not (Test-Path $configSource)) {
+    throw "Missing PCem 486 machine profile: $configSource"
+}
+Copy-Item -Force $configSource (Join-Path $buildPath "pcem_486.cfg")
+
+$portableData = Join-Path (Split-Path $exe -Parent) ".pcem"
+$romRoot = Join-Path $portableData "roms"
+New-Item -ItemType Directory -Force -Path (Join-Path $romRoot "sis496") | Out-Null
 Write-Host "[486/PCem] Executable: $exe"
+Write-Host "[486/PCem] ROM directory: $romRoot"
+Write-Host "[486/PCem] Machine profile: $(Join-Path $buildPath 'pcem_486.cfg')"
