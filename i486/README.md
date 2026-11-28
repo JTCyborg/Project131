@@ -14,16 +14,19 @@ use the Spectrum/ATM banked-memory API.
 - PCI Configuration Mechanism #1 at CF8h-CFFh.
 - Initial SiS 496/497 host/ISA bridge PCI function at bus 0, device 5,
   function 0 (vendor 1039h, device 0496h, class 0600h).
-- Initial legacy register blocks for dual 8259 PIC ports, PIT ports,
-  CMOS index/data ports, and 8237 DMA register storage.
+- Dual 8259A PIC command/data ports with ICW1-ICW4, OCW1-OCW3,
+  IRR/ISR selection, EOI, fixed/rotating priority, IRQ edge latching,
+  master/slave cascade, pending detection and interrupt-vector acknowledge.
+- Initial register blocks for PIT ports, CMOS index/data ports, and
+  8237 DMA register storage.
 - The module I/O path dispatches chipset/legacy PC ports before the Trident
   ISA VGA adapter. Unclaimed ports return FFh / ignore writes.
 
 ## Important implementation boundary
 
 This is **not yet a bootable PC**. The PCI bridge identity/configuration and
-legacy I/O register interfaces are an initial board skeleton. The PIC does not
-yet arbitrate CPU interrupt lines, the PIT has no clock/event scheduler, the
+legacy I/O register interfaces are an initial board skeleton. The PIC now arbitrates IRQ requests and exposes an acknowledge/vector API,
+but is not yet wired to an executing CPU core; the PIT has no clock/event scheduler, the
 DMA register file does not perform transfers, and CMOS does not yet have a
 time source. Keyboard controller, FDC, IDE, serial, parallel, speaker, PCI/ISA
 enumeration and interrupt routing still need complete device models.
