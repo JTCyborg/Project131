@@ -17,8 +17,9 @@ use the Spectrum/ATM banked-memory API.
 - Dual 8259A PIC command/data ports with ICW1-ICW4, OCW1-OCW3,
   IRR/ISR selection, EOI, fixed/rotating priority, IRQ edge latching,
   master/slave cascade, pending detection and interrupt-vector acknowledge.
-- Initial register blocks for PIT ports, CMOS index/data ports, and
-  8237 DMA register storage.
+- 8253 PIT channel programming, counter latching and read/write sequencing;
+  channel 0 supports one-shot mode 0 and periodic modes 2/3 with IRQ0 generation.
+- Initial register blocks for CMOS index/data ports and 8237 DMA register storage.
 - The module I/O path dispatches chipset/legacy PC ports before the Trident
   ISA VGA adapter. Unclaimed ports return FFh / ignore writes.
 
@@ -26,7 +27,7 @@ use the Spectrum/ATM banked-memory API.
 
 This is **not yet a bootable PC**. The PCI bridge identity/configuration and
 legacy I/O register interfaces are an initial board skeleton. The PIC now arbitrates IRQ requests and exposes an acknowledge/vector API,
-but is not yet wired to an executing CPU core; the PIT has no clock/event scheduler, the
+but is not yet wired to an executing CPU core; PIT channel 0 still needs an external clock source calling pit_advance(), the
 DMA register file does not perform transfers, and CMOS does not yet have a
 time source. Keyboard controller, FDC, IDE, serial, parallel, speaker, PCI/ISA
 enumeration and interrupt routing still need complete device models.
