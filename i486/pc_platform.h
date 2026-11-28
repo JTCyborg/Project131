@@ -19,5 +19,8 @@ namespace pc
     void pic_set_irq(unsigned int irq, bool asserted);
     bool pic_pending();
     bool pic_acknowledge(unsigned char &interrupt_vector);
+
+    // Advance PIT input clock ticks (nominally 1.193182 MHz on a PC/AT).
+    void pit_advance(unsigned int input_clocks);
 }
 }
