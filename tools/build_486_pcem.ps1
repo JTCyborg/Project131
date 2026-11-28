@@ -133,7 +133,7 @@ $cmakeArgs = @(
     "-S", $source,
     "-B", $buildPath,
     "-DCMAKE_BUILD_TYPE=Release",
-    "-DPCEM_DISPLAY_ENGINE=SDL",
+    "-DPCEM_DISPLAY_ENGINE=wxWidgets",
     "-DPLUGIN_ENGINE=OFF",
     "-DUSE_NETWORKING=OFF",
     "-DUSE_PCAP_NETWORKING=OFF"
