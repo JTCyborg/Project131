@@ -5,10 +5,6 @@
 
 // The i486 ISA I/O bus is wired to the Trident adapter. Keep the adapter
 // interface narrow: non-VGA ports remain unclaimed by this device.
-extern bool isa_vga_adapter_port_read(unsigned port, unsigned char &value);
-extern bool isa_vga_adapter_port_write(unsigned port, unsigned char value);
-extern bool isa_vga_adapter_isa_mem_read(unsigned address, unsigned char &value);
-extern bool isa_vga_adapter_isa_mem_write(unsigned address, unsigned char value);
 
 namespace i486
 {
@@ -16,27 +12,11 @@ namespace i486
     static unsigned long ram_size = 0;
     static unsigned char bios[BiosSize];
     static bool bios_loaded = false;
-    // Trident TVGA8900D Option ROM. Its header defines the decoded window.
-    static const unsigned int VgaBiosBase = 0x000C0000U;
-    static const unsigned int VgaBiosMaxSize = 64U * 1024U;
-    static unsigned char vga_bios[VgaBiosMaxSize];
-    static unsigned int vga_bios_size = 0;
-
     static unsigned char read8_internal(unsigned int address)
     {
         // 486 reset fetch at FFFFFFF0h maps to BIOS offset FFF0h.
         if (address >= 0xFFFF0000U)
             return bios[address & 0xFFFFU];
-
-        // Trident TVGA8900D VGA Option ROM window.
-        if (vga_bios_size && address >= VgaBiosBase &&
-            address < VgaBiosBase + vga_bios_size)
-            return vga_bios[address - VgaBiosBase];
-
-        // VGA owns the decoded ISA aperture before ordinary RAM.
-        unsigned char video_value = 0xFF;
-        if (isa_vga_adapter_isa_mem_read(address, video_value))
-            return video_value;
 
         // Legacy PC-compatible system BIOS window.
         if (address >= 0x000F0000U && address <= 0x000FFFFFU)
@@ -62,33 +42,9 @@ namespace i486
         memset(ram, 0, ram_size);
         memset(bios, 0xFF, sizeof(bios));
         bios_loaded = false;
-        memset(vga_bios, 0xFF, sizeof(vga_bios));
-        vga_bios_size = 0;
         pc::init();
 
-        // BIOS.BIN is the checked-in Trident TVGA8900D Option ROM.
-        // Try the working directory first, then the directory above the EXE.
-        if (!load_vga_bios("BIOS.BIN"))
-        {
-            char module_path[MAX_PATH];
-            DWORD n = GetModuleFileNameA(0, module_path, MAX_PATH);
-            if (n && n < MAX_PATH)
-            {
-                char *slash = strrchr(module_path, '\\');
-                char *forward = strrchr(module_path, '/');
-                if (!slash || (forward && forward > slash)) slash = forward;
-                if (slash)
-                {
-                    *slash = 0;
-                    char *parent = strrchr(module_path, '\\');
-                    forward = strrchr(module_path, '/');
-                    if (!parent || (forward && forward > parent)) parent = forward;
-                    if (parent) *parent = 0;
-                    strncat(module_path, "\\BIOS.BIN", MAX_PATH - strlen(module_path) - 1);
-                    load_vga_bios(module_path);
-                }
-            }
-        }
+        // The system BIOS is supplied explicitly by the machine configuration.
         return true;
     }
 
@@ -99,8 +55,6 @@ namespace i486
         ram_size = 0;
         bios_loaded = false;
         memset(bios, 0xFF, sizeof(bios));
-        memset(vga_bios, 0xFF, sizeof(vga_bios));
-        vga_bios_size = 0;
         pc::close();
     }
 
@@ -147,13 +101,11 @@ namespace i486
         return bios_loaded;
     }
 
-    bool load_vga_bios(const char *path)
     {
         if (!path || !*path) return false;
         FILE *file = fopen(path, "rb");
         if (!file) return false;
 
-        unsigned char image[VgaBiosMaxSize];
         const size_t count = fread(image, 1, sizeof(image), file);
         const int extra = fgetc(file);
         const bool file_ok = count == sizeof(image) && extra == EOF && !ferror(file);
@@ -162,22 +114,15 @@ namespace i486
             return false;
 
         const unsigned int decoded_size = (unsigned int)image[2] * 512U;
-        if (decoded_size > VgaBiosMaxSize || decoded_size < 512U)
             return false;
 
-        memcpy(vga_bios, image, sizeof(vga_bios));
-        vga_bios_size = decoded_size;
         return true;
     }
 
-    bool vga_bios_is_loaded()
     {
-        return vga_bios_size != 0;
     }
 
-    unsigned int vga_bios_rom_size()
     {
-        return vga_bios_size;
     }
 
     unsigned char read8(unsigned int address)
@@ -202,14 +147,10 @@ namespace i486
     void write8(unsigned int address, unsigned char value)
     {
         if (address >= 0xFFFF0000U ||
-            (address >= 0x000F0000U && address <= 0x000FFFFFU) ||
-            (vga_bios_size && address >= VgaBiosBase &&
-             address < VgaBiosBase + vga_bios_size))
+            (address >= 0x000F0000U && address <= 0x000FFFFFU))
             return;
 
-        // Route writes into the active VGA aperture; do not mirror them to RAM.
-        if (isa_vga_adapter_isa_mem_write(address, value))
-            return;
+
 
         if (ram && (unsigned long)address < ram_size)
             ram[address] = value;
@@ -234,7 +175,6 @@ namespace i486
         unsigned char value = 0xFF;
         if (pc::port_read(port, value))
             return value;
-        if (isa_vga_adapter_port_read((unsigned)port, value))
             return value;
         return 0xFF;
     }
@@ -253,10 +193,9 @@ namespace i486
 
     void out8(unsigned short port, unsigned char value)
     {
-        // Route chipset and legacy PC ports before the ISA VGA adapter.
+        // Unclaimed PC ports remain open-bus; Spectrum devices are not mapped here.
         if (pc::port_write(port, value))
             return;
-        isa_vga_adapter_port_write((unsigned)port, value);
     }
 
     void out16(unsigned short port, unsigned short value)

@@ -1,7 +1,7 @@
 #pragma once
 
 // Isolated platform interface for the Intel 486DX expansion module.
-// The CPU interpreter is imported from PCem in a later integration step.
+// CPU and PC device implementations are being integrated from PCem.
 
 namespace i486
 {
@@ -13,12 +13,7 @@ namespace i486
     void reset();
     bool load_bios(const char *path);
     bool bios_is_loaded();
-    // Trident TVGA8900D Option ROM mapped at physical C0000h.
-    bool load_vga_bios(const char *path);
-    bool vga_bios_is_loaded();
-    unsigned int vga_bios_rom_size();
-
-    unsigned char read8(unsigned int address);
+unsigned char read8(unsigned int address);
     unsigned short read16(unsigned int address);
     unsigned int read32(unsigned int address);
     void write8(unsigned int address, unsigned char value);
