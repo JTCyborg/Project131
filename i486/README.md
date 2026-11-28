@@ -32,20 +32,20 @@ DMA register file does not perform transfers, and CMOS does not yet have a
 time source. Keyboard controller, FDC, IDE, serial, parallel, speaker, PCI/ISA
 enumeration and interrupt routing still need complete device models.
 
-Most importantly, no x86 instruction execution is connected yet. The PCem
-486 interpreter, x87, segmentation, paging/MMU, exception/interrupt delivery,
-prefetch/timing and reset logic remain to be ported and integrated. The module
-must not be described as a complete 486 implementation until those pieces and
-the device set are working together.
+Most importantly, the imported upstream CPU sources are not yet compiled into
+Project131 and no x86 instruction execution is connected yet. The PCem
+interpreter, x87, segmentation, paging/MMU, exception/interrupt delivery,
+prefetch/timing and reset logic still require host-service adaptation and
+integration. The module must not be described as a complete 486 implementation
+until those pieces and the device set are working together.
 
 ## PCem source baseline
 
-The implementation reference is Sarah Walker's PCem `dev` branch, pinned in
-`../docs/atm-486-module/PCEM_PORTING.md`. The 486 CPU implementation lives in
-PCem's `src/cpu/386.c` and `src/cpu/386_common.c`; the SiS 496/497 chipset
-reference is `src/devices/sis496.c` and its machine wiring is in
-`src/models/`. Preserve upstream copyright and GPL-2.0 notices when source
-files are imported. No PCem CPU source has been imported in this stage.
+The implementation reference is Sarah Walker's PCem `dev` branch at
+`b3d6ab4cd5016e459832a066e1bea5dd78605715`. The original CPU implementation
+and its private operation headers are vendored under `third_party/pcem/`.
+See `third_party/pcem/UPSTREAM.md` for the exact imported file inventory and
+license. These are source imports, not yet a compiled CPU integration.
 
 ## BIOS images
 
