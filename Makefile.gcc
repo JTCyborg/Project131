@@ -50,7 +50,7 @@ LIBS=$(LIBS) sndrender/snd.a z80/z80.a
 LIBS2=-lcomctl32 -lcomdlg32 -luser32 -lkernel32 -lgdi32 -lwinmm -ldxguid \
   -lddraw -ldsound -ldinput -ldxerr9 -lsetupapi -lgcc -lstdc++
 
-SRCS=emul.cpp std.cpp atm.cpp cheat.cpp config.cpp dbgbpx.cpp dbgcmd.cpp dbglabls.cpp \
+SRCS=emul.cpp std.cpp i486/i486.cpp i486/pc_platform.cpp vga_adapter.cpp atm.cpp cheat.cpp config.cpp dbgbpx.cpp dbgcmd.cpp dbglabls.cpp \
     dbgmem.cpp dbgoth.cpp dbgpaint.cpp dbgreg.cpp dbgrwdlg.cpp dbgtrace.cpp \
         debug.cpp draw.cpp drawnomc.cpp draw_384.cpp dx.cpp dxerr.cpp dxovr.cpp \
         dxrcopy.cpp dxrend.cpp dxrendch.cpp dxrframe.cpp dxr_4bpp.cpp dxr_512.cpp \
