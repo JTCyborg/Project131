@@ -134,12 +134,18 @@ if (-not (Test-Path (Join-Path $wxCompatDir "FindwxWidgets.cmake"))) {
     throw "Missing wxWidgets compatibility module: $wxCompatDir"
 }
 
+# CMake embeds CMAKE_MODULE_PATH in try_run() probe projects. Use forward
+# slashes so Windows drive paths are not parsed as CMake escape sequences.
+$wxCompatDirCMake = $wxCompatDir.Replace("\\", "/")
+$sourceCMake = $source.Replace("\\", "/")
+$buildPathCMake = $buildPath.Replace("\\", "/")
+
 $cmakeArgs = @(
-    "-S", $source,
-    "-B", $buildPath,
+    "-S", $sourceCMake,
+    "-B", $buildPathCMake,
     "-DCMAKE_BUILD_TYPE=Release",
     "-DPCEM_DISPLAY_ENGINE=wxWidgets",
-    "-DCMAKE_MODULE_PATH=$wxCompatDir",
+    "-DCMAKE_MODULE_PATH=$wxCompatDirCMake",
     "-DPLUGIN_ENGINE=OFF",
     "-DUSE_NETWORKING=OFF",
     "-DUSE_PCAP_NETWORKING=OFF"
@@ -154,7 +160,7 @@ $wxConfigDir = $wxConfigCandidates | Where-Object {
     Test-Path (Join-Path $_ "wxWidgetsConfig.cmake")
 } | Select-Object -First 1
 if ($wxConfigDir) {
-    $cmakeArgs += "-DwxWidgets_DIR=$wxConfigDir"
+    $cmakeArgs += "-DwxWidgets_DIR=$($wxConfigDir.Replace("\\", "/"))"
 } else {
     throw "wxWidgets CMake package was not found. Install the wxWidgets package for the selected MinGW toolchain."
 }
