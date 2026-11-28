@@ -28,6 +28,16 @@ them in the portable data directory created beside the PCem executable:
 Do not use the Spectrum Trident `BIOS.BIN` for either image. Voodoo Graphics
 is enabled as a separate 3D accelerator; it does not replace the S3 VGA card.
 
+## Build prerequisites
+
+- Git (for initializing the pinned source submodule)
+- CMake
+- MinGW-w64 GCC/G++ and Ninja on Windows
+- SDL2, OpenAL and OpenGL development packages discoverable by CMake
+
+The PCem build is a separate native build. Project131's existing MSVC Makefile
+does not compile PCem's C sources as part of the emulator.
+
 ## Build and launch
 
 From the Project131 checkout:

@@ -27,6 +27,8 @@ in `docs/atm-486-module/PCEM_MACHINE_PROFILE.md`. PCem does not include
 copyrighted ROM images. Supply the motherboard and S3 video ROMs; the
 Spectrum Trident `BIOS.BIN` is not a PC BIOS.
 
+The PCem build requires CMake, SDL2, OpenAL and OpenGL development packages.
+On Windows use MinGW-w64 GCC/G++ and Ninja; the build script checks for them.
 The launcher currently runs PCem as a separate process. This provides the
 standalone Stage 1 machine implementation; it is not yet an in-process PC
 device inside Project131. The old `i486/i486.cpp` shell is not a substitute

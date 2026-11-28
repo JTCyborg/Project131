@@ -23,6 +23,23 @@ if (-not (Get-Command cmake -ErrorAction SilentlyContinue)) {
     throw "CMake is required. Install CMake and ensure it is on PATH."
 }
 
+$cmakeGeneratorArgs = @()
+if ($env:OS -eq "Windows_NT") {
+    $gcc = Get-Command gcc -ErrorAction SilentlyContinue
+    $gxx = Get-Command g++ -ErrorAction SilentlyContinue
+    if (-not $gcc -or -not $gxx) {
+        throw "PCem's Windows build requires MinGW-w64 GCC/G++ and Ninja. Install them and ensure gcc, g++, and ninja are on PATH."
+    }
+    if (-not (Get-Command ninja -ErrorAction SilentlyContinue)) {
+        throw "Ninja is required for the MinGW-w64 PCem build on Windows."
+    }
+    $cmakeGeneratorArgs = @(
+        "-G", "Ninja",
+        "-DCMAKE_C_COMPILER=$($gcc.Source)",
+        "-DCMAKE_CXX_COMPILER=$($gxx.Source)"
+    )
+}
+
 $submoduleMarker = Join-Path $source ".git"
 if (-not (Test-Path $submoduleMarker)) {
     Invoke-Checked "git" @("-C", $repoRoot, "submodule", "update", "--init", "--recursive", "third_party/pcem-full")
@@ -45,7 +62,9 @@ $cmakeArgs = @(
     "-DUSE_NETWORKING=OFF",
     "-DUSE_PCAP_NETWORKING=OFF"
 )
-if (Get-Command ninja -ErrorAction SilentlyContinue) {
+if ($cmakeGeneratorArgs.Count -gt 0) {
+    $cmakeArgs += $cmakeGeneratorArgs
+} elseif (Get-Command ninja -ErrorAction SilentlyContinue) {
     $cmakeArgs += @("-G", "Ninja")
 }
 
