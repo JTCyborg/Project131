@@ -14,5 +14,10 @@ namespace pc
     bool port_read(unsigned short port, unsigned char &value);
     bool port_write(unsigned short port, unsigned char value);
     unsigned int pci_config_address();
+
+    // 8259A interrupt controller interface used by the future x86 core.
+    void pic_set_irq(unsigned int irq, bool asserted);
+    bool pic_pending();
+    bool pic_acknowledge(unsigned char &interrupt_vector);
 }
 }
