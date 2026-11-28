@@ -1,0 +1,3 @@
+[submodule "third_party/pcem-full"]
+	path = third_party/pcem-full
+	url = https://github.com/sarah-walker-pcem/pcem.git

@@ -1,18 +1,25 @@
-# 486 ZXBus module — implementation plan
+# 486 ZXBus module — staged implementation
 
-1. **Standalone 486 PC:** PCem CPU and machine core, private RAM and BIOS,
-   chipset, ISA/PCI devices, independent VGA, and BIOS POST.
-2. **ZXBus interconnect:** bridge/controller on both sides, register map,
-   memory windows, command/status queues, interrupts, reset and block transfers.
+## Stage 1: independent 486 PC
 
-The Spectrum Trident TVGA8900D remains attached only to Spectrum. The 486 PC
-uses a separate VGA adapter and Option ROM.
+Use the complete PCem source at the pinned upstream revision
+`b3d6ab4cd5016e459832a066e1bea5dd78605715`. Build and run the standalone
+PCem frontend with the Award SiS 496/497 / Intel 486DX2 / 16 MiB profile,
+S3 ViRGE primary VGA and optional Voodoo accelerator.
 
-## Current limitations
+The Stage 1 launcher is a separate PCem process. It establishes a real
+standalone PC machine implementation before any ZXBus coupling is attempted.
+BIOS ROM images are not included; legally obtained motherboard and video ROMs
+must be supplied by the operator.
 
-Vendored PCem CPU sources are not integrated into Project131's build or
-adapted to per-instance machine state. The platform layer remains a
-preliminary skeleton, not a complete PC/AT chipset. No ZXBus protocol or
-486 BIOS POST has been implemented or verified.
+## Stage 2: ZXBus interconnect
 
-Root BIOS.BIN is the Spectrum Trident VGA Option ROM, not a motherboard BIOS.
+Only after a successful BIOS POST, implement the Spectrum-side and PC-side
+controller endpoints, a documented register map, memory windows, command and
+status exchange, interrupt lines, reset control, and block transfers. Do not
+share the machines' private RAM or conflate their video devices.
+
+## Validation boundary
+
+The submodule is pinned to the upstream PCem commit. Project131's native
+application build and a BIOS POST have not yet been verified in this change.

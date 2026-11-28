@@ -1,41 +1,42 @@
 # ATM ZXBus 486 expansion module
 
-The 486 module is a standalone IBM PC-compatible machine with its own CPU,
-physical address space, RAM, motherboard BIOS, chipset, interrupt controllers,
-I/O devices and video adapter. Spectrum/ATM is a separate computer.
+The 486 expansion is a standalone IBM PC-compatible computer. It owns its CPU,
+RAM, motherboard BIOS, chipset, buses, peripherals and primary video adapter.
+The ATM/Spectrum computer is a separate machine; Trident TVGA8900D belongs
+only to Spectrum.
 
-## Stage 1 — standalone PC boot
+## Stage 1 — standalone PC
 
-- 16 MiB private physical RAM.
-- Separate 64 KiB motherboard BIOS image, loaded explicitly with
-  `i486::load_bios()`.
-- Reset-vector alias at FFFFFFF0h and legacy BIOS window at F0000h.
-- Isolated x86 memory and I/O entry points.
-- Preliminary board-device models in `pc_platform.cpp`.
-- PCem 486 CPU source is vendored under `third_party/pcem/`; provenance and
-  license are recorded in `third_party/pcem/UPSTREAM.md`.
+The full upstream PCem source is pinned as the `third_party/pcem-full`
+submodule. The PCem revision includes the 486 CPU, PC/AT machine framework,
+SiS 496/497 motherboard, ISA/PCI, memory, interrupt/timer, storage and VGA
+implementations. The earlier `third_party/pcem/` directory is a small
+verbatim CPU-source provenance snapshot, not a complete PCem build.
 
-This is not yet a bootable PC: the imported PCem CPU is not compiled or
-connected to a per-machine context, and the preliminary board devices are not
-a complete PC/AT implementation. A compatible motherboard BIOS image is also
-required. Root `BIOS.BIN` is the Spectrum Trident VGA ROM, never the 486
-motherboard BIOS.
+Build and launch the independent PCem machine:
 
-Next Stage 1 work: adapt PCem CPU execution and machine services, integrate
-chipset, memory/ROM mapping, PIC/PIT, DMA, CMOS/RTC, keyboard, storage and an
-independent PC VGA device. Bootability will only be claimed after executing a
-real system BIOS and completing POST.
+```powershell
+.\tools\build_486_pcem.ps1
+.\tools\run_486_pcem.ps1
+```
 
-## Video ownership
+Use the reference profile in
+`docs/atm-486-module/PCEM_MACHINE_PROFILE.md`: Award SiS 496/497, Intel
+486DX2/66, 16 MiB RAM, S3 ViRGE primary VGA, and optional 3DFX Voodoo.
+PCem does not include copyrighted BIOS ROM images. A legally obtained
+motherboard BIOS and the relevant video Option ROMs must be supplied through
+PCem's configuration UI. The Spectrum Trident `BIOS.BIN` is not a PC BIOS.
 
-Trident TVGA8900D belongs exclusively to ATM/Spectrum. The 486 must have its
-own PCem-supported VGA device, private VRAM, VGA I/O ports and VGA Option ROM.
-A 3D accelerator such as 3Dfx Voodoo is an additional 486-side device. No
-Spectrum Trident memory or I/O callback is mapped into the 486.
+The launcher currently runs PCem as a separate process. It is the standalone
+PC baseline, not yet an in-process PC device in Project131. The previous
+`i486/i486.cpp` memory/I/O shell is not used as a substitute for the PCem
+machine implementation.
 
-## Stage 2 — ZXBus link
+## Stage 2 — ZXBus
 
-After standalone 486 boot works, implement ZXBus controllers on both machines:
-explicit register and memory windows, command/status exchange, interrupts,
-reset/control and block transfers. Neither CPU directly accesses the other's
-private RAM or internal device buses.
+After the standalone PC configuration boots through BIOS POST, implement a
+controller endpoint on both sides. The link will provide explicit register
+and memory windows, command/status exchange, interrupts, reset/control and
+block transfers. The two CPUs and their internal device buses remain
+independent. The PCem process boundary will be replaced by an explicit ZXBus
+transport, not by mapping Trident or ATM RAM into the PC's address space.
