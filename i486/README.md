@@ -1,45 +1,70 @@
-# Intel i486DX expansion module
+# ATM ZXBus i486DX expansion module
 
-This directory is the isolated platform layer for the planned Intel i486DX/33
-module. It deliberately does not use the Spectrum/ATM banked-memory API.
+This directory contains the isolated PC platform layer for the ATM ZXBus
+486DX/33 expansion module. It has its own physical address space and does not
+use the Spectrum/ATM banked-memory API.
 
-## Initial platform layer
+## Implemented in this stage
 
-- Independent 16 MiB RAM allocation (configurable at initialization).
-- Separate 64 KiB BIOS image.
-- BIOS read-only mapping at F0000h-FFFFFh and FFFF0000h-FFFFFFFFh.
+- Independent 16 MiB RAM allocation.
+- Separate 64 KiB system BIOS image and reset-vector alias.
+- Separate Trident TVGA8900D Option ROM at physical C0000h.
 - Little-endian physical memory accessors.
-- Separate 8/16/32-bit I/O port interface.
+- Separate 8/16/32-bit x86 I/O port interface.
+- PCI Configuration Mechanism #1 at CF8h-CFFh.
+- Initial SiS 496/497 host/ISA bridge PCI function at bus 0, device 5,
+  function 0 (vendor 1039h, device 0496h, class 0600h).
+- Initial legacy register blocks for dual 8259 PIC ports, PIT ports,
+  CMOS index/data ports, and 8237 DMA register storage.
+- The module I/O path dispatches chipset/legacy PC ports before the Trident
+  ISA VGA adapter. Unclaimed ports return FFh / ignore writes.
 
-## Current status
+## Important implementation boundary
 
-This is only the platform/bootstrap layer. It does **not** yet execute x86
-instructions. The PCem interpreter, x87 tables, reset/segment logic, MMU,
-interrupt controller, and timer integration are the next implementation
-stage. The selected CPU model remains Intel i486DX/33 with integrated FPU;
-dynarec is intentionally excluded.
+This is **not yet a bootable PC**. The PCI bridge identity/configuration and
+legacy I/O register interfaces are an initial board skeleton. The PIC does not
+yet arbitrate CPU interrupt lines, the PIT has no clock/event scheduler, the
+DMA register file does not perform transfers, and CMOS does not yet have a
+time source. Keyboard controller, FDC, IDE, serial, parallel, speaker, PCI/ISA
+enumeration and interrupt routing still need complete device models.
 
-The initial BIOS loader expects exactly 64 KiB. The 486 reset fetch at
-FFFFFFF0h resolves to BIOS offset FFF0h.
+Most importantly, no x86 instruction execution is connected yet. The PCem
+486 interpreter, x87, segmentation, paging/MMU, exception/interrupt delivery,
+prefetch/timing and reset logic remain to be ported and integrated. The module
+must not be described as a complete 486 implementation until those pieces and
+the device set are working together.
 
-## Integration constraints
+## PCem source baseline
 
-- Keep this module independent from the Spectrum/ATM banked-memory API.
-- Do not route x86 IN/OUT through the Z80/ATM output handler.
-- Import PCem code with its original copyright and license notices.
-- Do not import PCem motherboard, PCI/ISA, video, or dynarec subsystems.
+The implementation reference is Sarah Walker's PCem `dev` branch, pinned in
+`../docs/atm-486-module/PCEM_PORTING.md`. The 486 CPU implementation lives in
+PCem's `src/cpu/386.c` and `src/cpu/386_common.c`; the SiS 496/497 chipset
+reference is `src/devices/sis496.c` and its machine wiring is in
+`src/models/`. Preserve upstream copyright and GPL-2.0 notices when source
+files are imported. No PCem CPU source has been imported in this stage.
 
+## BIOS images
 
-## Trident TVGA8900D video BIOS
+- `BIOS.BIN` in the repository root is the **Trident video Option ROM**, not
+  the motherboard BIOS. It is loaded independently and mapped at C0000h.
+- `i486::load_bios(path)` loads the separate system BIOS image (currently
+  exactly 64 KiB). No motherboard BIOS binary is bundled.
+- The 486 reset fetch at FFFFFFF0h aliases system BIOS offset FFF0h.
 
-- `BIOS.BIN` is loaded automatically by `i486::init()`, first from the
-  process working directory and then from the parent of the executable directory.
-- The image must be exactly 64 KiB and start with Option ROM signature `55 AA`.
-  Header byte 2 determines the decoded size in 512-byte units; this ROM declares
-  a 32-KiB decoded window.
-- The declared ROM window is mapped read-only at physical `C0000h` and is visible
-  through `i486::read8/read16/read32`. Writes to the window are ignored.
-- `load_vga_bios(path)`, `vga_bios_is_loaded()` and `vga_bios_rom_size()`
-  provide explicit loading and status.
-- The system BIOS remains separate at `F0000h` and the 486 reset alias
-  `FFFF0000h`; the Trident ROM does not replace it.
+## Build integration
+
+Both project makefiles include the 486 platform sources. The GCC makefile now
+also includes `vga_adapter.cpp`, which is required by the 486 port I/O and
+ISA memory callbacks.
+
+## Next integration stages
+
+1. Port the PCem i486 interpreter and x87 with a per-module CPU state.
+2. Connect CPU physical memory, I/O, IRQ, NMI and cycle callbacks to this board.
+3. Replace the preliminary PIC/PIT/DMA/CMOS register stores with functional
+   timed devices.
+4. Add the PCem ISA/PCI bus, storage, keyboard, serial and other PC peripherals.
+5. Connect a PCem-supported VGA device and a separate 3D accelerator
+   (for example Voodoo Graphics), with a distinct rendering path from ATM VGA.
+6. Implement and test the ZXBus bridge protocol, reset, interrupts and shared
+   transfer windows. No ZXBus register protocol is claimed by this commit.
