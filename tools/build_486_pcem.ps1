@@ -136,9 +136,9 @@ if (-not (Test-Path (Join-Path $wxCompatDir "FindwxWidgets.cmake"))) {
 
 # CMake embeds CMAKE_MODULE_PATH in try_run() probe projects. Use forward
 # slashes so Windows drive paths are not parsed as CMake escape sequences.
-$wxCompatDirCMake = $wxCompatDir.Replace("\\", "/")
-$sourceCMake = $source.Replace("\\", "/")
-$buildPathCMake = $buildPath.Replace("\\", "/")
+$wxCompatDirCMake = $wxCompatDir.Replace("\", "/")
+$sourceCMake = $source.Replace("\", "/")
+$buildPathCMake = $buildPath.Replace("\", "/")
 
 $cmakeArgs = @(
     "-S", $sourceCMake,
@@ -160,7 +160,7 @@ $wxConfigDir = $wxConfigCandidates | Where-Object {
     Test-Path (Join-Path $_ "wxWidgetsConfig.cmake")
 } | Select-Object -First 1
 if ($wxConfigDir) {
-    $cmakeArgs += "-DwxWidgets_DIR=$($wxConfigDir.Replace("\\", "/"))"
+    $cmakeArgs += "-DwxWidgets_DIR=$($wxConfigDir.Replace("\", "/"))"
 } else {
     throw "wxWidgets CMake package was not found. Install the wxWidgets package for the selected MinGW toolchain."
 }
