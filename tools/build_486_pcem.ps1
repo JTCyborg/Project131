@@ -124,6 +124,22 @@ if (-not (Test-Path (Join-Path $source "CMakeLists.txt"))) {
     throw "PCem source is missing at $source. Check submodule initialization."
 }
 
+# PCem's CD-ROM IOCTL backend uses a narrow char[] path. The wxWidgets
+# Windows frontend enables UNICODE globally, which aliases CreateFile to
+# CreateFileW and causes a char*/LPCWSTR compile failure. Keep this one
+# legacy device path on the matching ANSI Win32 API.
+$ioctlSource = Join-Path $source "src/cdrom/cdrom-ioctl.c"
+$ioctlText = [System.IO.File]::ReadAllText($ioctlSource)
+$ansiCall = "hIOCTL = CreateFileA(ioctl_path,"
+$genericCall = "hIOCTL = CreateFile(ioctl_path,"
+if ($ioctlText.Contains($genericCall)) {
+    $ioctlText = $ioctlText.Replace($genericCall, $ansiCall)
+    [System.IO.File]::WriteAllText($ioctlSource, $ioctlText, [System.Text.Encoding]::UTF8)
+    Write-Host "[486/PCem] Applied Windows ANSI CD-ROM IOCTL compatibility fix"
+} elseif (-not $ioctlText.Contains($ansiCall)) {
+    throw "Unexpected PCem source: cannot locate CreateFile(ioctl_path, ...) in $ioctlSource"
+}
+
 if ($Clean -and (Test-Path $buildPath)) {
     Remove-Item -Recurse -Force $buildPath
 }
