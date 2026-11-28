@@ -3,18 +3,16 @@
 #include "i486.h"
 #include "pc_platform.h"
 
-// The i486 ISA I/O bus is wired to the Trident adapter. Keep the adapter
-// interface narrow: non-VGA ports remain unclaimed by this device.
-
 namespace i486
 {
     static unsigned char *ram = 0;
     static unsigned long ram_size = 0;
     static unsigned char bios[BiosSize];
     static bool bios_loaded = false;
+
     static unsigned char read8_internal(unsigned int address)
     {
-        // 486 reset fetch at FFFFFFF0h maps to BIOS offset FFF0h.
+        // 486 reset fetch at FFFFFFF0h aliases the top of the system BIOS.
         if (address >= 0xFFFF0000U)
             return bios[address & 0xFFFFU];
 
@@ -25,6 +23,8 @@ namespace i486
         if (ram && (unsigned long)address < ram_size)
             return ram[address];
 
+        // Unmapped PC memory returns open-bus value. PC video and option ROM
+        // decoding will be provided by the independent PCem device bus.
         return 0xFF;
     }
 
@@ -43,8 +43,6 @@ namespace i486
         memset(bios, 0xFF, sizeof(bios));
         bios_loaded = false;
         pc::init();
-
-        // The system BIOS is supplied explicitly by the machine configuration.
         return true;
     }
 
@@ -60,8 +58,8 @@ namespace i486
 
     void reset()
     {
-        // CPU architectural reset state is established by the PCem core.
-        // Platform reset intentionally preserves RAM and the BIOS image.
+        // CPU architectural reset state will be established by the PCem core.
+        // Platform reset preserves RAM and the loaded system BIOS.
         pc::reset();
     }
 
@@ -101,30 +99,6 @@ namespace i486
         return bios_loaded;
     }
 
-    {
-        if (!path || !*path) return false;
-        FILE *file = fopen(path, "rb");
-        if (!file) return false;
-
-        const size_t count = fread(image, 1, sizeof(image), file);
-        const int extra = fgetc(file);
-        const bool file_ok = count == sizeof(image) && extra == EOF && !ferror(file);
-        fclose(file);
-        if (!file_ok || image[0] != 0x55 || image[1] != 0xAA || !image[2])
-            return false;
-
-        const unsigned int decoded_size = (unsigned int)image[2] * 512U;
-            return false;
-
-        return true;
-    }
-
-    {
-    }
-
-    {
-    }
-
     unsigned char read8(unsigned int address)
     {
         return read8_internal(address);
@@ -146,11 +120,10 @@ namespace i486
 
     void write8(unsigned int address, unsigned char value)
     {
+        // BIOS and reset-vector mappings are read-only.
         if (address >= 0xFFFF0000U ||
             (address >= 0x000F0000U && address <= 0x000FFFFFU))
             return;
-
-
 
         if (ram && (unsigned long)address < ram_size)
             ram[address] = value;
@@ -175,7 +148,6 @@ namespace i486
         unsigned char value = 0xFF;
         if (pc::port_read(port, value))
             return value;
-            return value;
         return 0xFF;
     }
 
@@ -193,9 +165,8 @@ namespace i486
 
     void out8(unsigned short port, unsigned char value)
     {
-        // Unclaimed PC ports remain open-bus; Spectrum devices are not mapped here.
-        if (pc::port_write(port, value))
-            return;
+        // Only devices on the 486 PC bus receive these I/O cycles.
+        pc::port_write(port, value);
     }
 
     void out16(unsigned short port, unsigned short value)

@@ -13,7 +13,8 @@ namespace i486
     void reset();
     bool load_bios(const char *path);
     bool bios_is_loaded();
-unsigned char read8(unsigned int address);
+
+    unsigned char read8(unsigned int address);
     unsigned short read16(unsigned int address);
     unsigned int read32(unsigned int address);
     void write8(unsigned int address, unsigned char value);
