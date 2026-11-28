@@ -104,3 +104,31 @@ that shell incrementally; it must not be mistaken for a finished 486 PC.
   independent tests.
 - ZXBus tests verify host/module isolation, register access, memory windows,
   interrupt delivery, reset and sustained transfers.
+
+
+## Imported CPU source — current status
+
+The following upstream files have now been copied verbatim into
+`third_party/pcem/` from the pinned commit above:
+
+- CPU execution and shared state: `src/cpu/386.c`,
+  `src/cpu/386_common.c`.
+- CPU dispatch/tables: `src/cpu/cpu.c`, `src/cpu/cpu_tables.c`.
+- Protected-mode segmentation and descriptor handling: `src/cpu/x86seg.c`.
+- x87 implementation and timing tables: `src/cpu/x87.c`,
+  `src/cpu/x87_timings.c`.
+- All 50 headers in `includes/private/cpu/`, including the 386 instruction
+  operation tables and x87 operation implementation.
+- Upstream `COPYING` at `third_party/pcem/COPYING`.
+
+Provenance and the file inventory are recorded in
+`third_party/pcem/UPSTREAM.md`.
+
+**Important:** this is a source-vendoring milestone, not a CPU integration
+milestone. The upstream files are not in the Project131 build yet. PCem's
+`exec386()` still depends on PCem machine globals and services (memory access,
+PIC, NMI, timer, FDC, logging, model state and code-generation interfaces).
+The next porting step is to isolate those dependencies behind a per-machine
+context, then compile and test the core against the 16 MiB board memory and
+I/O callbacks. Do not call this bootable until reset-vector execution and
+real BIOS POST have been demonstrated.
