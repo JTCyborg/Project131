@@ -121,10 +121,22 @@ static int pic_highest_pending(const Pic8259 &pic)
     for (unsigned int n = 1; n <= 8; ++n)
     {
         const unsigned char irq = (pic.priority_base + n) & 7;
+        // An in-service request blocks requests at the same or lower
+        // priority, but does not block a higher-priority interrupt.
+        if (pic.isr & (1U << irq))
+            break;
         if (pending & (1U << irq))
             return irq;
     }
     return -1;
+}
+
+static void pic_refresh_cascade()
+{
+    if (pic_highest_pending(pic_slave) >= 0)
+        pic_master.irr |= 0x04;
+    else
+        pic_master.irr &= (unsigned char)~0x04;
 }
 
 void pic_set_irq(unsigned int irq, bool asserted)
@@ -138,12 +150,8 @@ void pic_set_irq(unsigned int irq, bool asserted)
     else pic.level &= (unsigned char)~bit;
     // Edge-triggered mode: latch only a low-to-high transition.
     if (asserted && !old_level) pic.irr |= bit;
-    if (!asserted) pic.irr &= (unsigned char)~bit;
-    if (irq >= 8)
-    {
-        if (pic.irr & (unsigned char)~pic.imr) pic_master.irr |= 0x04;
-        else pic_master.irr &= (unsigned char)~0x04;
-    }
+    // In edge-triggered mode a falling edge does not erase a latched request.
+    if (irq >= 8) pic_refresh_cascade();
 }
 
 bool pic_pending()
@@ -166,6 +174,7 @@ bool pic_acknowledge(unsigned char &vector)
         if (slave_irq < 0) return false;
         pic_slave.irr &= (unsigned char)~(1U << slave_irq);
         if (!pic_slave.auto_eoi) pic_slave.isr |= (unsigned char)(1U << slave_irq);
+        pic_refresh_cascade();
         else if (pic_slave.rotate_auto) pic_slave.priority_base = (unsigned char)slave_irq;
         irq = slave_irq + 8;
     }
