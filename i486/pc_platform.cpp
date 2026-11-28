@@ -24,8 +24,38 @@ namespace
     static Pic8259 pic_slave;
     static unsigned char cmos[128];
     static unsigned char cmos_index = 0;
-    static unsigned char pit[4];
+    struct PitChannel
+    {
+        unsigned int reload, counter, latch;
+        unsigned char access, mode, bcd;
+        unsigned char write_low, read_low, latch_valid;
+        unsigned char write_phase, read_phase;
+        unsigned char output, running;
+    };
+    static PitChannel pit[3];
     static unsigned char dma[32];
+
+    static unsigned int pit_decode_count(unsigned int value)
+    {
+        value &= 0xFFFFU;
+        return value ? value : 0x10000U;
+    }
+
+    static void pit_load(unsigned int channel, unsigned int value)
+    {
+        if (channel >= 3) return;
+        PitChannel &ch = pit[channel];
+        ch.reload = pit_decode_count(value);
+        ch.counter = ch.reload;
+        ch.running = 1;
+        if (ch.mode == 0) ch.output = 0;
+        else ch.output = 1;
+    }
+
+    static unsigned int pit_current_count(const PitChannel &ch)
+    {
+        return ch.counter & 0xFFFFU;
+    }
 
     static void init_sis496()
     {
@@ -101,6 +131,12 @@ void reset()
     cmos[0x0D] = 0x80; // CMOS battery valid
     cmos_index = 0;
     memset(pit, 0, sizeof(pit));
+    for (unsigned int i = 0; i < 3; ++i)
+    {
+        pit[i].access = 3;
+        pit[i].mode = 3;
+        pit[i].output = 1;
+    }
     memset(dma, 0, sizeof(dma));
 }
 
@@ -163,6 +199,66 @@ bool pic_pending()
     return true;
 }
 
+void pit_advance(unsigned int input_clocks)
+{
+    PitChannel &ch = pit[0];
+    if (!ch.running || !input_clocks) return;
+
+    // Channel 0 is the PC system timer. Modes 2 and 3 generate periodic
+    // IRQ0 requests; mode 0 generates one terminal-count interrupt.
+    if (ch.mode == 0)
+    {
+        if (input_clocks >= ch.counter)
+        {
+            ch.counter = 0;
+            ch.running = 0;
+            if (!ch.output)
+            {
+                ch.output = 1;
+                pic_set_irq(0, true);
+                pic_set_irq(0, false);
+            }
+        }
+        else ch.counter -= input_clocks;
+        return;
+    }
+
+    if (ch.mode == 2 || ch.mode == 3)
+    {
+        const unsigned int period = ch.reload ? ch.reload : 0x10000U;
+        if (input_clocks >= ch.counter)
+        {
+            unsigned int remaining = input_clocks - ch.counter;
+            const unsigned int expiries = 1U + remaining / period;
+            const unsigned int tail = remaining % period;
+            ch.counter = tail ? period - tail : period;
+            // Each terminal count is a rising edge of OUT in mode 2/3.
+            if (expiries)
+            {
+                pic_set_irq(0, true);
+                pic_set_irq(0, false);
+            }
+        }
+        else ch.counter -= input_clocks;
+        return;
+    }
+
+    // Modes 1, 4 and 5 retain a useful down-counter approximation until
+    // their gate/retrigger semantics are connected to the PC timer layer.
+    if (input_clocks >= ch.counter)
+    {
+        ch.counter = 0;
+        ch.running = 0;
+        if (!ch.output)
+        {
+            ch.output = 1;
+            pic_set_irq(0, true);
+            pic_set_irq(0, false);
+        }
+    }
+    else ch.counter -= input_clocks;
+}
+
 bool pic_acknowledge(unsigned char &vector)
 {
     const int master_irq = pic_highest_pending(pic_master);
@@ -207,8 +303,21 @@ bool port_read(unsigned short port, unsigned char &value)
     case 0x21: value = pic_master.imr; return true;
     case 0xA0: value = pic_slave.read_isr ? pic_slave.isr : pic_slave.irr; return true;
     case 0xA1: value = pic_slave.imr; return true;
-    case 0x40: case 0x41: case 0x42: case 0x43:
-        value = pit[port - 0x40]; return true;
+    case 0x40: case 0x41: case 0x42:
+    {
+        PitChannel &ch = pit[port - 0x40];
+        unsigned int count = ch.latch_valid ? ch.latch : pit_current_count(ch);
+        if (ch.access == 1) value = (unsigned char)count;
+        else if (ch.access == 2) value = (unsigned char)(count >> 8);
+        else
+        {
+            value = ch.read_phase ? (unsigned char)(count >> 8) : (unsigned char)count;
+            ch.read_phase ^= 1;
+            if (!ch.read_phase) ch.latch_valid = 0;
+        }
+        return true;
+    }
+    case 0x43: value = 0xFF; return true;
     case 0x70: value = cmos_index; return true;
     case 0x71: value = cmos[cmos_index & 0x7F]; return true;
     default: break;
@@ -312,8 +421,50 @@ bool port_write(unsigned short port, unsigned char value)
         else pic.imr = value; // OCW1
         return true;
     }
-    case 0x40: case 0x41: case 0x42: case 0x43:
-        pit[port - 0x40] = value; return true;
+    case 0x40: case 0x41: case 0x42:
+    {
+        const unsigned int channel = port - 0x40;
+        PitChannel &ch = pit[channel];
+        if (ch.access == 1) pit_load(channel, value);
+        else if (ch.access == 2) pit_load(channel, (unsigned int)value << 8);
+        else if (!ch.write_phase)
+        {
+            ch.write_low = value;
+            ch.write_phase = 1;
+        }
+        else
+        {
+            pit_load(channel, (unsigned int)ch.write_low | ((unsigned int)value << 8));
+            ch.write_phase = 0;
+        }
+        return true;
+    }
+    case 0x43:
+    {
+        const unsigned int channel = (value >> 6) & 3;
+        if (channel == 3) return true; // 8253 has no read-back command
+        PitChannel &ch = pit[channel];
+        const unsigned int access = (value >> 4) & 3;
+        if (!access) // counter latch command
+        {
+            if (!ch.latch_valid)
+            {
+                ch.latch = pit_current_count(ch);
+                ch.latch_valid = 1;
+                ch.read_phase = 0;
+            }
+            return true;
+        }
+        ch.access = (unsigned char)access;
+        ch.mode = (unsigned char)((value >> 1) & 7);
+        if (ch.mode >= 6) ch.mode -= 4;
+        ch.bcd = value & 1;
+        ch.write_phase = ch.read_phase = 0;
+        ch.latch_valid = 0;
+        ch.running = 0;
+        ch.output = (ch.mode == 0) ? 0 : 1;
+        return true;
+    }
     case 0x70: cmos_index = (unsigned char)(value & 0x7F); return true;
     case 0x71:
         if ((cmos_index & 0x7F) != 0x0C && (cmos_index & 0x7F) != 0x0D)
