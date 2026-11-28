@@ -49,7 +49,8 @@ From the Project131 checkout:
 
 The launcher passes `i486/pcem_486.cfg` to PCem, selecting the machine above.
 The build script creates the ROM directories but does not download copyrighted
-ROMs. If required images are missing, PCem cannot complete BIOS startup.
+ROMs. The launcher checks both required files and stops with their expected
+paths if either is missing.
 
 ## Integration boundary
 
