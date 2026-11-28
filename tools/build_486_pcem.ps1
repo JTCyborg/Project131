@@ -129,15 +129,35 @@ if ($Clean -and (Test-Path $buildPath)) {
 }
 
 New-Item -ItemType Directory -Force -Path $buildPath | Out-Null
+$wxCompatDir = Join-Path $repoRoot "cmake/wxwidgets-msys2"
+if (-not (Test-Path (Join-Path $wxCompatDir "FindwxWidgets.cmake"))) {
+    throw "Missing wxWidgets compatibility module: $wxCompatDir"
+}
+
 $cmakeArgs = @(
     "-S", $source,
     "-B", $buildPath,
     "-DCMAKE_BUILD_TYPE=Release",
     "-DPCEM_DISPLAY_ENGINE=wxWidgets",
+    "-DCMAKE_MODULE_PATH=$wxCompatDir",
     "-DPLUGIN_ENGINE=OFF",
     "-DUSE_NETWORKING=OFF",
     "-DUSE_PCAP_NETWORKING=OFF"
 )
+
+# Prefer the wxWidgets CMake package shipped by the selected MinGW toolchain.
+$wxConfigCandidates = @(
+    (Join-Path (Split-Path $compilerBin -Parent) "lib/cmake/wxWidgets-3.2"),
+    "C:\msys64\ucrt64\lib\cmake\wxWidgets-3.2"
+)
+$wxConfigDir = $wxConfigCandidates | Where-Object {
+    Test-Path (Join-Path $_ "wxWidgetsConfig.cmake")
+} | Select-Object -First 1
+if ($wxConfigDir) {
+    $cmakeArgs += "-DwxWidgets_DIR=$wxConfigDir"
+} else {
+    throw "wxWidgets CMake package was not found. Install the wxWidgets package for the selected MinGW toolchain."
+}
 if ($cmakeGeneratorArgs.Count -gt 0) {
     $cmakeArgs += $cmakeGeneratorArgs
 } elseif (Get-Command ninja -ErrorAction SilentlyContinue) {
