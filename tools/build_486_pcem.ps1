@@ -134,7 +134,7 @@ $ansiCall = "hIOCTL = CreateFileA(ioctl_path,"
 $genericCall = "hIOCTL = CreateFile(ioctl_path,"
 if ($ioctlText.Contains($genericCall)) {
     $ioctlText = $ioctlText.Replace($genericCall, $ansiCall)
-    [System.IO.File]::WriteAllText($ioctlSource, $ioctlText, [System.Text.Encoding]::UTF8)
+    [System.IO.File]::WriteAllText($ioctlSource, $ioctlText, [System.Text.UTF8Encoding]::new($false))
     Write-Host "[486/PCem] Applied Windows ANSI CD-ROM IOCTL compatibility fix"
 } elseif (-not $ioctlText.Contains($ansiCall)) {
     throw "Unexpected PCem source: cannot locate CreateFile(ioctl_path, ...) in $ioctlSource"
