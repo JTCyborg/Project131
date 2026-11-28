@@ -1,6 +1,7 @@
 #include "std.h"
 #include <new>
 #include "i486.h"
+#include "pc_platform.h"
 
 // The i486 ISA I/O bus is wired to the Trident adapter. Keep the adapter
 // interface narrow: non-VGA ports remain unclaimed by this device.
@@ -63,6 +64,7 @@ namespace i486
         bios_loaded = false;
         memset(vga_bios, 0xFF, sizeof(vga_bios));
         vga_bios_size = 0;
+        pc::init();
 
         // BIOS.BIN is the checked-in Trident TVGA8900D Option ROM.
         // Try the working directory first, then the directory above the EXE.
@@ -99,12 +101,14 @@ namespace i486
         memset(bios, 0xFF, sizeof(bios));
         memset(vga_bios, 0xFF, sizeof(vga_bios));
         vga_bios_size = 0;
+        pc::close();
     }
 
     void reset()
     {
         // CPU architectural reset state is established by the PCem core.
         // Platform reset intentionally preserves RAM and the BIOS image.
+        pc::reset();
     }
 
     bool load_bios(const char *path)
@@ -228,6 +232,8 @@ namespace i486
     unsigned char in8(unsigned short port)
     {
         unsigned char value = 0xFF;
+        if (pc::port_read(port, value))
+            return value;
         if (isa_vga_adapter_port_read((unsigned)port, value))
             return value;
         return 0xFF;
@@ -247,8 +253,9 @@ namespace i486
 
     void out8(unsigned short port, unsigned char value)
     {
-        // VGA/Trident register writes are dispatched to the emulated adapter.
-        // Unhandled ISA ports are intentionally left for other devices.
+        // Route chipset and legacy PC ports before the ISA VGA adapter.
+        if (pc::port_write(port, value))
+            return;
         isa_vga_adapter_port_write((unsigned)port, value);
     }
 
