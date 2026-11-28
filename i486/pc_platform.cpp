@@ -174,8 +174,8 @@ bool pic_acknowledge(unsigned char &vector)
         if (slave_irq < 0) return false;
         pic_slave.irr &= (unsigned char)~(1U << slave_irq);
         if (!pic_slave.auto_eoi) pic_slave.isr |= (unsigned char)(1U << slave_irq);
-        pic_refresh_cascade();
         else if (pic_slave.rotate_auto) pic_slave.priority_base = (unsigned char)slave_irq;
+        pic_refresh_cascade();
         irq = slave_irq + 8;
     }
     pic_master.irr &= (unsigned char)~(1U << master_irq);
