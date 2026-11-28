@@ -16,46 +16,106 @@ function Invoke-Checked([string]$Program, [string[]]$Arguments) {
     }
 }
 
+function Find-Tool([string]$Name, [string[]]$CandidatePaths) {
+    $fromPath = Get-Command $Name -ErrorAction SilentlyContinue
+    if ($fromPath -and $fromPath.Source) { return $fromPath.Source }
+    foreach ($candidate in $CandidatePaths) {
+        if (Test-Path $candidate -PathType Leaf) { return $candidate }
+    }
+    return $null
+}
+
 if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
-    throw "Git is required to initialize the pinned PCem source submodule."
+    throw "Git is required. Install Git for Windows and ensure git.exe is on PATH."
 }
 if (-not (Get-Command cmake -ErrorAction SilentlyContinue)) {
-    throw "CMake is required. Install CMake and ensure it is on PATH."
+    throw "CMake is required. Install CMake and ensure cmake.exe is on PATH."
 }
 
 $cmakeGeneratorArgs = @()
 if ($env:OS -eq "Windows_NT") {
-    # PCem uses GCC-style compiler flags in its CMakeLists. Prefer MinGW-w64,
-    # but also support LLVM Clang in GNU-driver mode (clang.exe/clang++.exe).
-    $cCompiler = Get-Command gcc -ErrorAction SilentlyContinue
-    $cxxCompiler = Get-Command g++ -ErrorAction SilentlyContinue
+    # Search PATH first, then common MSYS2/MinGW/LLVM installation locations.
+    $gccPaths = @(
+        "C:\msys64\ucrt64\bin\gcc.exe",
+        "C:\msys64\mingw64\bin\gcc.exe",
+        "C:\msys64\clang64\bin\gcc.exe",
+        "C:\mingw64\bin\gcc.exe",
+        "C:\MinGW\bin\gcc.exe",
+        "C:\tools\mingw64\bin\gcc.exe"
+    )
+    $gxxPaths = @(
+        "C:\msys64\ucrt64\bin\g++.exe",
+        "C:\msys64\mingw64\bin\g++.exe",
+        "C:\msys64\clang64\bin\g++.exe",
+        "C:\mingw64\bin\g++.exe",
+        "C:\MinGW\bin\g++.exe",
+        "C:\tools\mingw64\bin\g++.exe"
+    )
+    $clangPaths = @(
+        "C:\Program Files\LLVM\bin\clang.exe",
+        "C:\LLVM\bin\clang.exe",
+        "C:\msys64\clang64\bin\clang.exe"
+    )
+    $clangxxPaths = @(
+        "C:\Program Files\LLVM\bin\clang++.exe",
+        "C:\LLVM\bin\clang++.exe",
+        "C:\msys64\clang64\bin\clang++.exe"
+    )
+    $ninjaPaths = @(
+        "C:\Program Files\CMake\bin\ninja.exe",
+        "C:\Program Files\LLVM\bin\ninja.exe",
+        "C:\msys64\ucrt64\bin\ninja.exe",
+        "C:\msys64\mingw64\bin\ninja.exe",
+        "C:\tools\ninja\ninja.exe"
+    )
 
-    if (-not $cCompiler -or -not $cxxCompiler) {
-        $clang = Get-Command clang -ErrorAction SilentlyContinue
-        $clangxx = Get-Command clang++ -ErrorAction SilentlyContinue
-        if ($clang -and $clangxx) {
-            $cCompiler = $clang
-            $cxxCompiler = $clangxx
-            Write-Host "[486/PCem] Using LLVM Clang: $($clang.Source)"
-        }
+    $gcc = Find-Tool "gcc" $gccPaths
+    $gxx = Find-Tool "g++" $gxxPaths
+    $clang = Find-Tool "clang" $clangPaths
+    $clangxx = Find-Tool "clang++" $clangxxPaths
+
+    if ($gcc -and $gxx) {
+        $cCompiler = $gcc
+        $cxxCompiler = $gxx
+        Write-Host "[486/PCem] Using GCC toolchain: $cCompiler"
+    } elseif ($clang -and $clangxx) {
+        $cCompiler = $clang
+        $cxxCompiler = $clangxx
+        Write-Host "[486/PCem] Using LLVM Clang toolchain: $cCompiler"
     } else {
-        Write-Host "[486/PCem] Using MinGW-w64: $($cCompiler.Source)"
+        throw @"
+No supported C/C++ compiler was found.
+Install MSYS2 with the MinGW-w64 UCRT64 toolchain, then run:
+  C:\msys64\ucrt64\bin\gcc.exe
+  C:\msys64\ucrt64\bin\g++.exe
+Recommended MSYS2 packages: mingw-w64-ucrt-x86_64-gcc, mingw-w64-ucrt-x86_64-cmake,
+mingw-w64-ucrt-x86_64-ninja, mingw-w64-ucrt-x86_64-SDL2, mingw-w64-ucrt-x86_64-openal.
+Alternatively install LLVM Clang and Ninja. Add their bin directories to PATH,
+or install MSYS2 in C:\msys64; this script checks the standard locations.
+"@
     }
 
-    if (-not $cCompiler -or -not $cxxCompiler) {
-        throw "A GCC-compatible toolchain is required. Install either MinGW-w64 (gcc/g++) or LLVM (clang/clang++), then add its bin directory to PATH."
+    $compilerBin = Split-Path $cCompiler -Parent
+    if (($env:PATH -split ';') -notcontains $compilerBin) {
+        $env:PATH = "$compilerBin;$env:PATH"
     }
-    $ninja = Get-Command ninja -ErrorAction SilentlyContinue
+
+    $ninja = Find-Tool "ninja" $ninjaPaths
     if (-not $ninja) {
-        throw "Ninja is required. Install Ninja and ensure ninja.exe is on PATH."
+        throw "Ninja was not found. Install mingw-w64-ucrt-x86_64-ninja (MSYS2) or add ninja.exe to PATH."
+    }
+    $ninjaBin = Split-Path $ninja -Parent
+    if (($env:PATH -split ';') -notcontains $ninjaBin) {
+        $env:PATH = "$ninjaBin;$env:PATH"
     }
 
     $cmakeGeneratorArgs = @(
         "-G", "Ninja",
-        "-DCMAKE_C_COMPILER=$($cCompiler.Source)",
-        "-DCMAKE_CXX_COMPILER=$($cxxCompiler.Source)"
+        "-DCMAKE_C_COMPILER=$cCompiler",
+        "-DCMAKE_CXX_COMPILER=$cxxCompiler"
     )
 }
+
 $submoduleMarker = Join-Path $source ".git"
 if (-not (Test-Path $submoduleMarker)) {
     Invoke-Checked "git" @("-C", $repoRoot, "submodule", "update", "--init", "--recursive", "third_party/pcem-full")
