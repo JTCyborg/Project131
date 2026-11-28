@@ -140,6 +140,22 @@ if ($ioctlText.Contains($genericCall)) {
     throw "Unexpected PCem source: cannot locate CreateFile(ioctl_path, ...) in $ioctlSource"
 }
 
+# PCem's WinMM MIDI device name is WCHAR under the Unicode wxWidgets build,
+# while the legacy PCem API exposes a narrow char* buffer. Convert explicitly
+# to the active Windows code page and bound the output to the fixed MIDI name
+# buffer size (MAXPNAMELEN).
+$midiSource = Join-Path $source "src/sound/win-midi.c"
+$midiText = [System.IO.File]::ReadAllText($midiSource)
+$legacyMidiCopy = "strcpy(s, caps.szPname);"
+$unicodeMidiCopy = "WideCharToMultiByte(CP_ACP, 0, caps.szPname, -1, s, sizeof(caps.szPname), NULL, NULL);"
+if ($midiText.Contains($legacyMidiCopy)) {
+    $midiText = $midiText.Replace($legacyMidiCopy, $unicodeMidiCopy)
+    [System.IO.File]::WriteAllText($midiSource, $midiText, [System.Text.UTF8Encoding]::new($false))
+    Write-Host "[486/PCem] Applied Unicode MIDI device-name compatibility fix"
+} elseif (-not $midiText.Contains($unicodeMidiCopy)) {
+    throw "Unexpected PCem source: cannot locate MIDI device-name copy in $midiSource"
+}
+
 if ($Clean -and (Test-Path $buildPath)) {
     Remove-Item -Recurse -Force $buildPath
 }
