@@ -25,21 +25,37 @@ if (-not (Get-Command cmake -ErrorAction SilentlyContinue)) {
 
 $cmakeGeneratorArgs = @()
 if ($env:OS -eq "Windows_NT") {
-    $gcc = Get-Command gcc -ErrorAction SilentlyContinue
-    $gxx = Get-Command g++ -ErrorAction SilentlyContinue
-    if (-not $gcc -or -not $gxx) {
-        throw "PCem's Windows build requires MinGW-w64 GCC/G++ and Ninja. Install them and ensure gcc, g++, and ninja are on PATH."
+    # PCem uses GCC-style compiler flags in its CMakeLists. Prefer MinGW-w64,
+    # but also support LLVM Clang in GNU-driver mode (clang.exe/clang++.exe).
+    $cCompiler = Get-Command gcc -ErrorAction SilentlyContinue
+    $cxxCompiler = Get-Command g++ -ErrorAction SilentlyContinue
+
+    if (-not $cCompiler -or -not $cxxCompiler) {
+        $clang = Get-Command clang -ErrorAction SilentlyContinue
+        $clangxx = Get-Command clang++ -ErrorAction SilentlyContinue
+        if ($clang -and $clangxx) {
+            $cCompiler = $clang
+            $cxxCompiler = $clangxx
+            Write-Host "[486/PCem] Using LLVM Clang: $($clang.Source)"
+        }
+    } else {
+        Write-Host "[486/PCem] Using MinGW-w64: $($cCompiler.Source)"
     }
-    if (-not (Get-Command ninja -ErrorAction SilentlyContinue)) {
-        throw "Ninja is required for the MinGW-w64 PCem build on Windows."
+
+    if (-not $cCompiler -or -not $cxxCompiler) {
+        throw "A GCC-compatible toolchain is required. Install either MinGW-w64 (gcc/g++) or LLVM (clang/clang++), then add its bin directory to PATH."
     }
+    $ninja = Get-Command ninja -ErrorAction SilentlyContinue
+    if (-not $ninja) {
+        throw "Ninja is required. Install Ninja and ensure ninja.exe is on PATH."
+    }
+
     $cmakeGeneratorArgs = @(
         "-G", "Ninja",
-        "-DCMAKE_C_COMPILER=$($gcc.Source)",
-        "-DCMAKE_CXX_COMPILER=$($gxx.Source)"
+        "-DCMAKE_C_COMPILER=$($cCompiler.Source)",
+        "-DCMAKE_CXX_COMPILER=$($cxxCompiler.Source)"
     )
 }
-
 $submoduleMarker = Join-Path $source ".git"
 if (-not (Test-Path $submoduleMarker)) {
     Invoke-Checked "git" @("-C", $repoRoot, "submodule", "update", "--init", "--recursive", "third_party/pcem-full")
