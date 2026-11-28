@@ -18,7 +18,7 @@ namespace
         unsigned char irr, isr, imr, vector_base;
         unsigned char init_step, read_isr, auto_eoi, rotate_auto;
         unsigned char priority_base, expect_icw4, single;
-        unsigned char level, last_level;
+        unsigned char level;
     };
     static Pic8259 pic_master;
     static Pic8259 pic_slave;
@@ -268,7 +268,9 @@ bool port_write(unsigned short port, unsigned char value)
         {
             const unsigned char command = (value >> 5) & 7;
             const unsigned char level = value & 7;
-            if (command == 1 || command == 5) // non-specific EOI
+            if (command == 0) pic.rotate_auto = 0; // clear rotate in auto-EOI
+            else if (command == 4) pic.rotate_auto = 1; // set rotate in auto-EOI
+            else if (command == 1 || command == 5) // non-specific EOI
             {
                 for (unsigned int n = 1; n <= 8; ++n)
                 {
@@ -281,6 +283,7 @@ bool port_write(unsigned short port, unsigned char value)
                     }
                 }
             }
+            else if (command == 6) pic.priority_base = level; // set lowest priority
             else if (command == 3 || command == 7) // specific EOI
             {
                 pic.isr &= (unsigned char)~(1U << level);
